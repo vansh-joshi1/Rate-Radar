@@ -1,0 +1,19 @@
+{
+  "_comment": "Baseline nightly rates. Edit freely - the model applies its uplift % on top of these. weekendDays: 5=Fri, 6=Sat.",
+  "tiers": [
+    {
+      "id": "standard",
+      "label": "Standard (king / double / superior king / handicap)",
+      "weekday": { "min": 68, "max": 72 },
+      "weekend": { "min": 80, "max": 90 }
+    },
+    {
+      "id": "queen",
+      "label": "Queen",
+      "weekday": { "min": 80, "max": 80 },
+      "weekend": { "min": 95, "max": 95 }
+    }
+  ],
+  "upliftCapPct": 40,
+  "weekendDays": [5, 6]
+}

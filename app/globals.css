@@ -1,0 +1,32 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1115; --panel: #171a21; --panel2: #1e222c; --border: #2a2f3a;
+  --text: #e6e8ee; --muted: #8b93a5; --accent: #4f8ef7;
+  --ok: #34c37f; --warn: #e5a53a; --bad: #e0564f; --tier0: #4b5263;
+}
+body { background: var(--bg); color: var(--text); font: 15px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+h1 { font-size: 22px; font-weight: 600; }
+h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+section { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-top: 18px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; color: var(--muted); font-weight: 500; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+input, textarea, button, select { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; }
+button { cursor: pointer; background: var(--accent); border: none; color: #fff; font-weight: 500; }
+button:hover { filter: brightness(1.1); }
+.muted { color: var(--muted); }
+.chip { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.chip.none { background: #262b36; color: var(--muted); }
+.chip.minor { background: #1d3a5f; color: #9cc4ff; }
+.chip.meaningful { background: #4a3a14; color: #ffd479; }
+.chip.major { background: #4a1f1c; color: #ff9a93; }
+.price { font-size: 26px; font-weight: 700; }
+.gap-badge { background: var(--bad); color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.small { font-size: 13px; }
+.grid { display: grid; gap: 14px; }
+@media (min-width: 760px) { .grid.cols2 { grid-template-columns: 1fr 1fr; } }
+.reason-toosmall { color: var(--muted); }
+.stale { background: #4a3a14; color: #ffd479; border-radius: 8px; padding: 10px 14px; margin-top: 14px; font-size: 14px; }
+.confbar { height: 8px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
+.confbar > div { height: 100%; background: var(--accent); }

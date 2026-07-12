@@ -1,0 +1,31 @@
+{
+  "_comment": "US holidays + long weekends through 2028. 'span' lists the NIGHTS likely affected (check-in dates). drawProfile: major|meaningful|minor. Refresh annually (~10 min): extend one more year, adjust CMA Fest once dates announced.",
+  "holidays": [
+    { "name": "MLK weekend", "date": "2027-01-18", "span": ["2027-01-15", "2027-01-16", "2027-01-17"], "drawProfile": "minor" },
+    { "name": "MLK weekend", "date": "2028-01-17", "span": ["2028-01-14", "2028-01-15", "2028-01-16"], "drawProfile": "minor" },
+    { "name": "Presidents Day weekend", "date": "2027-02-15", "span": ["2027-02-12", "2027-02-13", "2027-02-14"], "drawProfile": "minor" },
+    { "name": "Presidents Day weekend", "date": "2028-02-21", "span": ["2028-02-18", "2028-02-19", "2028-02-20"], "drawProfile": "minor" },
+    { "name": "Easter weekend", "date": "2027-03-28", "span": ["2027-03-26", "2027-03-27"], "drawProfile": "minor" },
+    { "name": "Easter weekend", "date": "2028-04-16", "span": ["2028-04-14", "2028-04-15"], "drawProfile": "minor" },
+    { "name": "Memorial Day weekend", "date": "2027-05-31", "span": ["2027-05-28", "2027-05-29", "2027-05-30"], "drawProfile": "meaningful" },
+    { "name": "Memorial Day weekend", "date": "2028-05-29", "span": ["2028-05-26", "2028-05-27", "2028-05-28"], "drawProfile": "meaningful" },
+    { "name": "CMA Fest (dates estimated until announced)", "date": "2027-06-10", "span": ["2027-06-10", "2027-06-11", "2027-06-12", "2027-06-13"], "drawProfile": "major" },
+    { "name": "CMA Fest (dates estimated until announced)", "date": "2028-06-08", "span": ["2028-06-08", "2028-06-09", "2028-06-10", "2028-06-11"], "drawProfile": "major" },
+    { "name": "Juneteenth", "date": "2027-06-19", "span": ["2027-06-18", "2027-06-19"], "drawProfile": "minor" },
+    { "name": "Juneteenth", "date": "2028-06-19", "span": ["2028-06-16", "2028-06-17", "2028-06-18"], "drawProfile": "minor" },
+    { "name": "July 4th", "date": "2027-07-04", "span": ["2027-07-02", "2027-07-03", "2027-07-04", "2027-07-05"], "drawProfile": "meaningful" },
+    { "name": "July 4th", "date": "2028-07-04", "span": ["2028-07-01", "2028-07-02", "2028-07-03", "2028-07-04"], "drawProfile": "meaningful" },
+    { "name": "Labor Day weekend", "date": "2026-09-07", "span": ["2026-09-04", "2026-09-05", "2026-09-06"], "drawProfile": "meaningful" },
+    { "name": "Labor Day weekend", "date": "2027-09-06", "span": ["2027-09-03", "2027-09-04", "2027-09-05"], "drawProfile": "meaningful" },
+    { "name": "Labor Day weekend", "date": "2028-09-04", "span": ["2028-09-01", "2028-09-02", "2028-09-03"], "drawProfile": "meaningful" },
+    { "name": "Thanksgiving", "date": "2026-11-26", "span": ["2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28"], "drawProfile": "meaningful" },
+    { "name": "Thanksgiving", "date": "2027-11-25", "span": ["2027-11-24", "2027-11-25", "2027-11-26", "2027-11-27"], "drawProfile": "meaningful" },
+    { "name": "Thanksgiving", "date": "2028-11-23", "span": ["2028-11-22", "2028-11-23", "2028-11-24", "2028-11-25"], "drawProfile": "meaningful" },
+    { "name": "Christmas", "date": "2026-12-25", "span": ["2026-12-23", "2026-12-24", "2026-12-25", "2026-12-26"], "drawProfile": "meaningful" },
+    { "name": "Christmas", "date": "2027-12-25", "span": ["2027-12-23", "2027-12-24", "2027-12-25", "2027-12-26"], "drawProfile": "meaningful" },
+    { "name": "Christmas", "date": "2028-12-25", "span": ["2028-12-22", "2028-12-23", "2028-12-24", "2028-12-25"], "drawProfile": "meaningful" },
+    { "name": "New Year's", "date": "2026-12-31", "span": ["2026-12-30", "2026-12-31", "2027-01-01"], "drawProfile": "meaningful" },
+    { "name": "New Year's", "date": "2027-12-31", "span": ["2027-12-30", "2027-12-31", "2028-01-01"], "drawProfile": "meaningful" },
+    { "name": "New Year's", "date": "2028-12-31", "span": ["2028-12-29", "2028-12-30", "2028-12-31"], "drawProfile": "meaningful" }
+  ]
+}
