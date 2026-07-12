@@ -1,5 +1,6 @@
 import type { Browser, Page } from 'playwright';
-import type { RateCheck, SourceResult } from '../../lib/scoring/types';
+import type { CompsetEntry, RateCheck, SourceResult } from '../../lib/scoring/types';
+import { matchCompset } from '../../lib/scoring/compset';
 
 /**
  * Rate parity: our own listed rate on 4 public sources, checked independently.
@@ -129,12 +130,42 @@ const checkRedroof = makeChecker('redroof', async (page) => {
   return extractPrice(page, REDROOF_PRICE_SELECTORS);
 });
 
+/** Filled by checkGoogle as a side harvest — the same page carries competitor prices. */
+let compsetHarvest: CompsetEntry[] = [];
+
+/**
+ * Google's "similar hotels" carousel renders as a hotel-name line followed
+ * within a few lines by a "$NN ·" price line (verified live 2026-07-12).
+ */
+export function harvestCompset(bodyText: string): CompsetEntry[] {
+  const lines = bodyText.split('\n').map((l) => l.trim());
+  const candidates: CompsetEntry[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^\$(\d{2,3})\s*·?/);
+    if (!m) continue;
+    for (let back = 1; back <= 4; back++) {
+      const name = lines[i - back];
+      if (name && name.length > 6 && !/\$|·|^view|^visit|^deal|^great price/i.test(name)) {
+        candidates.push({ name, price: Number(m[1]) });
+        break;
+      }
+    }
+  }
+  return matchCompset(candidates);
+}
+
 const checkGoogle = makeChecker('google', async (page) => {
+  const { checkin, checkout } = tomorrow();
   const q = process.env.GOOGLE_HOTELS_QUERY ?? GOOGLE_HOTELS_QUERY_DEFAULT;
-  await page.goto(`https://www.google.com/travel/search?q=${encodeURIComponent(q)}`, { waitUntil: 'domcontentloaded' });
+  await page.goto(
+    `https://www.google.com/travel/search?q=${encodeURIComponent(q)}&checkin=${checkin}&checkout=${checkout}`,
+    { waitUntil: 'domcontentloaded' }
+  );
   // consent dialog (region-dependent)
   await page.locator('button:has-text("Accept all"), button:has-text("I agree")').first().click({ timeout: 4000 }).catch(() => undefined);
   await page.waitForTimeout(3500); // let prices hydrate
+  const body = (await page.textContent('body').catch(() => '')) ?? '';
+  compsetHarvest = harvestCompset(body);
   return extractPrice(page, ['[data-hveid] span', 'span']);
 });
 
@@ -160,10 +191,16 @@ export async function collect(): Promise<SourceResult> {
   try {
     const { chromium } = await import('playwright');
     browser = await chromium.launch({ headless: true });
+    compsetHarvest = [];
     const checks = await Promise.all(
       [checkRedroof, checkGoogle, checkExpedia, checkBooking].map((c) => c(browser!))
     );
-    return { source: 'rates', status: 'ok', fetchedAt, data: checks };
+    return {
+      source: 'rates',
+      status: 'ok',
+      fetchedAt,
+      data: { checks, compset: compsetHarvest, compsetDate: tomorrow().checkin },
+    };
   } catch (err) {
     return { source: 'rates', status: 'failed', fetchedAt, error: String(err).slice(0, 300) };
   } finally {

@@ -1,9 +1,24 @@
+[email] RESEND_API_KEY or ALERT_EMAIL_TO unset — alert email skipped. Triggers: [
+  'New demand driver Fri, Jul 24: DCI: Drum Corps International at Nissan Stadium (score 73.7) — strong overflow likelihood — downtown will be contested.',
+  'New demand driver Fri, Jul 24: Meghan Trainor: The Get In Girl Tour at Bridgestone Arena (score 42.4) — likely to push some overflow demand toward franklin.',
+  'New demand driver Sat, Jul 25: The R&B Tour - Starring Usher Raymond & Chris Brown at Nissan Stadium (score 100) — strong overflow likelihood — downtown will be contested.',
+  'New demand driver Fri, Jul 31: ZAYN: The Konnakol Tour at Bridgestone Arena (score 42.4) — likely to push some overflow demand toward franklin.',
+  'New demand driver Sat, Aug 1: MANILOW: The Last Nashville Concert at Bridgestone Arena (score 42.4) — likely to push some overflow demand toward franklin.',
+  'Flood Watch (Severe) for Williamson County + Davidson County: Flood Watch issued July 12 at 1:06PM CDT until July 12 at 6:00PM CDT by NWS Nashville TN'
+]
 === INGEST SUMMARY ===
 {
   "nights": 22,
   "eventsConsidered": 16,
-  "triggers": [],
-  "emailStatus": "none",
+  "triggers": [
+    "New demand driver Fri, Jul 24: DCI: Drum Corps International at Nissan Stadium (score 73.7) — strong overflow likelihood — downtown will be contested.",
+    "New demand driver Fri, Jul 24: Meghan Trainor: The Get In Girl Tour at Bridgestone Arena (score 42.4) — likely to push some overflow demand toward franklin.",
+    "New demand driver Sat, Jul 25: The R&B Tour - Starring Usher Raymond & Chris Brown at Nissan Stadium (score 100) — strong overflow likelihood — downtown will be contested.",
+    "New demand driver Fri, Jul 31: ZAYN: The Konnakol Tour at Bridgestone Arena (score 42.4) — likely to push some overflow demand toward franklin.",
+    "New demand driver Sat, Aug 1: MANILOW: The Last Nashville Concert at Bridgestone Arena (score 42.4) — likely to push some overflow demand toward franklin.",
+    "Flood Watch (Severe) for Williamson County + Davidson County: Flood Watch issued July 12 at 1:06PM CDT until July 12 at 6:00PM CDT by NWS Nashville TN"
+  ],
+  "emailStatus": "skipped",
   "confidence": 90,
   "failedSources": [
     "cfbd (failed)"
@@ -59,8 +74,20 @@
 2026-08-01 — score 42, uplift 6.2%, standard $90 [85-96]
    meaningful   42.4  MANILOW: The Last Nashville Concert (~14k est) — Likely to push some overflow demand toward Franklin
 
-=== RATE PARITY (checked live, Jul 13→14) ===
+=== RATE PARITY (checked live, Jul 13→14; google informational only) ===
   redroof  $68  Deluxe King / 2 Queen NS, flexible rate
   google   $59  via "Official Site" link on Google Hotels
   expedia  $68  1 Queen / 1 King / 2 Queen
   booking  $68  cheapest room, taxes excluded
+
+=== NEARBY COMPETITORS (live, check-in Jul 13) ===
+  $ 52  Clarion Pointe Franklin - Nashville Area
+  $ 53  Comfort Inn Franklin Highway 96
+  $ 57  Holiday Inn Franklin - Cool Springs by IHG
+  $ 72  Candlewood Suites Nashville - Franklin by IHG
+  $ 91  Tru by Hilton Franklin Cool Springs Nashville
+  median: $57
+  → tomorrow (2026-07-13) recommendation after compset bound:
+     Standard (king / double / superior king / handicap): $68 (range $68-$68)
+     Queen: $80 (range $80-$80)
+     Nearby competitors' median is $57 tonight — recommendation capped at ~115% of market (never below your baseline floor).

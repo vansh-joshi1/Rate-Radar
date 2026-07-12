@@ -65,6 +65,7 @@ Use accounts tied to the hotel/family business (a shared family email), not a pe
 - **Scrapers rot.** University calendar pages change structure roughly yearly. When a source shows "parse failed / structure may have changed" on the dashboard, the selectors in `collector/sources/calendars.ts` (or the constants at the top of `rates.ts`) need a 15-minute refresh. A broken scrape only skips that source — the rest of the run continues.
 - **Music City Center** calendar is JavaScript-rendered; the plain fetch may consistently return nothing. If it stays empty, it's a candidate for a Playwright-based fetch in `rates.ts`-style — or just rely on the manual note field for known conventions.
 - **OTA listing URLs** still use the pre-rebrand "Days Inn" slugs (the property converted to Red Roof). They resolve correctly today; if Expedia/Booking migrate the listing, update `RATE_URL_*` secrets.
+- **Compset** (`config/compset.json`): the competitor whitelist is editable — add/remove hotels as the market changes. Compset is a sanity bound on quiet nights only; event nights are never capped. Google Hotels' rate for OUR property is informational only (excluded from parity alerts by owner request).
 - **Rate parity checks** are best-effort against bot-protected pages. "needs manual check" now and then is expected behavior, not failure. If one source says it for days, spot-check by hand.
 - **Corporate events** at Nissan NA / CHS campuses aren't published anywhere — that's what the dashboard's manual note field is for.
 

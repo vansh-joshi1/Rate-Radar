@@ -6,8 +6,9 @@ import { recommendNight, upliftPct, confidence } from './scoring/recommend';
 import { buildReasoning } from './scoring/reason';
 import { evaluateAlerts, type HolidayEntry } from './alerts/rules';
 import { sendAlertEmail } from './alerts/email';
+import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compset';
 import type {
-  NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
+  CompsetEntry, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
 } from './scoring/types';
 
 export const SourceResultSchema = z.object({
@@ -74,10 +75,18 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
       ? (src('nws')!.data as WeatherAlert[])
       : [];
   const faaData = src('faa')?.status === 'ok' ? (src('faa')!.data as { bnaDisrupted: boolean; detail?: string }) : null;
-  const parity: RateCheck[] =
-    src('rates')?.status === 'ok' && Array.isArray(src('rates')!.data)
-      ? (src('rates')!.data as RateCheck[])
-      : [];
+
+  // rates data shape: { checks, compset, compsetDate } (legacy plain array also accepted)
+  const ratesData = src('rates')?.status === 'ok' ? src('rates')!.data : null;
+  const parity: RateCheck[] = Array.isArray(ratesData)
+    ? (ratesData as RateCheck[])
+    : ((ratesData as { checks?: RateCheck[] } | null)?.checks ?? []);
+  const compsetRaw = !Array.isArray(ratesData)
+    ? ((ratesData as { compset?: CompsetEntry[]; compsetDate?: string } | null) ?? null)
+    : null;
+  const compsetEntries = matchCompset(compsetRaw?.compset ?? []);
+  const compsetDate = compsetRaw?.compsetDate ?? addDays(chicagoToday(now), 1);
+  const median = compsetMedian(compsetEntries);
 
   // --- score per night ---
   const byNight = new Map<string, ScoredEvent[]>();
@@ -114,6 +123,14 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
           ? `BNA disruption: ${faaData.detail ?? 'delays/ground stop'} — mass disruption can spike last-minute overnight demand nearby.`
           : undefined,
     };
+    // Compset sanity bound applies only to the night the competitor prices were checked for
+    if (date === compsetDate && median != null) {
+      const bounded = applyCompsetBound(partial.tiers, ns, median);
+      partial.tiers = bounded.tiers;
+      const reasoning = buildReasoning(partial);
+      if (bounded.note) reasoning.push(bounded.note);
+      return { ...partial, reasoning };
+    }
     return { ...partial, reasoning: buildReasoning(partial) };
   });
 
@@ -139,7 +156,9 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   const snapshot: Snapshot = {
     runAt: bundle.runAt, runId,
     confidence: conf.value, confidenceNote: conf.note,
-    nights, parity, sources: bundle.sources,
+    nights, parity,
+    compset: { date: compsetDate, entries: compsetEntries, median },
+    sources: bundle.sources,
   };
   await store.set('snapshot:latest', snapshot);
   await store.set(`snapshot:${today}:${runId}`, snapshot, 30 * 86400);

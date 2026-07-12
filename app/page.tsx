@@ -4,6 +4,7 @@ import type { HistoryRecord, Snapshot } from '../lib/scoring/types';
 import TodayCard from '../components/TodayCard';
 import Outlook from '../components/Outlook';
 import ParityPanel from '../components/ParityPanel';
+import CompsetPanel from '../components/CompsetPanel';
 import HistoryLog from '../components/HistoryLog';
 import NoteBox from '../components/NoteBox';
 
@@ -50,6 +51,7 @@ export default async function Page() {
       <TodayCard night={snapshot.nights[0]} confidence={snapshot.confidence} confidenceNote={snapshot.confidenceNote} />
       <NoteBox date={today} initial={note} />
       <ParityPanel parity={snapshot.parity} />
+      <CompsetPanel compset={snapshot.compset} />
       <Outlook nights={snapshot.nights} />
       <HistoryLog history={history} actuals={actuals} />
       <p className="muted small" style={{ marginTop: 20 }}>

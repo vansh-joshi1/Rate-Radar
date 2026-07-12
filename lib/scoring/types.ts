@@ -76,6 +76,18 @@ export interface NightRecommendation {
   reasoning: string[];
 }
 
+export interface CompsetEntry {
+  name: string;
+  price: number;
+}
+
+export interface CompsetInfo {
+  /** Night the competitor prices apply to (the checked check-in date). */
+  date: string;
+  entries: CompsetEntry[];
+  median: number | null;
+}
+
 export interface Snapshot {
   runAt: string;
   runId: string;
@@ -83,6 +95,7 @@ export interface Snapshot {
   confidenceNote: string;
   nights: NightRecommendation[];
   parity: RateCheck[];
+  compset?: CompsetInfo;
   sources: SourceResult[];
 }
 

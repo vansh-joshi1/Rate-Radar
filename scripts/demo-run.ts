@@ -69,6 +69,15 @@ const rates: RateCheck[] = [
   { source: 'booking', status: 'ok', price: 68, room: 'cheapest room, taxes excluded', fetchedAt: AT },
 ];
 
+// Competitor prices — read live off the same Google Hotels page (check-in Jul 13)
+const compset = [
+  { name: 'Clarion Pointe Franklin - Nashville Area', price: 52 },
+  { name: 'Comfort Inn Franklin Highway 96', price: 53 },
+  { name: 'Holiday Inn Franklin - Cool Springs by IHG', price: 57 },
+  { name: 'Candlewood Suites Nashville - Franklin by IHG', price: 72 },
+  { name: 'Tru by Hilton Franklin Cool Springs Nashville', price: 91 },
+];
+
 const bundle: Bundle = {
   runAt: AT,
   sources: [
@@ -77,7 +86,7 @@ const bundle: Bundle = {
     { source: 'nws', status: 'ok', fetchedAt: AT, data: weather },
     { source: 'faa', status: 'ok', fetchedAt: AT, data: { bnaDisrupted: false } },
     { source: 'calendars', status: 'ok', fetchedAt: AT, data: calendarEvents, error: 'Belmont calendar returned an empty shell to plain fetch — warned & skipped (structure note in README).' },
-    { source: 'rates', status: 'ok', fetchedAt: AT, data: rates },
+    { source: 'rates', status: 'ok', fetchedAt: AT, data: { checks: rates, compset, compsetDate: '2026-07-13' } },
   ],
 };
 
@@ -105,8 +114,18 @@ async function main() {
     }
   }
 
-  console.log('\n=== RATE PARITY (checked live, Jul 13→14) ===');
+  console.log('\n=== RATE PARITY (checked live, Jul 13→14; google informational only) ===');
   for (const p of snap.parity) console.log(`  ${p.source.padEnd(8)} ${p.status === 'ok' ? `$${p.price}` : 'needs manual check'}  ${p.room ?? p.error ?? ''}`);
+
+  console.log('\n=== NEARBY COMPETITORS (live, check-in Jul 13) ===');
+  if (snap.compset) {
+    for (const c of snap.compset.entries) console.log(`  $${String(c.price).padStart(3)}  ${c.name}`);
+    console.log(`  median: $${snap.compset.median}`);
+    const tomorrow = snap.nights.find((n) => n.date === snap.compset!.date);
+    console.log(`  → tomorrow (${snap.compset.date}) recommendation after compset bound:`);
+    for (const t of tomorrow!.tiers) console.log(`     ${t.label}: $${t.recommended} (range $${t.range[0]}-$${t.range[1]})`);
+    console.log(`     ${tomorrow!.reasoning[tomorrow!.reasoning.length - 1]}`);
+  }
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

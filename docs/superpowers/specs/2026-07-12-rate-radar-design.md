@@ -87,6 +87,12 @@ Per event, overflow-likelihood score 0–100:
 
 **Honest output rule**: every considered event appears in the reasoning with its score and verdict, including "too small to matter" — nothing silently omitted.
 
+## Compset (added 2026-07-12 by owner request)
+
+Nearby-competitor rates are harvested from the same Google Hotels page loaded for the parity check (the "similar hotels" carousel carries prices for the same check-in date, i.e. tomorrow). Competitors are matched against an editable whitelist in `config/compset.json`; prices sanity-bounded $40–$250.
+
+Effect on pricing — **sanity bound, not a driver**: for tomorrow's night only, if nightScore < 40 (no event justification) and recommended > 1.15 × compset median, the recommendation is capped at `max(baseline floor, 1.15 × median)`. Event nights (score ≥ 40) are never capped — comps posted rates before the demand signal, and the premium is the point. Compset entries + median always shown in reasoning and in a dashboard panel. Google's own rate for OUR property remains excluded from parity alerting (informational only, owner request).
+
 ## Rate parity checks
 
 Playwright (in Action) against redroof.com, Google Hotels (property-name search), Expedia, Booking.com — user-provided URLs parameterized to check-in = tomorrow, 1 night, cheapest standard room. Each source isolated: success → `{price, room, currency}`; blocked/structure-changed → status `needs-manual-check` with error note. Never guessed, never averaged. Booking/Expedia via **both** (per user's "Both" answer) → 4 total public sources reported side by side.

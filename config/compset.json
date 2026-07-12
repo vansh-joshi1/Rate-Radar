@@ -1,0 +1,16 @@
+{
+  "_comment": "Nearby competitor hotels matched (case-insensitive substring) against Google Hotels results. Edit freely - these are the budget/midscale properties guests actually cross-shop with a Red Roof Inn. Luxury properties are intentionally absent.",
+  "competitors": [
+    "Comfort Inn Franklin",
+    "Clarion Pointe Franklin",
+    "Holiday Inn Franklin - Cool Springs",
+    "Candlewood Suites Nashville - Franklin",
+    "Quality Inn",
+    "Baymont",
+    "La Quinta",
+    "Super 8",
+    "Motel 6",
+    "Tru by Hilton Franklin"
+  ],
+  "priceSanity": { "min": 40, "max": 250 }
+}
