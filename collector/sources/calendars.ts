@@ -126,31 +126,76 @@ export function parseUniversityCalendar(html: string, school: string, url: strin
     : { name: school, events: [], warning: `${school} calendar parsed but produced 0 overnight-relevant events — page structure may have changed: ${url}` };
 }
 
+/**
+ * Music City Center calendar (nashvillemcc.com/calendar — the site moved off
+ * nashvillemusiccitycenter.com in 2026). Server-rendered, plain-fetchable.
+ * Verified structure (2026-07-12): entries read
+ *   "Event Name Wednesday July 22, 2026 to Friday July 24, 2026 ... Event ID: 8591"
+ * and a month-grid section repeats each event with "Attendance: 950".
+ * Parses page TEXT rather than DOM classes — resilient to restyling.
+ */
 export function parseMcc(html: string, url: string): SubResult {
   const $ = cheerio.load(html);
+  const text = $('body').text().replace(/[ \t]+/g, ' ');
+
+  // Grid lines look like "Jul 22 - 24 Firehouse Sub 2026 Attendance: 950" —
+  // keys keep the date prefix, so lookups match by event-name SUFFIX.
+  const attendance = new Map<string, number>();
+  for (const m of text.matchAll(/([^\n]{3,90}?)\s*Attendance:\s*([\d,]+)/g)) {
+    attendance.set(m[1].trim().toLowerCase(), Number(m[2].replace(/,/g, '')));
+  }
+  const attendanceFor = (name: string): number | undefined => {
+    const needle = name.toLowerCase();
+    for (const [k, v] of attendance) if (k.endsWith(needle)) return v;
+    return undefined;
+  };
+
+  const DAY = '(?:Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)';
+  const FULLDATE = '((?:January|February|March|April|May|June|July|August|September|October|November|December) \\d{1,2}, \\d{4})';
+  const entry = new RegExp(
+    `([A-Za-z0-9'’&.,()/+\\- ]{4,90}?) ${DAY} ${FULLDATE}(?: to ${DAY} ${FULLDATE})?[^]{0,90}?Event ID: (\\d+)`, 'g'
+  );
+
   const events: RawEvent[] = [];
-  $('tr, li, article, .event, [class*="event"], [class*="Event"]').each((_, el) => {
-    const text = $(el).text().replace(/\s+/g, ' ').trim();
-    if (text.length > 400 || !MCC_MULTIDAY.test(text)) return;
-    const date = parseDate(text);
-    if (!date) return;
-    const attendanceMatch = text.match(/([\d,]{4,})\s*(attendees|people|guests)/i);
-    const name = text.slice(0, 80);
-    events.push({
-      id: `mcc:${date}:${name.slice(0, 24)}`,
-      name: `Music City Center: ${name}`,
-      date,
-      venue: 'Music City Center',
-      capacity: null,
-      expectedAttendance: attendanceMatch ? Number(attendanceMatch[1].replace(/,/g, '')) : 5000,
-      kind: 'convention',
-      source: 'calendars',
-    });
-  });
+  for (const m of text.matchAll(entry)) {
+    const [, rawName, startStr, endStr, eventId] = m;
+    const name = rawName.trim();
+    const start = parseDate(startStr);
+    if (!start) continue;
+    const end = endStr ? parseDate(endStr) : null;
+    const att = attendanceFor(name);
+
+    // nights: multi-day events occupy start..end-1; single-day events just that night
+    const nights: string[] = [];
+    if (end && end > start) {
+      const d = new Date(`${start}T12:00:00Z`);
+      const stop = new Date(`${end}T12:00:00Z`);
+      while (d < stop) {
+        nights.push(d.toISOString().slice(0, 10));
+        d.setUTCDate(d.getUTCDate() + 1);
+      }
+    } else {
+      nights.push(start);
+    }
+
+    for (const night of nights) {
+      events.push({
+        id: `mcc:${eventId}:${night}`,
+        name: `Music City Center: ${name}`,
+        date: night,
+        venue: 'Music City Center',
+        capacity: null,
+        expectedAttendance: att ?? 5000,
+        kind: 'convention',
+        source: 'calendars',
+      });
+    }
+  }
+
   const unique = uniq(events);
   return unique.length > 0
     ? { name: 'Music City Center', events: unique }
-    : { name: 'Music City Center', events: [], warning: `MCC calendar parsed but produced 0 events — page may be JS-rendered or structure changed: ${url}` };
+    : { name: 'Music City Center', events: [], warning: `MCC calendar parsed but produced 0 events — page structure may have changed: ${url}` };
 }
 
 /** July 2026 → "2026-27" (academic years roll over in June). */
@@ -171,7 +216,7 @@ function sources(now = new Date()) {
       parse: (html: string, url: string) => parseUniversityCalendar(html, 'Belmont', url),
     },
     {
-      url: 'https://www.nashvillemusiccitycenter.com/attend/event-calendar',
+      url: 'https://nashvillemcc.com/calendar',
       parse: (html: string, url: string) => parseMcc(html, url),
     },
   ];

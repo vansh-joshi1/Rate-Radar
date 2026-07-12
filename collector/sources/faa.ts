@@ -14,15 +14,15 @@ export async function collect(): Promise<SourceResult> {
     if (!res.ok) throw new Error(`FAA HTTP ${res.status}`);
     const xml = await res.text();
 
-    // Grab any program blocks that mention BNA
-    const mentionsBna = /BNA/.test(xml);
+    // Real structure (verified live 2026-07-12): airports appear as
+    // <ARPT>BNA</ARPT> inside <Delay_type> blocks whose <Name> identifies the
+    // program (Ground Stop Programs, Ground Delay Programs, Airport Closures…).
     let detail: string | undefined;
-    if (mentionsBna) {
-      const groundStop = /<Ground_Stop_List>[\s\S]*?BNA[\s\S]*?<\/Ground_Stop_List>/.test(xml);
-      const delay = /<(Arrival_Departure_Delay_List|Ground_Delay_List)>[\s\S]*?BNA[\s\S]*?<\/\1>/.test(xml);
-      if (groundStop) detail = 'Ground stop at BNA';
-      else if (delay) detail = 'Delay program active at BNA';
-      else detail = 'BNA mentioned in FAA status (closure/other)';
+    if (xml.includes('<ARPT>BNA</ARPT>')) {
+      const before = xml.slice(0, xml.indexOf('<ARPT>BNA</ARPT>'));
+      const names = [...before.matchAll(/<Name>([^<]+)<\/Name>/g)];
+      const program = names.length > 0 ? names[names.length - 1][1] : 'FAA program';
+      detail = `${program} affecting BNA`;
     }
 
     return {

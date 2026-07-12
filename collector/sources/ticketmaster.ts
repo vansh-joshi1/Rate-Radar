@@ -1,10 +1,26 @@
 import type { RawEvent, SourceResult } from '../../lib/scoring/types';
 import { venueCapacity } from '../../lib/scoring/venues';
 
-const TRACKED_VENUES = ['nissan stadium', 'bridgestone arena', 'geodis park'];
-const NASHVILLE_LATLONG = '36.1627,-86.7816';
+/**
+ * Ticketmaster Discovery API — events at the three big Nashville venues.
+ * Queries by venueId (verified 2026-07-12) rather than lat/long: precise, and
+ * avoids pulling every honky-tonk listing downtown.
+ *
+ * Real-world quirks handled (all observed in live data):
+ * - Junk listings: "BetMGM Dinner Reservation", VIP upgrades, parking — these
+ *   are classified Miscellaneous/Upsell/Parking and are filtered out.
+ * - Duplicate cross-listings: the same show can appear twice (Ticketmaster +
+ *   a SeatGeek/marketplace redirect) — deduped by date + normalized name.
+ * - Cancelled/rescheduled-away events are skipped by status.
+ */
+const VENUES: { id: string; name: string }[] = [
+  { id: 'KovZpZA7AnJA', name: 'Nissan Stadium' },
+  { id: 'KovZpZA6taAA', name: 'Bridgestone Arena' },
+  { id: 'KovZ917APYJ', name: 'GEODIS Park' },
+];
+const JUNK_NAME = /dinner reservation|vip|parking|club access|suite|pregame|pre-show|meal/i;
+const JUNK_TYPE = new Set(['Upsell', 'Parking']);
 
-/** Ticketmaster Discovery API — events at the three big Nashville venues, next 22 nights. */
 export async function collect(): Promise<SourceResult> {
   const fetchedAt = new Date().toISOString();
   const key = process.env.TICKETMASTER_API_KEY;
@@ -14,49 +30,69 @@ export async function collect(): Promise<SourceResult> {
     const start = new Date();
     const end = new Date(start.getTime() + 22 * 86400_000);
     const iso = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
-    const url =
-      `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}` +
-      `&latlong=${NASHVILLE_LATLONG}&radius=10&unit=miles&size=200` +
-      `&startDateTime=${iso(start)}&endDateTime=${iso(end)}&sort=date,asc`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Ticketmaster HTTP ${res.status}`);
-    const json = (await res.json()) as {
-      _embedded?: { events?: TmEvent[] };
-    };
-    const all = json._embedded?.events ?? [];
 
-    const tracked = all.filter((e) => {
-      const venue = e._embedded?.venues?.[0]?.name?.toLowerCase() ?? '';
-      return TRACKED_VENUES.some((v) => venue.includes(v));
+    const all: { tm: TmEvent; venueName: string }[] = [];
+    for (const venue of VENUES) {
+      let page = 0;
+      let totalPages = 1;
+      while (page < totalPages && page < 5) {
+        const url =
+          `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}` +
+          `&venueId=${venue.id}&size=100&page=${page}` +
+          `&startDateTime=${iso(start)}&endDateTime=${iso(end)}&sort=date,asc`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Ticketmaster HTTP ${res.status} (${venue.name})`);
+        const json = (await res.json()) as {
+          _embedded?: { events?: TmEvent[] };
+          page?: { totalPages?: number };
+        };
+        for (const e of json._embedded?.events ?? []) all.push({ tm: e, venueName: venue.name });
+        totalPages = json.page?.totalPages ?? 1;
+        page += 1;
+      }
+    }
+
+    const real = all.filter(({ tm }) => {
+      const cls = tm.classifications?.[0];
+      if (JUNK_NAME.test(tm.name)) return false;
+      if (cls?.type?.name && JUNK_TYPE.has(cls.type.name)) return false;
+      if (cls?.segment?.name === 'Miscellaneous') return false;
+      if (tm.dates?.status?.code === 'cancelled') return false;
+      return Boolean(tm.dates?.start?.localDate);
     });
 
-    // multi-night: same attraction + venue on >1 date in the window
+    // multi-night: same attraction+venue on more than one date
     const runCount = new Map<string, number>();
-    for (const e of tracked) {
-      const k = `${e._embedded?.attractions?.[0]?.id ?? e.name}@${e._embedded?.venues?.[0]?.name}`;
+    for (const { tm, venueName } of real) {
+      const k = `${tm._embedded?.attractions?.[0]?.id ?? tm.name}@${venueName}`;
       runCount.set(k, (runCount.get(k) ?? 0) + 1);
     }
 
-    const events: RawEvent[] = tracked
-      .filter((e) => e.dates?.start?.localDate)
-      .map((e) => {
-        const venue = e._embedded?.venues?.[0]?.name ?? 'unknown';
-        const k = `${e._embedded?.attractions?.[0]?.id ?? e.name}@${venue}`;
-        const isMusic = e.classifications?.[0]?.segment?.name === 'Music';
-        const cap = venueCapacity(venue);
-        return {
-          id: `tm:${e.id}`,
-          name: e.name,
-          date: e.dates.start.localDate!, // guaranteed by the filter above
-          venue,
-          capacity: cap,
-          kind: isMusic ? ('concert' as const) : ('sports' as const),
-          isTouring: isMusic, // a booked show at these venues is a touring production
-          multiNight: (runCount.get(k) ?? 1) > 1,
-          selloutLikely: (runCount.get(k) ?? 1) > 1 || (isMusic && (cap ?? 0) >= 40000),
-          source: 'ticketmaster',
-        };
+    // dedupe cross-listings by date + normalized name
+    const seen = new Set<string>();
+    const events: RawEvent[] = [];
+    for (const { tm, venueName } of real) {
+      const date = tm.dates.start.localDate!;
+      const dedupeKey = `${date}|${tm.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+
+      const runKey = `${tm._embedded?.attractions?.[0]?.id ?? tm.name}@${venueName}`;
+      const isMusic = tm.classifications?.[0]?.segment?.name === 'Music';
+      const cap = venueCapacity(venueName);
+      events.push({
+        id: `tm:${tm.id}`,
+        name: tm.name,
+        date,
+        venue: venueName,
+        capacity: cap,
+        kind: isMusic ? 'concert' : 'sports',
+        isTouring: isMusic, // a booked show at these venues is a touring production
+        multiNight: (runCount.get(runKey) ?? 1) > 1,
+        selloutLikely: (runCount.get(runKey) ?? 1) > 1 || (isMusic && (cap ?? 0) >= 40000),
+        source: 'ticketmaster',
       });
+    }
 
     return { source: 'ticketmaster', status: 'ok', fetchedAt, data: events };
   } catch (err) {
@@ -67,10 +103,7 @@ export async function collect(): Promise<SourceResult> {
 interface TmEvent {
   id: string;
   name: string;
-  dates: { start: { localDate?: string } };
-  classifications?: { segment?: { name?: string } }[];
-  _embedded?: {
-    venues?: { name?: string }[];
-    attractions?: { id?: string }[];
-  };
+  dates: { start: { localDate?: string }; status?: { code?: string } };
+  classifications?: { segment?: { name?: string }; type?: { name?: string } }[];
+  _embedded?: { attractions?: { id?: string }[] };
 }

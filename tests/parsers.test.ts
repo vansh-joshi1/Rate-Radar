@@ -39,14 +39,30 @@ describe('generic university parser (Belmont)', () => {
   });
 });
 
-describe('MCC parser', () => {
-  it('keeps conventions, parses published attendance, defaults to 5000', () => {
+describe('MCC parser (verified structure, nashvillemcc.com 2026-07-12)', () => {
+  it('parses events with published attendance', () => {
     const r = parseMcc(fx('mcc.html'), 'test://mcc');
-    const conv = r.events.find((e) => /beverage/i.test(e.name));
-    expect(conv?.expectedAttendance).toBe(15000);
-    const hr = r.events.find((e) => /hr conference/i.test(e.name));
-    expect(hr?.expectedAttendance).toBe(5000);
-    expect(r.events.some((e) => /lunch/i.test(e.name))).toBe(false); // no keyword match
+    const firehouse = r.events.filter((e) => /firehouse/i.test(e.name));
+    expect(firehouse.map((e) => e.date)).toEqual(['2026-07-22', '2026-07-23']); // multi-day: start..end-1 nights
+    expect(firehouse[0].expectedAttendance).toBe(950);
+  });
+  it('single-day event occupies one night', () => {
+    const r = parseMcc(fx('mcc.html'), 'test://mcc');
+    const engage = r.events.filter((e) => /engage/i.test(e.name));
+    expect(engage.map((e) => e.date)).toEqual(['2026-07-26']);
+    expect(engage[0].expectedAttendance).toBe(500);
+  });
+  it('spans month boundaries and finds big events', () => {
+    const r = parseMcc(fx('mcc.html'), 'test://mcc');
+    const nul = r.events.filter((e) => /urban league/i.test(e.name));
+    expect(nul.map((e) => e.date)).toEqual(['2026-07-29', '2026-07-30', '2026-07-31']);
+    const hyrox = r.events.filter((e) => /hyrox/i.test(e.name));
+    expect(hyrox[0]?.expectedAttendance).toBe(30000);
+  });
+  it('warns instead of throwing on changed structure', () => {
+    const r = parseMcc('<html><body>changed</body></html>', 'test://mcc');
+    expect(r.events).toEqual([]);
+    expect(r.warning).toContain('structure may have changed');
   });
 });
 

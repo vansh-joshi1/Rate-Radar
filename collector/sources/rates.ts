@@ -120,6 +120,12 @@ const checkRedroof = makeChecker('redroof', async (page) => {
   });
   await page.goto(rewriteDates(url), { waitUntil: 'networkidle' }).catch(() => undefined);
   if (apiPrice) return { price: apiPrice, room: 'cheapest available (from rates API)' };
+  // redroof renders prices WITHOUT a $ sign: "68.00\nUSD/night" (verified live 2026-07-12)
+  const body = (await page.textContent('body').catch(() => '')) ?? '';
+  const usd = [...body.matchAll(/(\d{2,3})\.\d{2}\s*\n?\s*USD\/night/g)]
+    .map((m) => Number(m[1]))
+    .filter((p) => p >= 40 && p <= 500);
+  if (usd.length > 0) return { price: Math.min(...usd), room: 'cheapest available (flexible rate)' };
   return extractPrice(page, REDROOF_PRICE_SELECTORS);
 });
 
