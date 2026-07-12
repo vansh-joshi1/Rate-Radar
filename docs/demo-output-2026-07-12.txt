@@ -1,0 +1,66 @@
+=== INGEST SUMMARY ===
+{
+  "nights": 22,
+  "eventsConsidered": 16,
+  "triggers": [],
+  "emailStatus": "none",
+  "confidence": 90,
+  "failedSources": [
+    "cfbd (failed)"
+  ]
+}
+
+=== TONIGHT (2026-07-12) ===
+  Standard (king / double / superior king / handicap): $70 (range $68-$72)
+  Queen: $80 (range $80-$80)
+  night score: 0 | uplift: 0% | confidence: 90% (Reduced confidence — source(s) not reporting this run: cfbd.)
+  • No demand-relevant events found for this night — baseline day-of-week pricing applies.
+  • Weather alert active: Flood Watch issued July 12 at 1:06PM CDT until July 12 at 6:00PM CDT by NWS Nashville TN. Watch for short-notice cancellations or demand.
+
+=== NIGHTS WITH SIGNAL (next 21) ===
+
+2026-07-17 — score 29, uplift 0%, standard $85 [80-90]
+   minor        29.4  Nashville SC v Atlanta United FC (~24k est) — Minor signal — unlikely to justify a rate move on its own
+
+2026-07-18 — score 24, uplift 0%, standard $85 [80-90]
+   minor        24.4  Hot Wheels Monster Trucks Live Glow-N-Fire (~17k est) — Minor signal — unlikely to justify a rate move on its own
+
+2026-07-19 — score 17, uplift 0%, standard $70 [68-72]
+   minor        17.1  Hot Wheels Monster Trucks Live Glow-N-Fire (~17k est) — Minor signal — unlikely to justify a rate move on its own
+
+2026-07-22 — score 14, uplift 0%, standard $70 [68-72]
+   too-small    13.2  Nashville SC v CF Montréal (~24k est) — Nearby, likely too small to move demand in Franklin
+   too-small     1.3  Music City Center: Firehouse Sub 2026 (~1k est) — Nearby, likely too small to move demand in Franklin
+
+2026-07-23 — score 2, uplift 0%, standard $70 [68-72]
+   too-small     2.1  Music City Center: Firehouse Sub 2026 (~1k est) — Nearby, likely too small to move demand in Franklin
+
+2026-07-24 — score 85, uplift 31.3%, standard $112 [105-118]
+   major        73.7  DCI: Drum Corps International (~24k est) — Strong overflow likelihood — downtown will be contested
+   meaningful   42.4  Meghan Trainor: The Get In Girl Tour (~14k est) — Likely to push some overflow demand toward Franklin
+
+2026-07-25 — score 100, uplift 40%, standard $119 [112-126]
+   major         100  The R&B Tour - Starring Usher Raymond & Chris Brown (~69k est) — Strong overflow likelihood — downtown will be contested
+   minor        32.7  Liverpool FC v Sunderland A.F.C. (~30k est) — Minor signal — unlikely to justify a rate move on its own
+
+2026-07-26 — score 1, uplift 0%, standard $70 [68-72]
+   too-small     1.1  Music City Center: Engage Nashville (~1k est) — Nearby, likely too small to move demand in Franklin
+
+2026-07-29 — score 5, uplift 0%, standard $70 [68-72]
+   too-small       5  Music City Center: National Urban League Annual Conference (~4k est) — Nearby, likely too small to move demand in Franklin
+
+2026-07-30 — score 8, uplift 0%, standard $70 [68-72]
+   too-small     7.7  Music City Center: National Urban League Annual Conference (~4k est) — Nearby, likely too small to move demand in Franklin
+
+2026-07-31 — score 49, uplift 10.3%, standard $94 [88-99]
+   meaningful   42.4  ZAYN: The Konnakol Tour (~14k est) — Likely to push some overflow demand toward Franklin
+   too-small      11  Music City Center: National Urban League Annual Conference (~4k est) — Nearby, likely too small to move demand in Franklin
+
+2026-08-01 — score 42, uplift 6.2%, standard $90 [85-96]
+   meaningful   42.4  MANILOW: The Last Nashville Concert (~14k est) — Likely to push some overflow demand toward Franklin
+
+=== RATE PARITY (checked live, Jul 13→14) ===
+  redroof  $68  Deluxe King / 2 Queen NS, flexible rate
+  google   $59  via "Official Site" link on Google Hotels
+  expedia  $68  1 Queen / 1 King / 2 Queen
+  booking  $68  cheapest room, taxes excluded

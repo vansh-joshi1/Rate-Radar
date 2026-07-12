@@ -80,7 +80,11 @@ export async function collect(): Promise<SourceResult> {
       const runKey = `${tm._embedded?.attractions?.[0]?.id ?? tm.name}@${venueName}`;
       const isMusic = tm.classifications?.[0]?.segment?.name === 'Music';
       const cap = venueCapacity(venueName);
+      // Competitions (DCI, cheer/dance championships) draw traveling families but
+      // don't fill a stadium like a headliner tour — observed live: DCI at Nissan.
+      const isCompetition = tm.classifications?.some((c) => c.subType?.name === 'Competition');
       events.push({
+        ...(isCompetition && cap ? { expectedAttendance: Math.round(cap * 0.35) } : {}),
         id: `tm:${tm.id}`,
         name: tm.name,
         date,
@@ -104,6 +108,6 @@ interface TmEvent {
   id: string;
   name: string;
   dates: { start: { localDate?: string }; status?: { code?: string } };
-  classifications?: { segment?: { name?: string }; type?: { name?: string } }[];
+  classifications?: { segment?: { name?: string }; type?: { name?: string }; subType?: { name?: string } }[];
   _embedded?: { attractions?: { id?: string }[] };
 }
