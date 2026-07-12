@@ -92,8 +92,12 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
     }
   }
 
-  // 2) Parity gap across sources that actually reported a price
-  const priced = input.parity.filter((p) => p.status === 'ok' && typeof p.price === 'number');
+  // 2) Parity gap across sources that actually reported a price.
+  // Google Hotels is excluded by owner request (its "official site" rate is a
+  // Google-side artifact) — shown on the dashboard as informational only.
+  const priced = input.parity.filter(
+    (p) => p.status === 'ok' && typeof p.price === 'number' && p.source !== 'google'
+  );
   if (priced.length >= 2) {
     const lo = priced.reduce((a, b) => (a.price! <= b.price! ? a : b));
     const hi = priced.reduce((a, b) => (a.price! >= b.price! ? a : b));

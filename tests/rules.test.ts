@@ -128,3 +128,13 @@ describe('fingerprint dedupe', () => {
     expect(third.triggers).toHaveLength(1);
   });
 });
+
+describe('google exclusion from parity (owner request)', () => {
+  it('google price never triggers or contributes to the gap', () => {
+    const check = (source: string, price: number) => ({
+      source: source as never, status: 'ok' as const, price, fetchedAt: NOW,
+    });
+    const r = evaluateAlerts(base({ parity: [check('redroof', 68), check('google', 59), check('expedia', 68), check('booking', 68)] }));
+    expect(r.triggers).toHaveLength(0);
+  });
+});

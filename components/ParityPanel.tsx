@@ -1,11 +1,12 @@
 import type { RateCheck } from '../lib/scoring/types';
 
 const LABELS: Record<string, string> = {
-  redroof: 'redroof.com (direct)', google: 'Google Hotels', expedia: 'Expedia', booking: 'Booking.com',
+  redroof: 'redroof.com (direct)', google: 'Google Hotels (informational — not alerted on)', expedia: 'Expedia', booking: 'Booking.com',
 };
 
 export default function ParityPanel({ parity }: { parity: RateCheck[] }) {
-  const priced = parity.filter((p) => p.status === 'ok' && typeof p.price === 'number');
+  // Google is informational only — excluded from the gap badge (owner request)
+  const priced = parity.filter((p) => p.status === 'ok' && typeof p.price === 'number' && p.source !== 'google');
   const gap = priced.length >= 2
     ? Math.max(...priced.map((p) => p.price!)) - Math.min(...priced.map((p) => p.price!))
     : 0;
