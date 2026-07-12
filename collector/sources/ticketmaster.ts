@@ -47,7 +47,7 @@ export async function collect(): Promise<SourceResult> {
         return {
           id: `tm:${e.id}`,
           name: e.name,
-          date: e.dates.start.localDate,
+          date: e.dates.start.localDate!, // guaranteed by the filter above
           venue,
           capacity: cap,
           kind: isMusic ? ('concert' as const) : ('sports' as const),
