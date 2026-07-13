@@ -17,6 +17,10 @@ class UpstashStore implements Store {
   private async cmd<T>(parts: (string | number)[]): Promise<T> {
     const res = await fetch(this.url, {
       method: 'POST',
+      // no-store is load-bearing: Next.js data-caches fetches made inside
+      // server components, which froze an early empty read of snapshot:latest
+      // and made the dashboard show "No data yet" forever. Never cache store I/O.
+      cache: 'no-store',
       headers: { Authorization: `Bearer ${this.token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(parts),
     });
