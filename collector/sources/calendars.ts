@@ -136,34 +136,50 @@ export function parseUniversityCalendar(html: string, school: string, url: strin
  */
 export function parseMcc(html: string, url: string): SubResult {
   const $ = cheerio.load(html);
-  const text = $('body').text().replace(/[ \t]+/g, ' ');
+  // Flatten ALL whitespace (incl. newlines between HTML elements) to single
+  // spaces — cheerio's text() of the real page separates nodes with newlines,
+  // which broke space-delimited matching on the first GitHub Actions run.
+  const text = $('body').text().replace(/\s+/g, ' ');
 
-  // Grid lines look like "Jul 22 - 24 Firehouse Sub 2026 Attendance: 950" —
-  // keys keep the date prefix, so lookups match by event-name SUFFIX.
-  const attendance = new Map<string, number>();
-  for (const m of text.matchAll(/([^\n]{3,90}?)\s*Attendance:\s*([\d,]+)/g)) {
-    attendance.set(m[1].trim().toLowerCase(), Number(m[2].replace(/,/g, '')));
+  // Parse the month-grid section: it carries clean names, dates, and published
+  // attendance in one place, under month headers that provide year context:
+  //   "July 2026 ... Jul 22 - 24 Firehouse Sub 2026 Attendance: 950
+  //    ... Jul 29 - Aug 01 National Urban League Annual Conference Attendance: 4000"
+  const MONTH_FULL = 'January|February|March|April|May|June|July|August|September|October|November|December';
+  const MON = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
+
+  // month headers ("July 2026") — position → year/month context
+  const headers: { index: number; year: number }[] = [];
+  for (const m of text.matchAll(new RegExp(`\\b(?:${MONTH_FULL}) (20\\d{2})\\b`, 'g'))) {
+    headers.push({ index: m.index!, year: Number(m[1]) });
   }
-  const attendanceFor = (name: string): number | undefined => {
-    const needle = name.toLowerCase();
-    for (const [k, v] of attendance) if (k.endsWith(needle)) return v;
-    return undefined;
+  const yearAt = (index: number): number | null => {
+    let y: number | null = null;
+    for (const h of headers) if (h.index < index) y = h.year;
+    return y;
   };
 
-  const DAY = '(?:Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)';
-  const FULLDATE = '((?:January|February|March|April|May|June|July|August|September|October|November|December) \\d{1,2}, \\d{4})';
   const entry = new RegExp(
-    `([A-Za-z0-9'’&.,()/+\\- ]{4,90}?) ${DAY} ${FULLDATE}(?: to ${DAY} ${FULLDATE})?[^]{0,90}?Event ID: (\\d+)`, 'g'
+    `\\b(${MON}) (\\d{1,2})(?: ?- ?(?:(${MON}) )?(\\d{1,2}))? (.{3,90}?) Attendance: ([\\d,]+)`, 'g'
   );
+  const monthNum = (mon: string): number => MONTHS[mon.toLowerCase()]!;
+  const iso = (y: number, mo: number, d: number) =>
+    `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
   const events: RawEvent[] = [];
   for (const m of text.matchAll(entry)) {
-    const [, rawName, startStr, endStr, eventId] = m;
+    const [, startMon, startDay, endMon, endDay, rawName, att] = m;
+    const year = yearAt(m.index!);
+    if (!year) continue; // no month-header context → not the grid section
+    const sMo = monthNum(startMon);
+    const start = iso(year, sMo, Number(startDay));
+    let end: string | null = null;
+    if (endDay) {
+      const eMo = endMon ? monthNum(endMon) : sMo;
+      const eYear = eMo < sMo ? year + 1 : year; // Dec 30 - Jan 02 rollover
+      end = iso(eYear, eMo, Number(endDay));
+    }
     const name = rawName.trim();
-    const start = parseDate(startStr);
-    if (!start) continue;
-    const end = endStr ? parseDate(endStr) : null;
-    const att = attendanceFor(name);
 
     // nights: multi-day events occupy start..end-1; single-day events just that night
     const nights: string[] = [];
@@ -180,12 +196,12 @@ export function parseMcc(html: string, url: string): SubResult {
 
     for (const night of nights) {
       events.push({
-        id: `mcc:${eventId}:${night}`,
+        id: `mcc:${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}:${night}`,
         name: `Music City Center: ${name}`,
         date: night,
         venue: 'Music City Center',
         capacity: null,
-        expectedAttendance: att ?? 5000,
+        expectedAttendance: Number(att.replace(/,/g, '')) || 5000,
         kind: 'convention',
         source: 'calendars',
       });

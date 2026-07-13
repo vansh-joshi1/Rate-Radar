@@ -75,3 +75,21 @@ describe('helpers', () => {
     expect(parseMonthDay('Nov 21-Nov 29, Sat-Sun', 2026)).toBe('2026-11-21');
   });
 });
+
+describe('MCC parser handles real-page whitespace (regression: first Actions run)', () => {
+  it('matches entries split across HTML elements/newlines', () => {
+    const html = `<html><body><div class="event">
+      <h3>Firehouse Sub 2026</h3>
+      <span>Wednesday July 22, 2026</span> to
+      <span>Friday July 24, 2026</span>
+      <a>no-link</a> <em>Event ID: 8591</em>
+    </div>
+    <div><h2>July 2026</h2>
+      Jul 22 - 24
+      Firehouse Sub 2026
+      Attendance: 950</div></body></html>`;
+    const r = parseMcc(html, 'test://mcc');
+    expect(r.events.map((e) => e.date)).toEqual(['2026-07-22', '2026-07-23']);
+    expect(r.events[0].expectedAttendance).toBe(950);
+  });
+});
