@@ -46,8 +46,14 @@ async function newPage(browser: Browser): Promise<Page> {
     userAgent:
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
     viewport: { width: 1366, height: 900 },
+    extraHTTPHeaders: { 'Accept-Language': 'en-US,en;q=0.9' },
   });
   const page = await ctx.newPage();
+  // Headless Chromium advertises itself via navigator.webdriver — the single
+  // cheapest tell for bot walls. Removing it fixes a good share of blocks.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+  });
   await page.route('**/*', (route) => {
     const type = route.request().resourceType();
     if (type === 'image' || type === 'font' || type === 'media') return route.abort();
@@ -55,6 +61,26 @@ async function newPage(browser: Browser): Promise<Page> {
   });
   page.setDefaultTimeout(TIMEOUT);
   return page;
+}
+
+/** Recognize bot-check interstitials so the dashboard says "blocked", not "structure changed". */
+function botWalled(body: string): boolean {
+  return /verify you are a human|are you a robot|unusual traffic|press & hold|access denied|captcha|pardon our interruption/i.test(body);
+}
+
+/** Nudge lazy-rendered prices into the DOM. */
+async function settlePage(page: Page, waitFor: RegExp, timeoutMs = 18_000): Promise<string> {
+  await page.evaluate(() => window.scrollBy(0, 900)).catch(() => undefined);
+  await page
+    .waitForFunction(
+      (src) => new RegExp(src, 'i').test(document.body.innerText),
+      waitFor.source,
+      { timeout: timeoutMs }
+    )
+    .catch(() => undefined); // fall through — extractor gets whatever rendered
+  const body = (await page.textContent('body').catch(() => '')) ?? '';
+  if (botWalled(body)) throw new Error('Blocked by a bot check on this run — usually transient from datacenter IPs; will retry next collection.');
+  return body;
 }
 
 async function extractPrice(page: Page, selectors: string[]): Promise<{ price: number; room?: string } | null> {
@@ -81,25 +107,34 @@ async function extractPrice(page: Page, selectors: string[]): Promise<{ price: n
 
 type Checker = (browser: Browser) => Promise<RateCheck>;
 
+const ATTEMPTS = 2;
+
 function makeChecker(
   source: RateCheck['source'],
   run: (page: Page) => Promise<{ price: number; room?: string } | null>
 ): Checker {
   return async (browser) => {
     const fetchedAt = new Date().toISOString();
-    let page: Page | null = null;
-    try {
-      page = await newPage(browser);
-      const result = await run(page);
-      if (!result) {
-        return { source, status: 'needs-manual-check', fetchedAt, error: 'No price found on page — structure may have changed or source blocked the check.' };
+    let lastError = 'No price found on page — structure may have changed or source blocked the check.';
+    for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+      let page: Page | null = null;
+      try {
+        page = await newPage(browser); // fresh context per attempt — blocks are often per-session
+        const result = await run(page);
+        if (result) return { source, status: 'ok', fetchedAt, ...result };
+      } catch (err) {
+        lastError = String(err).slice(0, 200);
+      } finally {
+        await page?.context().close().catch(() => undefined);
       }
-      return { source, status: 'ok', fetchedAt, ...result };
-    } catch (err) {
-      return { source, status: 'needs-manual-check', fetchedAt, error: String(err).slice(0, 200) };
-    } finally {
-      await page?.context().close().catch(() => undefined);
+      if (attempt < ATTEMPTS) await new Promise((r) => setTimeout(r, 2500));
     }
+    return {
+      source,
+      status: 'needs-manual-check',
+      fetchedAt,
+      error: `${lastError} (${ATTEMPTS} attempts)`,
+    };
   };
 }
 
@@ -119,10 +154,10 @@ const checkRedroof = makeChecker('redroof', async (page) => {
       }
     } catch { /* non-JSON response — ignore */ }
   });
-  await page.goto(rewriteDates(url), { waitUntil: 'networkidle' }).catch(() => undefined);
+  await page.goto(rewriteDates(url), { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+  const body = await settlePage(page, /USD\/night/);
   if (apiPrice) return { price: apiPrice, room: 'cheapest available (from rates API)' };
   // redroof renders prices WITHOUT a $ sign: "68.00\nUSD/night" (verified live 2026-07-12)
-  const body = (await page.textContent('body').catch(() => '')) ?? '';
   const usd = [...body.matchAll(/(\d{2,3})\.\d{2}\s*\n?\s*USD\/night/g)]
     .map((m) => Number(m[1]))
     .filter((p) => p >= 40 && p <= 500);
@@ -177,8 +212,7 @@ const checkGoogle = makeChecker('google', async (page) => {
   );
   // consent dialog (region-dependent)
   await page.locator('button:has-text("Accept all"), button:has-text("I agree")').first().click({ timeout: 4000 }).catch(() => undefined);
-  await page.waitForTimeout(3500); // let prices hydrate
-  const body = (await page.textContent('body').catch(() => '')) ?? '';
+  const body = await settlePage(page, /\$\d{2,3}/);
   compsetHarvest = harvestCompset(body);
   return extractPrice(page, ['[data-hveid] span', 'span']);
 });
@@ -187,7 +221,7 @@ const checkExpedia = makeChecker('expedia', async (page) => {
   const url = process.env.RATE_URL_EXPEDIA;
   if (!url) throw new Error('RATE_URL_EXPEDIA unset');
   await page.goto(rewriteDates(url), { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(5000);
+  await settlePage(page, /\$\d{2,3} nightly/); // room cards render "$68 nightly" (verified live)
   return extractPrice(page, EXPEDIA_PRICE_SELECTORS);
 });
 
@@ -195,7 +229,7 @@ const checkBooking = makeChecker('booking', async (page) => {
   const url = process.env.RATE_URL_BOOKING;
   if (!url) throw new Error('RATE_URL_BOOKING unset');
   await page.goto(rewriteDates(url), { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(5000);
+  await settlePage(page, /\$\d{2,3}/);
   return extractPrice(page, BOOKING_PRICE_SELECTORS);
 });
 
@@ -204,7 +238,7 @@ export async function collect(): Promise<SourceResult> {
   let browser: Browser | null = null;
   try {
     const { chromium } = await import('playwright');
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true, args: ['--disable-blink-features=AutomationControlled'] });
     compsetHarvest = [];
     const checks = await Promise.all(
       [checkRedroof, checkGoogle, checkExpedia, checkBooking].map((c) => c(browser!))
