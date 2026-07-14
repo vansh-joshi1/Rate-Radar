@@ -1,6 +1,7 @@
 import type { Browser, Page } from 'playwright';
 import type { CompsetEntry, RateCheck, SourceResult } from '../../lib/scoring/types';
 import { matchCompset } from '../../lib/scoring/compset';
+import compsetConfig from '../../config/compset.json';
 
 /**
  * Rate parity: our own listed rate on 4 public sources, checked independently.
@@ -13,6 +14,7 @@ import { matchCompset } from '../../lib/scoring/compset';
  */
 
 const TIMEOUT = 30_000;
+const CARD_WINDOW = 500; // chars of rendered text one result card plausibly spans
 const PRICE_RE = /\$\s?(\d{2,4})(?:\.\d{2})?/;
 
 // ---- selector constants (the bits that rot — keep them here) ----
@@ -78,7 +80,9 @@ async function settlePage(page: Page, waitFor: RegExp, timeoutMs = 18_000): Prom
       { timeout: timeoutMs }
     )
     .catch(() => undefined); // fall through — extractor gets whatever rendered
-  const body = (await page.textContent('body').catch(() => '')) ?? '';
+  // innerText (not textContent): rendered text only, line breaks at block
+  // boundaries, no <script> payloads — Booking's raw body is ~800KB of JS blobs.
+  const body = await page.evaluate(() => document.body.innerText).catch(() => '') ?? '';
   if (botWalled(body)) throw new Error('Blocked by a bot check on this run — usually transient from datacenter IPs; will retry next collection.');
   return body;
 }
@@ -181,32 +185,36 @@ let compsetHarvest: CompsetEntry[] = [];
  * production run harvested 0 comps).
  */
 export function harvestCompset(bodyText: string): CompsetEntry[] {
-  const lines = bodyText.split('\n').map((l) => l.trim());
-  const isComp = (l: string) =>
-    l.length >= 6 && l.length <= 90 && matchCompset([{ name: l, price: 100 }]).length > 0;
-  const seen = new Set<string>();
-  const candidates: CompsetEntry[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const name = lines[i];
-    if (!isComp(name)) continue;
-    if (seen.has(name.toLowerCase())) continue;
-    // Booking's result cards stack many lines (rating, distance, room type,
-    // cancellation policy) between name and price — look further than Google
-    // needs, but stop if we run into the NEXT hotel's card.
-    for (let ahead = 1; ahead <= 14; ahead++) {
-      const line = lines[i + ahead];
-      if (line === undefined) break;
-      if (ahead > 1 && isComp(line)) break; // next card started — don't steal its price
-      const m = line.match(/\$\s?(\d{2,3})(?:\D|$)/);
-      if (m) {
-        seen.add(name.toLowerCase());
-        candidates.push({ name, price: Number(m[1]) });
-        break;
-      }
+  const lower = bodyText.toLowerCase();
+  const brands: string[] = (compsetConfig.competitors as string[]) ?? [];
+
+  // all whitelist occurrences, sorted — each card window ends where the next brand begins
+  const marks: { pos: number; brand: string }[] = [];
+  for (const brand of brands) {
+    const needle = brand.toLowerCase();
+    let pos = lower.indexOf(needle);
+    let hits = 0;
+    while (pos !== -1 && hits < 5) {
+      marks.push({ pos, brand });
+      hits += 1;
+      pos = lower.indexOf(needle, pos + needle.length);
     }
   }
-  return matchCompset(candidates);
+  marks.sort((a, b) => a.pos - b.pos);
+
+  const found = new Map<string, number>();
+  for (let i = 0; i < marks.length; i++) {
+    const { pos, brand } = marks[i];
+    if (found.has(brand)) continue;
+    const nextPos = marks.slice(i + 1).find((m) => m.brand !== brand)?.pos ?? pos + CARD_WINDOW;
+    const window = bodyText.slice(pos, Math.min(pos + CARD_WINDOW, nextPos));
+    const m = window.match(/\$\s?(\d{2,3})(?!\d)/);
+    if (m) found.set(brand, Number(m[1]));
+  }
+
+  return matchCompset([...found.entries()].map(([name, price]) => ({ name, price })));
 }
+
 
 const checkGoogle = makeChecker('google', async (page) => {
   const { checkin, checkout } = tomorrow();
