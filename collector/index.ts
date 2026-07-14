@@ -4,7 +4,9 @@ import { collect as nws } from './sources/nws';
 import { collect as faa } from './sources/faa';
 import { collect as calendars } from './sources/calendars';
 import { collect as rates } from './sources/rates';
-import type { SourceResult } from '../lib/scoring/types';
+import { pickCompsetDates } from './eventNights';
+import { chicagoToday } from '../lib/ingest';
+import type { RawEvent, SourceResult } from '../lib/scoring/types';
 
 /**
  * Dumb collector: gather raw data from every source (isolated — one failing is
@@ -19,22 +21,39 @@ async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const skipRates = process.argv.includes('--skip-rates');
 
-  const collectors: (() => Promise<SourceResult>)[] = [
-    ticketmaster, cfbd, nws, faa, calendars,
-    ...(skipRates ? [] : [rates]),
-  ];
-
-  const settled = await Promise.allSettled(collectors.map((c) => c()));
+  // Stage 1: API collectors (parallel). Their events feed stage 2's date picks.
+  const apiNames = ['ticketmaster', 'cfbd', 'nws', 'faa', 'calendars'];
+  const settled = await Promise.allSettled([ticketmaster(), cfbd(), nws(), faa(), calendars()]);
   const sources: SourceResult[] = settled.map((s, i) =>
     s.status === 'fulfilled'
       ? s.value
       : {
-          source: ['ticketmaster', 'cfbd', 'nws', 'faa', 'calendars', 'rates'][i],
+          source: apiNames[i],
           status: 'failed' as const,
           fetchedAt: new Date().toISOString(),
           error: String(s.reason).slice(0, 300),
         }
   );
+
+  // Stage 2: Playwright rate checks + compset — tomorrow always, plus event
+  // nights scoring >= 40 (computed in-process from stage 1's events).
+  if (!skipRates) {
+    const events: RawEvent[] = sources
+      .filter((s) => ['ticketmaster', 'cfbd', 'calendars'].includes(s.source) && s.status === 'ok' && Array.isArray(s.data))
+      .flatMap((s) => s.data as RawEvent[]);
+    const eventNights = pickCompsetDates(events, chicagoToday());
+    if (eventNights.length > 0) console.log(`[compset] event nights selected: ${eventNights.join(', ')}`);
+    try {
+      sources.push(await rates(eventNights));
+    } catch (err) {
+      sources.push({
+        source: 'rates',
+        status: 'failed',
+        fetchedAt: new Date().toISOString(),
+        error: String(err).slice(0, 300),
+      });
+    }
+  }
 
   console.log('\n=== Collection summary ===');
   for (const s of sources) {

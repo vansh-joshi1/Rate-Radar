@@ -93,6 +93,10 @@ Nearby-competitor rates are harvested from the same Google Hotels page loaded fo
 
 Effect on pricing — **sanity bound, not a driver**: for tomorrow's night only, if nightScore < 40 (no event justification) and recommended > 1.15 × compset median, the recommendation is capped at `max(baseline floor, 1.15 × median)`. Event nights (score ≥ 40) are never capped — comps posted rates before the demand signal, and the premium is the point. Compset entries + median always shown in reasoning and in a dashboard panel. Google's own rate for OUR property remains excluded from parity alerting (informational only, owner request).
 
+## Compset v2 (added 2026-07-13, approved)
+
+Primary compset source is **Booking.com search results** for Franklin, TN (server-rendered, demonstrably runner-friendly), harvested name-anchored against the whitelist. Google's carousel remains a bonus secondary for tomorrow. The collector now stages: API collectors run first, nights in the next 21 days are scored in-process, and up to 3 nights scoring >= 40 (plus tomorrow) each get a Booking search fetch. Bundle shape becomes `compsets: [{date, entries}]` (legacy shapes still accepted by ingest). Semantics: tomorrow's median keeps the quiet-night sanity cap; event-night compsets NEVER cap - they surface as reasoning lines and per-date dashboard blocks (market intelligence for nights like DCI/Usher). Per-date failures mark that date empty, never the run.
+
 ## Rate parity checks
 
 Playwright (in Action) against redroof.com, Google Hotels (property-name search), Expedia, Booking.com — user-provided URLs parameterized to check-in = tomorrow, 1 night, cheapest standard room. Each source isolated: success → `{price, room, currency}`; blocked/structure-changed → status `needs-manual-check` with error note. Never guessed, never averaged. Booking/Expedia via **both** (per user's "Both" answer) → 4 total public sources reported side by side.

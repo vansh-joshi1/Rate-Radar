@@ -233,7 +233,30 @@ const checkBooking = makeChecker('booking', async (page) => {
   return extractPrice(page, BOOKING_PRICE_SELECTORS);
 });
 
-export async function collect(): Promise<SourceResult> {
+/** Booking.com search results for Franklin on a given night — server-rendered and
+ * runner-friendly (the one OTA that worked from GitHub Actions on day one). */
+async function bookingCompsetForDate(browser: Browser, checkin: string): Promise<CompsetEntry[]> {
+  const d = new Date(`${checkin}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  const checkout = d.toISOString().slice(0, 10);
+  let page: Page | null = null;
+  try {
+    page = await newPage(browser);
+    await page.goto(
+      `https://www.booking.com/searchresults.html?ss=Franklin%2C+Tennessee&checkin=${checkin}&checkout=${checkout}&group_adults=2&no_rooms=1&selected_currency=USD`,
+      { waitUntil: 'domcontentloaded' }
+    );
+    const body = await settlePage(page, /\$\d{2,3}/);
+    return harvestCompset(body);
+  } catch (err) {
+    console.warn(`[compset] Booking search failed for ${checkin}: ${String(err).slice(0, 140)}`);
+    return [];
+  } finally {
+    await page?.context().close().catch(() => undefined);
+  }
+}
+
+export async function collect(eventNights: string[] = []): Promise<SourceResult> {
   const fetchedAt = new Date().toISOString();
   let browser: Browser | null = null;
   try {
@@ -243,11 +266,25 @@ export async function collect(): Promise<SourceResult> {
     const checks = await Promise.all(
       [checkRedroof, checkGoogle, checkExpedia, checkBooking].map((c) => c(browser!))
     );
+
+    // Compset: tomorrow always, plus approved event nights (already capped upstream).
+    const tomorrowDate = tomorrow().checkin;
+    const dates = [tomorrowDate, ...eventNights.filter((dte) => dte !== tomorrowDate)];
+    const compsets: { date: string; entries: CompsetEntry[] }[] = [];
+    for (const date of dates) {
+      let entries = await bookingCompsetForDate(browser, date);
+      // Google's carousel harvest (same-run side product) backfills tomorrow if Booking gave nothing
+      if (entries.length === 0 && date === tomorrowDate && compsetHarvest.length > 0) {
+        entries = compsetHarvest;
+      }
+      compsets.push({ date, entries });
+    }
+
     return {
       source: 'rates',
       status: 'ok',
       fetchedAt,
-      data: { checks, compset: compsetHarvest, compsetDate: tomorrow().checkin },
+      data: { checks, compsets },
     };
   } catch (err) {
     return { source: 'rates', status: 'failed', fetchedAt, error: String(err).slice(0, 300) };

@@ -8,7 +8,7 @@ import { evaluateAlerts, type HolidayEntry } from './alerts/rules';
 import { sendAlertEmail } from './alerts/email';
 import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compset';
 import type {
-  CompsetEntry, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
+  CompsetEntry, CompsetInfo, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
 } from './scoring/types';
 
 export const SourceResultSchema = z.object({
@@ -23,6 +23,32 @@ export const BundleSchema = z.object({
   sources: z.array(SourceResultSchema),
 });
 export type Bundle = z.infer<typeof BundleSchema>;
+
+/**
+ * Rates-source payload has evolved; accept all three generations:
+ *   v1: RateCheck[]
+ *   v2: { checks, compset, compsetDate }  (single compset for tomorrow)
+ *   v3: { checks, compsets: [{date, entries}] }  (tomorrow + event nights)
+ */
+export function parseRatesData(
+  data: unknown,
+  fallbackDate: string
+): { parity: RateCheck[]; compsets: { date: string; entries: CompsetEntry[] }[] } {
+  if (!data) return { parity: [], compsets: [] };
+  if (Array.isArray(data)) return { parity: data as RateCheck[], compsets: [] };
+  const obj = data as {
+    checks?: RateCheck[];
+    compsets?: { date: string; entries: CompsetEntry[] }[];
+    compset?: CompsetEntry[];
+    compsetDate?: string;
+  };
+  const parity = obj.checks ?? [];
+  if (Array.isArray(obj.compsets)) return { parity, compsets: obj.compsets };
+  if (Array.isArray(obj.compset)) {
+    return { parity, compsets: [{ date: obj.compsetDate ?? fallbackDate, entries: obj.compset }] };
+  }
+  return { parity, compsets: [] };
+}
 
 const WINDOW_NIGHTS = 22; // today + 21
 const HOLIDAY_ATTENDANCE: Record<string, number> = { major: 40000, meaningful: 15000, minor: 6000 };
@@ -76,17 +102,13 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
       : [];
   const faaData = src('faa')?.status === 'ok' ? (src('faa')!.data as { bnaDisrupted: boolean; detail?: string }) : null;
 
-  // rates data shape: { checks, compset, compsetDate } (legacy plain array also accepted)
   const ratesData = src('rates')?.status === 'ok' ? src('rates')!.data : null;
-  const parity: RateCheck[] = Array.isArray(ratesData)
-    ? (ratesData as RateCheck[])
-    : ((ratesData as { checks?: RateCheck[] } | null)?.checks ?? []);
-  const compsetRaw = !Array.isArray(ratesData)
-    ? ((ratesData as { compset?: CompsetEntry[]; compsetDate?: string } | null) ?? null)
-    : null;
-  const compsetEntries = matchCompset(compsetRaw?.compset ?? []);
-  const compsetDate = compsetRaw?.compsetDate ?? addDays(chicagoToday(now), 1);
-  const median = compsetMedian(compsetEntries);
+  const { parity, compsets: rawCompsets } = parseRatesData(ratesData, addDays(chicagoToday(now), 1));
+  const compsets: CompsetInfo[] = rawCompsets.map((c) => {
+    const entries = matchCompset(c.entries);
+    return { date: c.date, entries, median: compsetMedian(entries) };
+  });
+  const compsetByDate = new Map(compsets.map((c) => [c.date, c]));
 
   // --- score per night ---
   const byNight = new Map<string, ScoredEvent[]>();
@@ -123,9 +145,10 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
           ? `BNA disruption: ${faaData.detail ?? 'delays/ground stop'} — mass disruption can spike last-minute overnight demand nearby.`
           : undefined,
     };
-    // Compset sanity bound applies only to the night the competitor prices were checked for
-    if (date === compsetDate && median != null) {
-      const bounded = applyCompsetBound(partial.tiers, ns, median);
+    // Compset applies per checked night: caps quiet nights, informs event nights
+    const nightCompset = compsetByDate.get(date);
+    if (nightCompset && nightCompset.median != null) {
+      const bounded = applyCompsetBound(partial.tiers, ns, nightCompset.median);
       partial.tiers = bounded.tiers;
       const reasoning = buildReasoning(partial);
       if (bounded.note) reasoning.push(bounded.note);
@@ -157,7 +180,8 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
     runAt: bundle.runAt, runId,
     confidence: conf.value, confidenceNote: conf.note,
     nights, parity,
-    compset: { date: compsetDate, entries: compsetEntries, median },
+    compset: compsets[0], // back-compat for older readers
+    compsets,
     sources: bundle.sources,
   };
   await store.set('snapshot:latest', snapshot);

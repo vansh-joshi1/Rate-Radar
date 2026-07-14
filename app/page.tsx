@@ -51,7 +51,7 @@ export default async function Page() {
       <TodayCard night={snapshot.nights[0]} confidence={snapshot.confidence} confidenceNote={snapshot.confidenceNote} />
       <NoteBox date={today} initial={note} />
       <ParityPanel parity={snapshot.parity} />
-      <CompsetPanel compset={snapshot.compset} />
+      <CompsetPanel compsets={snapshot.compsets ?? (snapshot.compset ? [snapshot.compset] : [])} />
       <Outlook nights={snapshot.nights} />
       <HistoryLog history={history} actuals={actuals} />
       <p className="muted small" style={{ marginTop: 20 }}>
