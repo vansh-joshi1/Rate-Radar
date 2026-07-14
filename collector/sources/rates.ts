@@ -137,15 +137,29 @@ let compsetHarvest: CompsetEntry[] = [];
  * Google's "similar hotels" carousel renders as a hotel-name line followed
  * within a few lines by a "$NN ·" price line (verified live 2026-07-12).
  */
+/**
+ * Name-anchored harvest: we KNOW which competitors we want (the whitelist), so
+ * find each name in the page text and scan forward a few lines for its price.
+ * The earlier price-anchored approach broke on the real page: Google stacks
+ * rating/amenity/"View prices" lines between name and price, so the
+ * looked-back "name" was junk that failed the whitelist (observed live —
+ * production run harvested 0 comps).
+ */
 export function harvestCompset(bodyText: string): CompsetEntry[] {
   const lines = bodyText.split('\n').map((l) => l.trim());
+  const seen = new Set<string>();
   const candidates: CompsetEntry[] = [];
   for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^\$(\d{2,3})\s*·?/);
-    if (!m) continue;
-    for (let back = 1; back <= 4; back++) {
-      const name = lines[i - back];
-      if (name && name.length > 6 && !/\$|·|^view|^visit|^deal|^great price/i.test(name)) {
+    const name = lines[i];
+    if (name.length < 6 || name.length > 90) continue;
+    // is this line a whitelisted competitor name? (matchCompset does the real
+    // filtering; this pre-check just uses it with a dummy price)
+    if (matchCompset([{ name, price: 100 }]).length === 0) continue;
+    if (seen.has(name.toLowerCase())) continue;
+    for (let ahead = 1; ahead <= 8; ahead++) {
+      const m = lines[i + ahead]?.match(/\$(\d{2,3})(?:\s*·|\s|$)/);
+      if (m) {
+        seen.add(name.toLowerCase());
         candidates.push({ name, price: Number(m[1]) });
         break;
       }
