@@ -30,16 +30,16 @@ export default function HistoryLog({
       </p>
       <table>
         <thead>
-          <tr><th>Date</th><th>Recommended (std / queen)</th><th>Signal</th><th>Top driver</th><th>Actually charged (std)</th><th>(queen)</th></tr>
+          <tr><th>Date</th><th>Recommended (std / superior)</th><th>Signal</th><th>Top driver</th><th>Actually charged (std)</th><th>(superior)</th></tr>
         </thead>
         <tbody>
           {history.map((h) => (
             <tr key={h.date}>
               <td>{h.date}</td>
-              <td>${h.recommendedStandard} / ${h.recommendedQueen}</td>
+              <td>${h.recommendedStandard} / ${h.recommendedSuperior}</td>
               <td>{h.nightScore}</td>
               <td className="small muted">{h.topDriver}</td>
-              {(['standard', 'queen'] as const).map((tier) => (
+              {(['standard', 'superior'] as const).map((tier) => (
                 <td key={tier}>
                   <input
                     type="number"

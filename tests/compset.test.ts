@@ -4,8 +4,8 @@ import type { TierRecommendation } from '../lib/scoring/types';
 
 
 const tiers = (): TierRecommendation[] => [
-  { tierId: 'standard', label: 'Standard', baselineMid: 70, recommended: 70, range: [68, 72] },
-  { tierId: 'queen', label: 'Queen', baselineMid: 80, recommended: 80, range: [80, 80] },
+  { tierId: 'standard', label: 'Standard', baselineMid: 71.5, recommended: 72, range: [68, 75] },
+  { tierId: 'superior', label: 'Superior', baselineMid: 85, recommended: 85, range: [80, 90] },
 ];
 
 describe('matchCompset', () => {
@@ -42,15 +42,15 @@ describe('applyCompsetBound', () => {
     expect(r.note).toContain('55');
   });
   it('quiet night, cap lands between floor and recommendation → capped to 1.15x median', () => {
-    // median 64 → cap 73.6 → round 74; standard 70 stays (below cap); queen 80 → capped 74? no, floor 80 wins
+    // median 64 → cap 73.6; standard 72 stays (below cap); superior 85 → capped, but floor 80 wins
     const r = applyCompsetBound(tiers(), 0, 64);
-    expect(r.tiers.find((t) => t.tierId === 'standard')!.recommended).toBe(70); // unchanged, under cap
-    expect(r.tiers.find((t) => t.tierId === 'queen')!.recommended).toBe(80); // floor protected
+    expect(r.tiers.find((t) => t.tierId === 'standard')!.recommended).toBe(72); // unchanged, under cap
+    expect(r.tiers.find((t) => t.tierId === 'superior')!.recommended).toBe(80); // floor protected
   });
   it('event night (score >= 40) is never capped', () => {
     const hot = tiers().map((t) => ({ ...t, recommended: Math.round(t.recommended * 1.4) }));
     const r = applyCompsetBound(hot, 85, 55);
-    expect(r.tiers.find((t) => t.tierId === 'standard')!.recommended).toBe(98);
+    expect(r.tiers.find((t) => t.tierId === 'standard')!.recommended).toBe(101);
     expect(r.note).toContain('not capped');
   });
   it('no median → passthrough with no note', () => {

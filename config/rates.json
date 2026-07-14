@@ -1,19 +1,20 @@
 {
-  "_comment": "Baseline nightly rates. Edit freely - the model applies its uplift % on top of these. weekendDays: 5=Fri, 6=Sat.",
+  "_comment": "Baseline nightly rates. Edit freely - the model applies its uplift % on top of these. Day classes: weekday = Mon-Thu, sunday = Sun (between weekday and weekend), weekend = Fri-Sat. Sunday numbers were set as the weekday/weekend midpoint per owner guidance ('higher than weekdays, a little lower than Fri/Sat') - adjust to taste.",
   "tiers": [
     {
       "id": "standard",
-      "label": "Standard (king / double / superior king / handicap)",
-      "weekday": { "min": 68, "max": 72 },
+      "label": "Standard (king / queen / double / handicap)",
+      "weekday": { "min": 68, "max": 75 },
+      "sunday": { "min": 74, "max": 82 },
       "weekend": { "min": 80, "max": 90 }
     },
     {
-      "id": "queen",
-      "label": "Queen",
-      "weekday": { "min": 80, "max": 80 },
-      "weekend": { "min": 95, "max": 95 }
+      "id": "superior",
+      "label": "Superior (king / queen)",
+      "weekday": { "min": 80, "max": 90 },
+      "sunday": { "min": 85, "max": 95 },
+      "weekend": { "min": 90, "max": 100 }
     }
   ],
-  "upliftCapPct": 40,
-  "weekendDays": [5, 6]
+  "upliftCapPct": 40
 }

@@ -14,12 +14,12 @@ export default function Outlook({ nights }: { nights: NightRecommendation[] }) {
       <h2>Next 3 weeks</h2>
       <table>
         <thead>
-          <tr><th>Night</th><th>Signal</th><th>Standard</th><th>Queen</th><th>Driver</th></tr>
+          <tr><th>Night</th><th>Signal</th><th>Standard</th><th>Superior</th><th>Driver</th></tr>
         </thead>
         <tbody>
           {nights.map((n) => {
             const std = n.tiers.find((t) => t.tierId === 'standard');
-            const q = n.tiers.find((t) => t.tierId === 'queen');
+            const q = n.tiers.find((t) => t.tierId === 'superior');
             const top = n.events[0];
             return (
               <tr key={n.date}>

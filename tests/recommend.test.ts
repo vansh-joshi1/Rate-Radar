@@ -26,14 +26,22 @@ describe('recommendNight', () => {
     const std = r.find((t) => t.tierId === 'standard')!;
     expect(std.recommended).toBe(104); // round(85*1.225)
     expect(std.range).toEqual([98, 110]);
-    const q = r.find((t) => t.tierId === 'queen')!;
-    expect(q.recommended).toBe(116); // round(95*1.225)
+    const q = r.find((t) => t.tierId === 'superior')!;
+    expect(q.recommended).toBe(116); // round(95*1.225) — mid of weekend 90-100
   });
   it('quiet Tuesday → weekday baseline', () => {
     const r = recommendNight('2026-07-14', 0);
     const std = r.find((t) => t.tierId === 'standard')!;
-    expect(std.recommended).toBe(70);
-    expect(std.range).toEqual([68, 72]);
+    expect(std.recommended).toBe(72); // mid of 68-75
+    expect(std.range).toEqual([68, 75]);
+  });
+  it('quiet Sunday → its own middle class (higher than weekday, below Fri/Sat)', () => {
+    const r = recommendNight('2026-07-19', 0); // a Sunday
+    const std = r.find((t) => t.tierId === 'standard')!;
+    expect(std.recommended).toBe(78); // mid of 74-82
+    expect(std.range).toEqual([74, 82]);
+    const sup = r.find((t) => t.tierId === 'superior')!;
+    expect(sup.recommended).toBe(90); // mid of 85-95
   });
 });
 

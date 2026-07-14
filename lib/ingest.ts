@@ -165,11 +165,11 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
 
   const todayNight = nights[0];
   const std = todayNight.tiers.find((t) => t.tierId === 'standard');
-  const queen = todayNight.tiers.find((t) => t.tierId === 'queen');
+  const superior = todayNight.tiers.find((t) => t.tierId === 'superior');
   await store.hset('history', today, {
     date: today,
     recommendedStandard: std?.recommended ?? 0,
-    recommendedQueen: queen?.recommended ?? 0,
+    recommendedSuperior: superior?.recommended ?? 0,
     nightScore: todayNight.nightScore,
     topDriver: todayNight.events[0]?.name ?? 'none',
     recordedAt: now.toISOString(),

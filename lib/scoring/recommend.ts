@@ -19,11 +19,19 @@ function dayOfWeek(date: string): number {
   return new Date(`${date}T12:00:00Z`).getUTCDay();
 }
 
+/** Three day classes per owner guidance: Mon-Thu weekday, Sunday its own middle tier, Fri-Sat weekend. */
+export function dayClass(date: string): 'weekday' | 'sunday' | 'weekend' {
+  const dow = dayOfWeek(date);
+  if (dow === 5 || dow === 6) return 'weekend';
+  if (dow === 0) return 'sunday';
+  return 'weekday';
+}
+
 export function recommendNight(date: string, nightScore: number): TierRecommendation[] {
-  const isWeekend = (ratesConfig.weekendDays as number[]).includes(dayOfWeek(date));
+  const cls = dayClass(date);
   const u = 1 + upliftPct(nightScore) / 100;
   return ratesConfig.tiers.map((t) => {
-    const base = isWeekend ? t.weekend : t.weekday;
+    const base = t[cls];
     const mid = (base.min + base.max) / 2;
     return {
       tierId: t.id,

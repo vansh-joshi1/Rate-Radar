@@ -102,7 +102,7 @@ export interface Snapshot {
 export interface HistoryRecord {
   date: string;
   recommendedStandard: number;
-  recommendedQueen: number;
+  recommendedSuperior: number;
   nightScore: number;
   topDriver: string;
   recordedAt: string;

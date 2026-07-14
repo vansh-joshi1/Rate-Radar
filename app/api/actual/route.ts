@@ -4,7 +4,7 @@ import { getStore } from '../../../lib/store';
 
 const Body = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  tierId: z.enum(['standard', 'queen']),
+  tierId: z.enum(['standard', 'superior']),
   rate: z.number().min(20).max(1000),
 });
 
