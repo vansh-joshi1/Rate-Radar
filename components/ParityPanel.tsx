@@ -22,11 +22,11 @@ export default function ParityPanel({ parity }: { parity: RateCheck[] }) {
       {parity.length === 0 && <p className="muted small">No rate check data yet this run.</p>}
       <div className="grid cols2">
         {parity.map((p) => (
-          <div key={p.source} style={{ background: 'var(--panel2)', borderRadius: 8, padding: 12 }}>
+          <div key={p.source} style={{ background: 'var(--panel2)', border: '1px solid var(--border)', borderRadius: 4, padding: 14 }}>
             <div className="muted small">{LABELS[p.source] ?? p.source}</div>
             {p.status === 'ok' ? (
               <>
-                <div className="price">${p.price}</div>
+                <div className="price price-sm">${p.price}</div>
                 {p.room && <div className="muted small">{p.room}</div>}
               </>
             ) : (
