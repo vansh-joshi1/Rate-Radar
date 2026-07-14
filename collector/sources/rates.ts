@@ -256,7 +256,7 @@ const checkBooking = makeChecker('booking', async (page) => {
  * runners, but its embedded JSON often carries display-formatted prices the
  * position-based scan can still catch).
  */
-async function compsetForDate(browser: Browser, checkin: string): Promise<CompsetEntry[]> {
+async function compsetForDate(browser: Browser, checkin: string, rejectSig?: string): Promise<CompsetEntry[]> {
   const d = new Date(`${checkin}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 1);
   const checkout = d.toISOString().slice(0, 10);
@@ -283,8 +283,10 @@ async function compsetForDate(browser: Browser, checkin: string): Promise<Compse
       }
       const body = await settlePage(page, /\$\d{2,3}/);
       const entries = harvestCompset(body);
-      console.log(`[compset] ${checkin} via ${a.label}: page ${body.length} chars → ${entries.length} comps matched`);
-      if (entries.length > 0) return entries;
+      const sig = entries.map((x) => `${x.name}@${x.price}`).sort().join('|');
+      const dateIgnored = rejectSig !== undefined && entries.length > 0 && sig === rejectSig;
+      console.log(`[compset] ${checkin} via ${a.label}: page ${body.length} chars → ${entries.length} comps${dateIgnored ? ' (identical to tomorrow — date ignored, trying next source)' : ''}`);
+      if (entries.length > 0 && !dateIgnored) return entries;
     } catch (err) {
       console.warn(`[compset] ${a.label} failed for ${checkin}: ${String(err).slice(0, 140)}`);
     } finally {
@@ -309,11 +311,21 @@ export async function collect(eventNights: string[] = []): Promise<SourceResult>
     const tomorrowDate = tomorrow().checkin;
     const dates = [tomorrowDate, ...eventNights.filter((dte) => dte !== tomorrowDate)];
     const compsets: { date: string; entries: CompsetEntry[] }[] = [];
+    const sig = (e: CompsetEntry[]) => e.map((x) => `${x.name}@${x.price}`).sort().join('|');
     for (const date of dates) {
-      let entries = await compsetForDate(browser, date);
+      const tomorrowSig = date !== tomorrowDate ? sig(compsets.find((c) => c.date === tomorrowDate)?.entries ?? []) : undefined;
+      let entries = await compsetForDate(browser, date, tomorrowSig || undefined);
       // Google's carousel harvest (same-run side product) backfills tomorrow if Booking gave nothing
       if (entries.length === 0 && date === tomorrowDate && compsetHarvest.length > 0) {
         entries = compsetHarvest;
+      }
+      // Honesty guard: identical prices to tomorrow's block means the source
+      // ignored our dates (observed live: Google serving default-date carousel
+      // for every checkin param). Show nothing rather than mislabeled data.
+      const tomorrowBlock = compsets.find((c) => c.date === tomorrowDate);
+      if (date !== tomorrowDate && tomorrowBlock && entries.length > 0 && sig(entries) === sig(tomorrowBlock.entries)) {
+        console.warn(`[compset] ${date}: prices identical to tomorrow's — source ignored the date; dropping block`);
+        entries = [];
       }
       compsets.push({ date, entries });
     }

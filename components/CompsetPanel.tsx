@@ -13,7 +13,7 @@ function Block({ c }: { c: CompsetInfo }) {
     <div style={{ marginBottom: 18 }}>
       <div className="small" style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 6 }}>
         <strong>{fmt(c.date)}</strong>
-        {c.median != null && <span className="chip minor">median ${c.median}</span>}
+        {c.median != null && <span className="chip minor">median ${Math.round(c.median)}</span>}
       </div>
       <table>
         <thead><tr><th>Hotel</th><th>Nightly rate</th></tr></thead>
