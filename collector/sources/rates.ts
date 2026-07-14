@@ -80,9 +80,11 @@ async function settlePage(page: Page, waitFor: RegExp, timeoutMs = 18_000): Prom
       { timeout: timeoutMs }
     )
     .catch(() => undefined); // fall through — extractor gets whatever rendered
-  // innerText (not textContent): rendered text only, line breaks at block
-  // boundaries, no <script> payloads — Booking's raw body is ~800KB of JS blobs.
-  const body = await page.evaluate(() => document.body.innerText).catch(() => '') ?? '';
+  // Prefer rendered text (no script payloads); fall back to raw textContent
+  // when nothing painted — some sites serve a JS shell whose embedded JSON
+  // still carries display-formatted prices we can scan.
+  let body = (await page.evaluate(() => document.body.innerText).catch(() => '')) ?? '';
+  if (body.length < 200) body = (await page.textContent('body').catch(() => '')) ?? '';
   if (botWalled(body)) throw new Error('Blocked by a bot check on this run — usually transient from datacenter IPs; will retry next collection.');
   return body;
 }
@@ -246,31 +248,50 @@ const checkBooking = makeChecker('booking', async (page) => {
   return extractPrice(page, BOOKING_PRICE_SELECTORS);
 });
 
-/** Booking.com search results for Franklin on a given night — server-rendered and
- * runner-friendly (the one OTA that worked from GitHub Actions on day one). */
-async function bookingCompsetForDate(browser: Browser, checkin: string): Promise<CompsetEntry[]> {
+/**
+ * Competitor prices for one night. Primary: the Google Hotels page for OUR
+ * property with that night's dates — its "similar hotels" carousel carries
+ * date-consistent competitor prices, and Google demonstrably renders on
+ * GitHub runners. Fallback: Booking's Franklin search (serves a JS shell to
+ * runners, but its embedded JSON often carries display-formatted prices the
+ * position-based scan can still catch).
+ */
+async function compsetForDate(browser: Browser, checkin: string): Promise<CompsetEntry[]> {
   const d = new Date(`${checkin}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 1);
   const checkout = d.toISOString().slice(0, 10);
-  let page: Page | null = null;
-  try {
-    page = await newPage(browser);
-    await page.goto(
-      `https://www.booking.com/searchresults.html?ss=Franklin%2C+Tennessee&checkin=${checkin}&checkout=${checkout}&group_adults=2&no_rooms=1&selected_currency=USD`,
-      { waitUntil: 'domcontentloaded' }
-    );
-    const body = await settlePage(page, /\$\d{2,3}/);
-    const entries = harvestCompset(body);
-    // Diagnostics land in the Actions log: page size distinguishes a bot wall /
-    // empty shell (tiny) from a naming mismatch (large page, zero matches).
-    console.log(`[compset] ${checkin}: page ${body.length} chars → ${entries.length} comps matched`);
-    return entries;
-  } catch (err) {
-    console.warn(`[compset] Booking search failed for ${checkin}: ${String(err).slice(0, 140)}`);
-    return [];
-  } finally {
-    await page?.context().close().catch(() => undefined);
+  const q = process.env.GOOGLE_HOTELS_QUERY ?? GOOGLE_HOTELS_QUERY_DEFAULT;
+
+  const attempts: { label: string; url: string }[] = [
+    {
+      label: 'google',
+      url: `https://www.google.com/travel/search?q=${encodeURIComponent(q)}&checkin=${checkin}&checkout=${checkout}`,
+    },
+    {
+      label: 'booking',
+      url: `https://www.booking.com/searchresults.html?ss=Franklin%2C+Tennessee&checkin=${checkin}&checkout=${checkout}&group_adults=2&no_rooms=1&selected_currency=USD`,
+    },
+  ];
+
+  for (const a of attempts) {
+    let page: Page | null = null;
+    try {
+      page = await newPage(browser);
+      await page.goto(a.url, { waitUntil: 'domcontentloaded' });
+      if (a.label === 'google') {
+        await page.locator('button:has-text("Accept all"), button:has-text("I agree")').first().click({ timeout: 4000 }).catch(() => undefined);
+      }
+      const body = await settlePage(page, /\$\d{2,3}/);
+      const entries = harvestCompset(body);
+      console.log(`[compset] ${checkin} via ${a.label}: page ${body.length} chars → ${entries.length} comps matched`);
+      if (entries.length > 0) return entries;
+    } catch (err) {
+      console.warn(`[compset] ${a.label} failed for ${checkin}: ${String(err).slice(0, 140)}`);
+    } finally {
+      await page?.context().close().catch(() => undefined);
+    }
   }
+  return [];
 }
 
 export async function collect(eventNights: string[] = []): Promise<SourceResult> {
@@ -289,7 +310,7 @@ export async function collect(eventNights: string[] = []): Promise<SourceResult>
     const dates = [tomorrowDate, ...eventNights.filter((dte) => dte !== tomorrowDate)];
     const compsets: { date: string; entries: CompsetEntry[] }[] = [];
     for (const date of dates) {
-      let entries = await bookingCompsetForDate(browser, date);
+      let entries = await compsetForDate(browser, date);
       // Google's carousel harvest (same-run side product) backfills tomorrow if Booking gave nothing
       if (entries.length === 0 && date === tomorrowDate && compsetHarvest.length > 0) {
         entries = compsetHarvest;
