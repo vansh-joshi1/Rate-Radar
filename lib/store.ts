@@ -8,6 +8,8 @@ export interface Store {
   hset(key: string, field: string, value: unknown): Promise<void>;
   lpush(key: string, value: unknown): Promise<void>;
   lrange<T>(key: string, start: number, stop: number): Promise<T[]>;
+  /** Atomic counter with TTL set on first increment — used for rate limiting. */
+  incr(key: string, ttlSeconds: number): Promise<number>;
 }
 
 /** Upstash Redis via REST (Vercel Marketplace injects KV_REST_API_URL / KV_REST_API_TOKEN). */
@@ -51,6 +53,11 @@ class UpstashStore implements Store {
   async lrange<T>(key: string, start: number, stop: number): Promise<T[]> {
     const raw = await this.cmd<string[]>(['LRANGE', key, start, stop]);
     return raw.map((r) => JSON.parse(r) as T);
+  }
+  async incr(key: string, ttlSeconds: number): Promise<number> {
+    const n = await this.cmd<number>(['INCR', key]);
+    if (n === 1) await this.cmd(['EXPIRE', key, ttlSeconds]);
+    return n;
   }
 }
 
@@ -99,6 +106,16 @@ export class FileStore implements Store {
   async lrange<T>(key: string, start: number, stop: number): Promise<T[]> {
     const l = this.read().lists[key] ?? [];
     return (stop === -1 ? l.slice(start) : l.slice(start, stop + 1)) as T[];
+  }
+  async incr(key: string, ttlSeconds: number): Promise<number> {
+    const d = this.read();
+    const rec = d.kv[key] as { n: number; expiresAt: number } | undefined;
+    const now = Date.now();
+    const live = rec && rec.expiresAt > now ? rec : { n: 0, expiresAt: now + ttlSeconds * 1000 };
+    live.n += 1;
+    d.kv[key] = live;
+    this.write(d);
+    return live.n;
   }
 }
 

@@ -7,6 +7,7 @@ import { buildReasoning } from './scoring/reason';
 import { evaluateAlerts, type HolidayEntry } from './alerts/rules';
 import { sendAlertEmail } from './alerts/email';
 import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compset';
+import { DEFAULT_PROPERTY_ID, propKey } from './properties';
 import type {
   CompsetEntry, CompsetInfo, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
 } from './scoring/types';
@@ -20,6 +21,8 @@ export const SourceResultSchema = z.object({
 });
 export const BundleSchema = z.object({
   runAt: z.string(),
+  /** Which hotel this bundle belongs to; defaults to the original property. */
+  propertyId: z.string().optional(),
   sources: z.array(SourceResultSchema),
 });
 export type Bundle = z.infer<typeof BundleSchema>;
@@ -184,8 +187,16 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
     compsets,
     sources: bundle.sources,
   };
-  await store.set('snapshot:latest', snapshot);
-  await store.set(`snapshot:${today}:${runId}`, snapshot, 30 * 86400);
+  // Property-scoped keys are the durable layout (multi-hotel ready); the
+  // legacy unscoped keys are dual-written for the default property so the
+  // existing dashboard and older readers keep working unchanged.
+  const propertyId = bundle.propertyId ?? DEFAULT_PROPERTY_ID;
+  await store.set(propKey.snapshotLatest(propertyId), snapshot);
+  await store.set(propKey.snapshotRun(propertyId, today, runId), snapshot, 30 * 86400);
+  if (propertyId === DEFAULT_PROPERTY_ID) {
+    await store.set('snapshot:latest', snapshot);
+    await store.set(`snapshot:${today}:${runId}`, snapshot, 30 * 86400);
+  }
 
   const todayNight = nights[0];
   const std = todayNight.tiers.find((t) => t.tierId === 'standard');
