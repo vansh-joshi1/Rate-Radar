@@ -1,7 +1,8 @@
 import type { Browser, Page } from 'playwright';
 import type { CompsetEntry, RateCheck, SourceResult } from '../../lib/scoring/types';
-import { matchCompset } from '../../lib/scoring/compset';
+import { matchCompset, type CompsetConfig } from '../../lib/scoring/compset';
 import compsetConfig from '../../config/compset.json';
+import { loadProperties, type RatePropertyConfig } from '../properties';
 
 /**
  * Rate parity: our own listed rate on 4 public sources, checked independently.
@@ -144,9 +145,7 @@ function makeChecker(
   };
 }
 
-const checkRedroof = makeChecker('redroof', async (page) => {
-  const url = process.env.RATE_URL_REDROOF;
-  if (!url) throw new Error('RATE_URL_REDROOF unset');
+const checkRedroof = (url: string) => makeChecker('redroof', async (page) => {
   // The checkout page loads rates via XHR — capture it if it fires, fall back to DOM.
   let apiPrice: number | null = null;
   page.on('response', async (res) => {
@@ -186,9 +185,9 @@ let compsetHarvest: CompsetEntry[] = [];
  * looked-back "name" was junk that failed the whitelist (observed live —
  * production run harvested 0 comps).
  */
-export function harvestCompset(bodyText: string): CompsetEntry[] {
+export function harvestCompset(bodyText: string, compset: CompsetConfig = compsetConfig): CompsetEntry[] {
   const lower = bodyText.toLowerCase();
-  const brands: string[] = (compsetConfig.competitors as string[]) ?? [];
+  const brands: string[] = compset.competitors ?? [];
 
   // all whitelist occurrences, sorted — each card window ends where the next brand begins
   const marks: { pos: number; brand: string }[] = [];
@@ -214,13 +213,12 @@ export function harvestCompset(bodyText: string): CompsetEntry[] {
     if (m) found.set(brand, Number(m[1]));
   }
 
-  return matchCompset([...found.entries()].map(([name, price]) => ({ name, price })));
+  return matchCompset([...found.entries()].map(([name, price]) => ({ name, price })), compset);
 }
 
 
-const checkGoogle = makeChecker('google', async (page) => {
+const checkGoogle = (q: string, compset: CompsetConfig) => makeChecker('google', async (page) => {
   const { checkin, checkout } = tomorrow();
-  const q = process.env.GOOGLE_HOTELS_QUERY ?? GOOGLE_HOTELS_QUERY_DEFAULT;
   await page.goto(
     `https://www.google.com/travel/search?q=${encodeURIComponent(q)}&checkin=${checkin}&checkout=${checkout}`,
     { waitUntil: 'domcontentloaded' }
@@ -228,25 +226,31 @@ const checkGoogle = makeChecker('google', async (page) => {
   // consent dialog (region-dependent)
   await page.locator('button:has-text("Accept all"), button:has-text("I agree")').first().click({ timeout: 4000 }).catch(() => undefined);
   const body = await settlePage(page, /\$\d{2,3}/);
-  compsetHarvest = harvestCompset(body);
+  compsetHarvest = harvestCompset(body, compset);
   return extractPrice(page, ['[data-hveid] span', 'span']);
 });
 
-const checkExpedia = makeChecker('expedia', async (page) => {
-  const url = process.env.RATE_URL_EXPEDIA;
-  if (!url) throw new Error('RATE_URL_EXPEDIA unset');
+const checkExpedia = (url: string) => makeChecker('expedia', async (page) => {
   await page.goto(rewriteDates(url), { waitUntil: 'domcontentloaded' });
   await settlePage(page, /\$\d{2,3} nightly/); // room cards render "$68 nightly" (verified live)
   return extractPrice(page, EXPEDIA_PRICE_SELECTORS);
 });
 
-const checkBooking = makeChecker('booking', async (page) => {
-  const url = process.env.RATE_URL_BOOKING;
-  if (!url) throw new Error('RATE_URL_BOOKING unset');
+const checkBooking = (url: string) => makeChecker('booking', async (page) => {
   await page.goto(rewriteDates(url), { waitUntil: 'domcontentloaded' });
   await settlePage(page, /\$\d{2,3}/);
   return extractPrice(page, BOOKING_PRICE_SELECTORS);
 });
+
+/** The checkers a property's config actually supports — unset URLs are skipped, not failed. */
+function buildCheckers(prop: RatePropertyConfig): Checker[] {
+  const checkers: Checker[] = [];
+  if (prop.rateUrls.redroof) checkers.push(checkRedroof(prop.rateUrls.redroof));
+  if (prop.googleHotelsQuery) checkers.push(checkGoogle(prop.googleHotelsQuery, prop.compset));
+  if (prop.rateUrls.expedia) checkers.push(checkExpedia(prop.rateUrls.expedia));
+  if (prop.rateUrls.booking) checkers.push(checkBooking(prop.rateUrls.booking));
+  return checkers;
+}
 
 /**
  * Competitor prices for one night. Primary: the Google Hotels page for OUR
@@ -256,11 +260,16 @@ const checkBooking = makeChecker('booking', async (page) => {
  * runners, but its embedded JSON often carries display-formatted prices the
  * position-based scan can still catch).
  */
-async function compsetForDate(browser: Browser, checkin: string, rejectSig?: string): Promise<CompsetEntry[]> {
+async function compsetForDate(
+  browser: Browser,
+  checkin: string,
+  prop: RatePropertyConfig,
+  rejectSig?: string
+): Promise<CompsetEntry[]> {
   const d = new Date(`${checkin}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 1);
   const checkout = d.toISOString().slice(0, 10);
-  const q = process.env.GOOGLE_HOTELS_QUERY ?? GOOGLE_HOTELS_QUERY_DEFAULT;
+  const q = prop.googleHotelsQuery ?? GOOGLE_HOTELS_QUERY_DEFAULT;
 
   const attempts: { label: string; url: string }[] = [
     {
@@ -269,7 +278,7 @@ async function compsetForDate(browser: Browser, checkin: string, rejectSig?: str
     },
     {
       label: 'booking',
-      url: `https://www.booking.com/searchresults.html?ss=Franklin%2C+Tennessee&checkin=${checkin}&checkout=${checkout}&group_adults=2&no_rooms=1&selected_currency=USD`,
+      url: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(prop.bookingSearchLocation)}&checkin=${checkin}&checkout=${checkout}&group_adults=2&no_rooms=1&selected_currency=USD`,
     },
   ];
 
@@ -282,7 +291,7 @@ async function compsetForDate(browser: Browser, checkin: string, rejectSig?: str
         await page.locator('button:has-text("Accept all"), button:has-text("I agree")').first().click({ timeout: 4000 }).catch(() => undefined);
       }
       const body = await settlePage(page, /\$\d{2,3}/);
-      const entries = harvestCompset(body);
+      const entries = harvestCompset(body, prop.compset);
       const sig = entries.map((x) => `${x.name}@${x.price}`).sort().join('|');
       const dateIgnored = rejectSig !== undefined && entries.length > 0 && sig === rejectSig;
       console.log(`[compset] ${checkin} via ${a.label}: page ${body.length} chars → ${entries.length} comps${dateIgnored ? ' (identical to tomorrow — date ignored, trying next source)' : ''}`);
@@ -296,16 +305,17 @@ async function compsetForDate(browser: Browser, checkin: string, rejectSig?: str
   return [];
 }
 
-export async function collect(eventNights: string[] = []): Promise<SourceResult> {
+export async function collect(
+  eventNights: string[] = [],
+  prop: RatePropertyConfig = loadProperties()[0]
+): Promise<SourceResult> {
   const fetchedAt = new Date().toISOString();
   let browser: Browser | null = null;
   try {
     const { chromium } = await import('playwright');
     browser = await chromium.launch({ headless: true, args: ['--disable-blink-features=AutomationControlled'] });
     compsetHarvest = [];
-    const checks = await Promise.all(
-      [checkRedroof, checkGoogle, checkExpedia, checkBooking].map((c) => c(browser!))
-    );
+    const checks = await Promise.all(buildCheckers(prop).map((c) => c(browser!)));
 
     // Compset: tomorrow always, plus approved event nights (already capped upstream).
     const tomorrowDate = tomorrow().checkin;
@@ -314,7 +324,7 @@ export async function collect(eventNights: string[] = []): Promise<SourceResult>
     const sig = (e: CompsetEntry[]) => e.map((x) => `${x.name}@${x.price}`).sort().join('|');
     for (const date of dates) {
       const tomorrowSig = date !== tomorrowDate ? sig(compsets.find((c) => c.date === tomorrowDate)?.entries ?? []) : undefined;
-      let entries = await compsetForDate(browser, date, tomorrowSig || undefined);
+      let entries = await compsetForDate(browser, date, prop, tomorrowSig || undefined);
       // Google's carousel harvest (same-run side product) backfills tomorrow if Booking gave nothing
       if (entries.length === 0 && date === tomorrowDate && compsetHarvest.length > 0) {
         entries = compsetHarvest;

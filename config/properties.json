@@ -1,0 +1,17 @@
+{
+  "_comment": "Per-property collection config — our own scraping pipeline, no third-party data APIs. Onboarding a hotel = one entry here (+ a row in lib/properties.ts). Values starting with 'env:' resolve from that environment variable at collect time, so listing URLs can stay in GitHub secrets. 'compset' inline overrides the default config/compset.json whitelist; null uses the default.",
+  "properties": [
+    {
+      "id": "rri-franklin",
+      "name": "Red Roof Inn Franklin",
+      "rateUrls": {
+        "redroof": "env:RATE_URL_REDROOF",
+        "expedia": "env:RATE_URL_EXPEDIA",
+        "booking": "env:RATE_URL_BOOKING"
+      },
+      "googleHotelsQuery": "env:GOOGLE_HOTELS_QUERY",
+      "bookingSearchLocation": "Franklin, Tennessee",
+      "compset": null
+    }
+  ]
+}

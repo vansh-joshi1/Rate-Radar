@@ -4,9 +4,14 @@ import type { CompsetEntry, TierRecommendation } from './types';
 const CAP_MULTIPLIER = 1.15;
 const EVENT_SCORE_FLOOR = 40; // nights at/above this are never capped
 
-/** Keep only whitelisted competitors with sane prices (config/compset.json). */
-export function matchCompset(candidates: CompsetEntry[]): CompsetEntry[] {
-  const { competitors, priceSanity } = compsetConfig;
+export interface CompsetConfig {
+  competitors: string[];
+  priceSanity: { min: number; max: number };
+}
+
+/** Keep only whitelisted competitors with sane prices. Defaults to config/compset.json; multi-property collectors pass their own whitelist. */
+export function matchCompset(candidates: CompsetEntry[], config: CompsetConfig = compsetConfig): CompsetEntry[] {
+  const { competitors, priceSanity } = config;
   return candidates.filter(
     (c) =>
       c.price >= priceSanity.min &&
