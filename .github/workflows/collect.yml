@@ -16,18 +16,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Gate on Central-time hour
+      # Gate on DATA FRESHNESS, not wall-clock hour. GitHub's scheduler drifts
+      # (observed 2026-07-18: fires ~1h late), which made the old exact-hour
+      # gate skip EVERY run — green jobs, no data. Asking the dashboard "how
+      # old is the data?" is drift-immune and self-deduping: the enumerated
+      # crons still converge to ~7 collections/day, and any failure to reach
+      # /api/health fails OPEN (collect rather than silently starve).
+      - name: Gate on data freshness
         id: gate
         run: |
-          H=$(TZ=America/Chicago date +%-H)
-          echo "Central hour: $H"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "manual run — no gate"
             echo "run=yes" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          AGE=$(curl -fsS -m 20 "${{ secrets.DASHBOARD_URL }}/api/health" | jq -r '.ageHours // empty' 2>/dev/null || echo "")
+          echo "data age: ${AGE:-unknown}h"
+          if [ -n "$AGE" ] && awk "BEGIN{exit !($AGE < 1.25)}"; then
+            echo "data is fresh — skipping (cron-drift dedupe)"
+            echo "run=no" >> "$GITHUB_OUTPUT"
           else
-            case "$H" in
-              7|10|13|15|18|20|22) echo "run=yes" >> "$GITHUB_OUTPUT" ;;
-              *) echo "run=no" >> "$GITHUB_OUTPUT" ;;
-            esac
+            echo "run=yes" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Checkout

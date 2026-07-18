@@ -21,6 +21,22 @@ const VENUES: { id: string; name: string }[] = [
 const JUNK_NAME = /dinner reservation|vip|parking|club access|suite|pregame|pre-show|meal/i;
 const JUNK_TYPE = new Set(['Upsell', 'Parking']);
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Discovery API rate-limits bursts (observed live: 429 on the 2nd venue) — retry with backoff. */
+async function fetchWithRetry(url: string, label: string): Promise<Response> {
+  const delays = [0, 2500, 6000];
+  let last: Response | null = null;
+  for (const delay of delays) {
+    if (delay > 0) await sleep(delay);
+    const res = await fetch(url);
+    if (res.ok) return res;
+    last = res;
+    if (res.status !== 429 && res.status < 500) break; // 4xx other than 429 won't heal
+  }
+  throw new Error(`Ticketmaster HTTP ${last?.status} (${label})`);
+}
+
 export async function collect(): Promise<SourceResult> {
   const fetchedAt = new Date().toISOString();
   const key = process.env.TICKETMASTER_API_KEY;
@@ -32,25 +48,33 @@ export async function collect(): Promise<SourceResult> {
     const iso = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
     const all: { tm: TmEvent; venueName: string }[] = [];
+    const venueErrors: string[] = [];
     for (const venue of VENUES) {
-      let page = 0;
-      let totalPages = 1;
-      while (page < totalPages && page < 5) {
-        const url =
-          `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}` +
-          `&venueId=${venue.id}&size=100&page=${page}` +
-          `&startDateTime=${iso(start)}&endDateTime=${iso(end)}&sort=date,asc`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Ticketmaster HTTP ${res.status} (${venue.name})`);
-        const json = (await res.json()) as {
-          _embedded?: { events?: TmEvent[] };
-          page?: { totalPages?: number };
-        };
-        for (const e of json._embedded?.events ?? []) all.push({ tm: e, venueName: venue.name });
-        totalPages = json.page?.totalPages ?? 1;
-        page += 1;
+      try {
+        let page = 0;
+        let totalPages = 1;
+        while (page < totalPages && page < 5) {
+          const url =
+            `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}` +
+            `&venueId=${venue.id}&size=100&page=${page}` +
+            `&startDateTime=${iso(start)}&endDateTime=${iso(end)}&sort=date,asc`;
+          const res = await fetchWithRetry(url, venue.name);
+          const json = (await res.json()) as {
+            _embedded?: { events?: TmEvent[] };
+            page?: { totalPages?: number };
+          };
+          for (const e of json._embedded?.events ?? []) all.push({ tm: e, venueName: venue.name });
+          totalPages = json.page?.totalPages ?? 1;
+          page += 1;
+        }
+      } catch (err) {
+        // One venue failing (usually a stubborn 429) shouldn't blank the other
+        // two — keep what we got, surface the gap honestly.
+        venueErrors.push(String(err).slice(0, 120));
       }
+      await sleep(400); // pace between venues — bursts are what trigger the 429s
     }
+    if (all.length === 0 && venueErrors.length > 0) throw new Error(venueErrors.join(' · '));
 
     const real = all.filter(({ tm }) => {
       const cls = tm.classifications?.[0];
@@ -98,7 +122,13 @@ export async function collect(): Promise<SourceResult> {
       });
     }
 
-    return { source: 'ticketmaster', status: 'ok', fetchedAt, data: events };
+    return {
+      source: 'ticketmaster',
+      status: 'ok',
+      fetchedAt,
+      data: events,
+      ...(venueErrors.length > 0 ? { error: `partial — ${venueErrors.join(' · ')}` } : {}),
+    };
   } catch (err) {
     return { source: 'ticketmaster', status: 'failed', fetchedAt, error: String(err) };
   }

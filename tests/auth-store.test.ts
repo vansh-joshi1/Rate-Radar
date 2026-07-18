@@ -13,8 +13,10 @@ function freshStore(): FileStore {
 describe('auth adapter over the store', () => {
   it('creates and finds users by id and email (case-insensitive)', async () => {
     const a = storeAdapter(freshStore());
-    const user = await a.createUser!({ email: 'Desk@Hotel.com', emailVerified: null });
+    // the adapter assigns its own id — the one passed in is ignored
+    const user = await a.createUser!({ id: 'ignored', email: 'Desk@Hotel.com', emailVerified: null });
     expect(user.id).toBeTruthy();
+    expect(user.id).not.toBe('ignored');
     expect((await a.getUser!(user.id))?.email).toBe('desk@hotel.com');
     expect((await a.getUserByEmail!('DESK@hotel.com'))?.id).toBe(user.id);
     expect(await a.getUserByEmail!('nobody@hotel.com')).toBeNull();
