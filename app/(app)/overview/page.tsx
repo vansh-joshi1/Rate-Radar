@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { loadSnapshot } from '../../../lib/dashboard-data';
 import { getStore } from '../../../lib/store';
 import { chicagoToday } from '../../../lib/ingest';
@@ -60,7 +61,8 @@ export default async function Overview() {
           <div className="py-6 text-center md:border-r md:border-line">
             <div className="text-xs font-semibold uppercase tracking-widest text-muted">{std.label}</div>
             <div className="my-2 font-serif text-7xl font-semibold leading-none text-accent">${std.recommended}</div>
-            <div className="font-semibold text-ok">{night.upliftPct > 0 ? `+${night.upliftPct}% uplift` : 'baseline'}</div>
+            <div className="text-xs font-semibold uppercase tracking-widest text-muted">Recommended rate</div>
+            <div className="mt-1.5 font-semibold text-ok">{night.upliftPct > 0 ? `+${night.upliftPct}% uplift` : 'baseline'}</div>
             <div className="mt-1.5 text-sm text-muted">Range: ${std.range[0]} – ${std.range[1]}</div>
             {listedStd != null && (
               <div className={`mt-2 text-sm font-semibold ${Math.abs(listedStd - std.recommended) > 3 ? 'text-warn' : 'text-muted'}`}>
@@ -102,7 +104,8 @@ export default async function Overview() {
               <div>
                 <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">{superior.label}</div>
                 <div className="font-serif text-3xl font-semibold">${superior.recommended}</div>
-                <div className="text-sm text-muted">
+                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted">Recommended rate</div>
+                <div className="mt-1 text-sm text-muted">
                   +${superior.recommended - std.recommended} premium over standard · range ${superior.range[0]}–${superior.range[1]}
                   {listedSup != null && <> · listed ${listedSup}</>}
                 </div>
@@ -116,6 +119,43 @@ export default async function Overview() {
           </>
         )}
       </div>
+
+      {snapshot.parity.length > 0 && (() => {
+        const LABELS: Record<string, string> = {
+          redroof: 'Direct (your site)', expedia: 'Expedia', booking: 'Booking.com', google: 'Google Hotels',
+        };
+        const priced = snapshot.parity.filter((p) => p.status === 'ok' && p.price != null && p.source !== 'google');
+        const gap = priced.length >= 2 ? Math.max(...priced.map((p) => p.price!)) - Math.min(...priced.map((p) => p.price!)) : 0;
+        const lo = priced.length >= 2 ? Math.min(...priced.map((p) => p.price!)) : 0;
+        const flagged = priced.length >= 2 && (gap >= 8 || (gap / lo) * 100 >= 10);
+        return (
+          <div className="card mb-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-bold tracking-tight">
+                Your listed rate by source
+                {flagged && <span className="ml-2 rounded-full bg-bad px-2.5 py-0.5 text-xs font-bold text-white">${gap} gap</span>}
+              </h3>
+              <Link href="/parity" className="text-sm font-semibold text-accent">Full parity monitor →</Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {snapshot.parity.map((p) => (
+                <div key={p.source} className="rounded-lg border border-line bg-paper/60 p-3.5">
+                  <div className="text-[10px] font-semibold uppercase tracking-widest text-muted">
+                    {LABELS[p.source] ?? p.source}
+                    {p.source === 'google' && ' (info only)'}
+                  </div>
+                  {p.status === 'ok' ? (
+                    <div className="mt-1 font-serif text-2xl font-semibold">${p.price}</div>
+                  ) : (
+                    <div className="mt-1.5 text-xs font-semibold text-warn">NEEDS MANUAL CHECK</div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-muted">Checked for tomorrow night — cheapest public rate per source.</p>
+          </div>
+        );
+      })()}
 
       <NoteBox date={today} initial={note} />
 
