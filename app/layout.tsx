@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import OriginIdInit from '../components/OriginIdInit';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -19,10 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>
-        {children}
-        <OriginIdInit />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

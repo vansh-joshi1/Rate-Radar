@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import OriginIdInit from '../components/OriginIdInit';
 
 /*
  * Marketing landing — modern SaaS look (announcement bar, sticky nav, gradient
@@ -67,6 +68,8 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 export default function Landing() {
   return (
     <div className="font-inter bg-white text-slate-900">
+      {/* Visitor identification runs on the public landing page only. */}
+      <OriginIdInit />
       {/* announcement bar */}
       <div className="bg-slate-900 px-4 py-2.5 text-center text-[13px] text-slate-200">
         Every night gets a verdict — even &quot;this event is too small to matter.&quot;{' '}

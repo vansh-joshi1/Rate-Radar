@@ -2,7 +2,9 @@
 import Script from 'next/script';
 
 /**
- * DigitalFingerprint (OriginID) visitor identification — site-wide init.
+ * DigitalFingerprint (OriginID) visitor identification.
+ * Mounted on the public landing page ONLY (owner request) — signed-in app
+ * pages are not fingerprinted.
  *
  * Loads the browser SDK from /originid.global.js (drop the file into public/;
  * it ships as dist/originid.global.js in the @visitoriq/client package, which
