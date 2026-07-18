@@ -61,8 +61,13 @@ export async function POST(req: NextRequest) {
   const property = getProperty(propertyId);
   if (!property) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
 
-  const { name } = (await req.json().catch(() => ({}))) as { name?: string };
-  const clean = name ? normalizeName(name) : '';
+  const body = (await req.json().catch(() => ({}))) as {
+    name?: string;
+    lat?: number;
+    lng?: number;
+    address?: string;
+  };
+  const clean = body.name ? normalizeName(body.name) : '';
   if (!clean || clean.length < 3 || clean.length > 80) {
     return NextResponse.json({ error: 'name must be 3–80 characters' }, { status: 400 });
   }
@@ -72,7 +77,11 @@ export async function POST(req: NextRequest) {
   if (hasHotel(hotels, clean)) return NextResponse.json({ error: 'already on the watchlist' }, { status: 409 });
   if (hotels.length >= 25) return NextResponse.json({ error: 'watchlist is capped at 25 hotels' }, { status: 400 });
 
-  const located = await geocode(clean, property.city);
+  // Coords supplied by the hotel-search picker skip the geocoding round-trip.
+  const located =
+    Number.isFinite(body.lat) && Number.isFinite(body.lng)
+      ? { lat: body.lat!, lng: body.lng!, address: body.address?.slice(0, 120) }
+      : await geocode(clean, property.city);
   const hotel: WatchlistHotel = { name: clean, addedAt: new Date().toISOString(), ...located };
   await saveWatchlist(store, propertyId, [...hotels, hotel]);
   return NextResponse.json({ hotel, located: hotel.lat != null });
