@@ -40,10 +40,18 @@ export default function BaselineEditor({ propertyId }: { propertyId: string }) {
       body: JSON.stringify({ config }),
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setStatus({ tone: 'bad', text: json.error ?? 'Save failed.' });
+      setSaving(false);
+      return;
+    }
+    // Apply immediately: rescore the last collected data with the new baselines.
+    setStatus({ tone: 'muted', text: 'Saved — applying to the latest data…' });
+    const re = await fetch(`/api/recompute?propertyId=${propertyId}`, { method: 'POST' });
     setStatus(
-      res.ok
-        ? { tone: 'ok', text: 'Saved. Recommendations use the new baselines from the next collection run.' }
-        : { tone: 'bad', text: json.error ?? 'Save failed.' }
+      re.ok
+        ? { tone: 'ok', text: 'Saved and applied — recommendations recomputed from the latest collected data.' }
+        : { tone: 'ok', text: 'Saved. Applies on the next collection run (no collected data to recompute yet).' }
     );
     setSaving(false);
   }

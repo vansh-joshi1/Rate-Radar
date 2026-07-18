@@ -206,6 +206,9 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   // existing dashboard and older readers keep working unchanged.
   await store.set(propKey.snapshotLatest(bundlePropertyId), snapshot);
   await store.set(propKey.snapshotRun(bundlePropertyId, today, runId), snapshot, 30 * 86400);
+  // Raw bundle kept for /api/recompute: config edits (baselines, watchlist)
+  // re-run scoring on the same data without waiting for the next scrape.
+  await store.set(`prop:${bundlePropertyId}:bundle:latest`, bundle);
   if (bundlePropertyId === DEFAULT_PROPERTY_ID) {
     await store.set('snapshot:latest', snapshot);
     await store.set(`snapshot:${today}:${runId}`, snapshot, 30 * 86400);

@@ -34,8 +34,28 @@ export default function WatchlistManager({ propertyId, property, compsetEntries 
       body: JSON.stringify(body),
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string; located?: boolean };
-    if (!res.ok) setNotice(json.error ?? 'request failed');
-    else setNotice(json.located === false ? 'Added, but the geocoder could not place it — try “locate” with a more specific name.' : okNotice);
+    if (!res.ok) {
+      setNotice(json.error ?? 'request failed');
+      await refresh();
+      setBusy(false);
+      return;
+    }
+    let notice = json.located === false
+      ? 'Added, but the geocoder could not place it — try “locate” with a more specific name.'
+      : okNotice;
+
+    if (method === 'POST') {
+      // A new hotel has no harvested prices yet — try to kick off a real collection run.
+      const kick = await fetch('/api/collect-now', { method: 'POST' });
+      notice += kick.ok
+        ? ' Collection run triggered — its prices should appear in ~10 minutes.'
+        : ' Its prices will appear after the next scheduled collection run.';
+    } else if (method === 'DELETE') {
+      // Removal only needs refiltering of already-collected data — instant.
+      const re = await fetch(`/api/recompute?propertyId=${propertyId}`, { method: 'POST' });
+      if (re.ok) notice += ' Applied to the current data.';
+    }
+    setNotice(notice);
     await refresh();
     setBusy(false);
   }
