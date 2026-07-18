@@ -1,13 +1,17 @@
-import ratesConfig from '../../config/rates.json';
 import type { SourceResult, TierRecommendation } from './types';
+import { DEFAULT_RATES_CONFIG, type RatesConfig } from '../rates-config';
 
 const UPLIFT_START_SCORE = 40;
 const UPLIFT_MIN_PCT = 5;
 
-/** Night score → uplift %. Zero below 40 (minor events never move the price). */
-export function upliftPct(score: number): number {
+/**
+ * Night score → uplift %. Zero below 40 (minor events never move the price).
+ * Config defaults to config/rates.json; ingest passes the property's
+ * store-backed (Settings-editable) config.
+ */
+export function upliftPct(score: number, cfg: RatesConfig = DEFAULT_RATES_CONFIG): number {
   if (score < UPLIFT_START_SCORE) return 0;
-  const cap = ratesConfig.upliftCapPct;
+  const cap = cfg.upliftCapPct;
   return (
     Math.round(
       (UPLIFT_MIN_PCT + ((score - UPLIFT_START_SCORE) / (100 - UPLIFT_START_SCORE)) * (cap - UPLIFT_MIN_PCT)) * 10
@@ -27,10 +31,14 @@ export function dayClass(date: string): 'weekday' | 'sunday' | 'weekend' {
   return 'weekday';
 }
 
-export function recommendNight(date: string, nightScore: number): TierRecommendation[] {
+export function recommendNight(
+  date: string,
+  nightScore: number,
+  cfg: RatesConfig = DEFAULT_RATES_CONFIG
+): TierRecommendation[] {
   const cls = dayClass(date);
-  const u = 1 + upliftPct(nightScore) / 100;
-  return ratesConfig.tiers.map((t) => {
+  const u = 1 + upliftPct(nightScore, cfg) / 100;
+  return cfg.tiers.map((t) => {
     const base = t[cls];
     const mid = (base.min + base.max) / 2;
     return {

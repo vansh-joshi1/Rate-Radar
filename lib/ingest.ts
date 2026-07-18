@@ -9,6 +9,7 @@ import { sendAlertEmail } from './alerts/email';
 import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compset';
 import { DEFAULT_PROPERTY_ID, propKey } from './properties';
 import { watchlistKey, watchlistCompsetConfig, type WatchlistHotel } from './watchlist';
+import { loadRatesConfig } from './rates-config';
 import type {
   CompsetEntry, CompsetInfo, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
 } from './scoring/types';
@@ -113,6 +114,8 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   // harvested with the same list); config/compset.json remains the fallback.
   const uiWatchlist = await store.get<WatchlistHotel[]>(watchlistKey(bundlePropertyId));
   const compsetCfg = uiWatchlist && uiWatchlist.length > 0 ? watchlistCompsetConfig(uiWatchlist) : undefined;
+  // Owner-editable baselines (Settings → Property); seeds from config/rates.json.
+  const ratesCfg = await loadRatesConfig(store, bundlePropertyId);
   const compsets: CompsetInfo[] = rawCompsets.map((c) => {
     const entries = matchCompset(c.entries, compsetCfg);
     return { date: c.date, entries, median: compsetMedian(entries) };
@@ -139,9 +142,9 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
       date,
       dow: new Date(`${date}T12:00:00Z`).getUTCDay(),
       nightScore: ns,
-      upliftPct: upliftPct(ns),
+      upliftPct: upliftPct(ns, ratesCfg),
       events,
-      tiers: recommendNight(date, ns),
+      tiers: recommendNight(date, ns, ratesCfg),
       holidayName,
       weatherNote:
         date === today && severeWinterToday

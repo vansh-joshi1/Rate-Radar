@@ -1,7 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { Chip, SampleBadge, SectionTitle } from '../../../components/ui';
+import BaselineEditor from '../../../components/BaselineEditor';
 import { demoInvoices } from '../../../lib/demo';
+import { DEFAULT_PROPERTY_ID } from '../../../lib/properties';
 
 const TABS = ['Property', 'Team', 'Billing', 'API & Data'] as const;
 type Tab = (typeof TABS)[number];
@@ -47,16 +49,7 @@ export default function Settings() {
             <div className="sm:col-span-2"><label className="label">Address</label><input className="field" defaultValue="3915 Carothers Pkwy, Franklin, TN" /></div>
           </div>
           <H4>Room tiers &amp; baseline rates</H4>
-          <div className="card p-0">
-            <table className="w-full border-collapse text-sm">
-              <thead><tr><th className="th">Tier</th><th className="th">Weekday</th><th className="th">Weekend</th></tr></thead>
-              <tbody>
-                <tr><td className="td font-semibold">Standard</td><td className="td font-serif">$79</td><td className="td font-serif">$94</td></tr>
-                <tr><td className="td font-semibold">Superior</td><td className="td font-serif">$94</td><td className="td font-serif">$109</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-3 text-xs text-muted">Baselines live in config/rates.json today; this form persists once per-property config moves to the database.</p>
+          <BaselineEditor propertyId={DEFAULT_PROPERTY_ID} />
         </div>
       )}
 
