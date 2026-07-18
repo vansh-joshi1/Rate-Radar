@@ -1,4 +1,6 @@
 import { loadSnapshot } from '../../../lib/dashboard-data';
+import { getStore } from '../../../lib/store';
+import { loadCurrentRates } from '../../../lib/current-rates';
 import { chicagoToday } from '../../../lib/ingest';
 import { Chip, SampleBadge, SectionTitle } from '../../../components/ui';
 import WatchlistManager from '../../../components/WatchlistManager';
@@ -72,8 +74,15 @@ export default async function Competitors() {
 
   const today = chicagoToday();
   const tomorrow = addDays(today, 1);
-  // Parity checks price tomorrow night — our actual listed rate applies to that date only.
-  const directListed = snapshot.parity.find((p) => p.source === 'redroof' && p.status === 'ok' && p.price != null)?.price;
+  // Your rate: owner-entered (authoritative — you set your prices) beats the
+  // scraped direct rate, which redroof.com's bot wall often blocks anyway.
+  const ownerRates = isDemo ? null : await loadCurrentRates(getStore(), property.id);
+  const ownerStandard = ownerRates?.tiers['standard'];
+  const scrapedDirect = snapshot.parity.find((p) => p.source === 'redroof' && p.status === 'ok' && p.price != null)?.price;
+  const yourRate = ownerStandard ?? scrapedDirect;
+  const yourRateLabel = ownerStandard != null
+    ? `${property.name} (you — current rate)`
+    : `${property.name} (you — listed on redroof.com)`;
 
   return (
     <div>
@@ -87,14 +96,14 @@ export default async function Competitors() {
         // lead-vs-lead is the honest cross-hotel comparison; room-level
         // matching across brands compares different products.
         const block = compsets.find((c) => c.date === tomorrow) ?? compsets[0];
-        if (!block || block.entries.length === 0 || directListed == null) return null;
-        const cheaper = block.entries.filter((e) => e.price < directListed).length;
-        const vsMedian = block.median ? Math.round(((directListed - block.median) / block.median) * 100) : null;
+        if (!block || block.entries.length === 0 || yourRate == null) return null;
+        const cheaper = block.entries.filter((e) => e.price < yourRate!).length;
+        const vsMedian = block.median ? Math.round(((yourRate! - block.median) / block.median) * 100) : null;
         return (
           <div className="card mb-6 flex flex-wrap items-baseline gap-x-6 gap-y-2">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-widest text-muted">Your lead rate ({fmt(block.date)})</div>
-              <div className="font-serif text-3xl font-semibold text-accent">${directListed}</div>
+              <div className="font-serif text-3xl font-semibold text-accent">${yourRate}</div>
             </div>
             <div className="text-sm">
               <span className="font-semibold">#{cheaper + 1} cheapest</span> of {block.entries.length + 1} tracked hotels
@@ -120,22 +129,17 @@ export default async function Competitors() {
       )}
 
       {compsets.map((c) => {
-        // Only ACTUAL prices in these tables: our row is the scraped
-        // redroof.com listed rate, which exists for tomorrow (the night parity
-        // checks). Other nights get no "you" row — we don't know your listed
-        // rate for those dates, and a recommendation isn't a market price.
+        // Only ACTUAL prices in these tables: our row is your current rate
+        // (owner-entered, else scraped from redroof.com). It applies to
+        // tomorrow's block — the night the competitor prices were checked for.
         const heading = c.date === today ? 'Tonight' : c.date === tomorrow ? 'Tomorrow' : 'Event night';
-        const useListed = c.date === tomorrow && directListed != null;
+        const useListed = c.date === tomorrow && yourRate != null;
         return (
           <div key={c.date}>
             <h3 className="mb-3 text-lg font-bold tracking-tight">
               {heading} — {fmt(c.date)}
             </h3>
-            <CompsetTable
-              c={c}
-              ourPrice={useListed ? directListed : undefined}
-              ourLabel={`${property.name} (you — listed on redroof.com)`}
-            />
+            <CompsetTable c={c} ourPrice={useListed ? yourRate : undefined} ourLabel={yourRateLabel} />
           </div>
         );
       })}

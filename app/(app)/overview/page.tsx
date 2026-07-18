@@ -1,5 +1,8 @@
 import Link from 'next/link';
 import { loadSnapshot } from '../../../lib/dashboard-data';
+import { loadCurrentRates } from '../../../lib/current-rates';
+import { DEFAULT_PROPERTY_ID } from '../../../lib/properties';
+import CurrentRatesCard from '../../../components/CurrentRates';
 import { getStore } from '../../../lib/store';
 import { chicagoToday } from '../../../lib/ingest';
 import NoteBox from '../../../components/NoteBox';
@@ -24,11 +27,15 @@ export default async function Overview() {
   const ageHours = (Date.now() - new Date(snapshot.runAt).getTime()) / 3600_000;
   const failed = snapshot.sources.filter((s) => s.status !== 'ok');
 
-  // Your actual listed rate per tier (scraped from redroof.com, tomorrow night)
+  // Your rate per tier: owner-entered is authoritative (you set your prices);
+  // the scraped redroof.com value fills in when the owner hasn't entered one.
+  const ownerRates = isDemo ? null : await loadCurrentRates(getStore(), DEFAULT_PROPERTY_ID);
   const directRooms = snapshot.parity.find((p) => p.source === 'redroof' && p.status === 'ok')?.rooms ?? [];
-  const listedFor = (tierId: string): number | undefined => {
+  const listedFor = (tierId: string): { price: number; src: 'you' | 'scrape' } | undefined => {
+    const owner = ownerRates?.tiers[tierId];
+    if (owner != null) return { price: owner, src: 'you' };
     const prices = directRooms.filter((r) => r.tierId === tierId).map((r) => r.price);
-    return prices.length > 0 ? Math.min(...prices) : undefined;
+    return prices.length > 0 ? { price: Math.min(...prices), src: 'scrape' } : undefined;
   };
   const listedStd = listedFor(std.tierId);
   const listedSup = superior ? listedFor(superior.tierId) : undefined;
@@ -72,8 +79,11 @@ export default async function Overview() {
               <div className="mt-1.5 font-semibold text-ok">{sub}</div>
               <div className="mt-1.5 text-sm text-muted">Range: ${tier.range[0]} – ${tier.range[1]}</div>
               {listed != null && (
-                <div className={`mt-2 text-sm font-semibold ${Math.abs(listed - tier.recommended) > 3 ? 'text-warn' : 'text-muted'}`}>
-                  Listed on redroof.com: ${listed} <span className="font-normal text-muted">(tomorrow night)</span>
+                <div className={`mt-2 text-sm font-semibold ${Math.abs(listed.price - tier.recommended) > 3 ? 'text-warn' : 'text-muted'}`}>
+                  Your current rate: ${listed.price}{' '}
+                  <span className="font-normal text-muted">
+                    {listed.src === 'you' ? '(entered by you)' : '(scraped from redroof.com, tomorrow night)'}
+                  </span>
                 </div>
               )}
             </div>
@@ -113,6 +123,11 @@ export default async function Overview() {
           </div>
         </div>
       </div>
+
+      <CurrentRatesCard
+        propertyId={DEFAULT_PROPERTY_ID}
+        tiers={night.tiers.map((t) => ({ tierId: t.tierId, label: t.label }))}
+      />
 
       {snapshot.parity.length > 0 && (() => {
         const LABELS: Record<string, string> = {
