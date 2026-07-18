@@ -57,19 +57,32 @@ export default async function Overview() {
       )}
 
       <div className="card mb-6">
-        <div className="grid items-start gap-8 md:grid-cols-[1fr_1.5fr]">
-          <div className="py-6 text-center md:border-r md:border-line">
-            <div className="text-xs font-semibold uppercase tracking-widest text-muted">{std.label}</div>
-            <div className="my-2 font-serif text-7xl font-semibold leading-none text-accent">${std.recommended}</div>
-            <div className="text-xs font-semibold uppercase tracking-widest text-muted">Recommended rate</div>
-            <div className="mt-1.5 font-semibold text-ok">{night.upliftPct > 0 ? `+${night.upliftPct}% uplift` : 'baseline'}</div>
-            <div className="mt-1.5 text-sm text-muted">Range: ${std.range[0]} – ${std.range[1]}</div>
-            {listedStd != null && (
-              <div className={`mt-2 text-sm font-semibold ${Math.abs(listedStd - std.recommended) > 3 ? 'text-warn' : 'text-muted'}`}>
-                Listed on redroof.com: ${listedStd} <span className="font-normal text-muted">(tomorrow night)</span>
-              </div>
-            )}
-          </div>
+        {/* Both tiers at the same level — equal prominence, side by side */}
+        <div className="grid gap-8 sm:grid-cols-2">
+          {[
+            { tier: std, listed: listedStd, sub: night.upliftPct > 0 ? `+${night.upliftPct}% uplift` : 'baseline' },
+            ...(superior
+              ? [{ tier: superior, listed: listedSup, sub: `+$${superior.recommended - std.recommended} over standard` }]
+              : []),
+          ].map(({ tier, listed, sub }) => (
+            <div key={tier.tierId} className="py-4 text-center">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted">{tier.label}</div>
+              <div className="my-2 font-serif text-6xl font-semibold leading-none text-accent">${tier.recommended}</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted">Recommended rate</div>
+              <div className="mt-1.5 font-semibold text-ok">{sub}</div>
+              <div className="mt-1.5 text-sm text-muted">Range: ${tier.range[0]} – ${tier.range[1]}</div>
+              {listed != null && (
+                <div className={`mt-2 text-sm font-semibold ${Math.abs(listed - tier.recommended) > 3 ? 'text-warn' : 'text-muted'}`}>
+                  Listed on redroof.com: ${listed} <span className="font-normal text-muted">(tomorrow night)</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <hr className="divider" />
+
+        <div className="grid items-start gap-8 md:grid-cols-[1.5fr_1fr]">
           <div>
             <h3 className="mb-4 text-base font-semibold">Reasoning</h3>
             <ul className="space-y-2 text-[15px]">
@@ -84,40 +97,21 @@ export default async function Overview() {
                 </li>
               ))}
             </ul>
-            <div className="mt-6">
-              <div className="mb-1 flex justify-between text-xs font-semibold">
-                <span>Confidence</span>
-                <span>{snapshot.confidence}%</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-ink/10">
-                <div className="h-full rounded-full bg-ok" style={{ width: `${snapshot.confidence}%` }} />
-              </div>
-              <p className="mt-1 text-xs text-muted">{snapshot.confidenceNote}</p>
+          </div>
+          <div>
+            <div className="mb-1 flex justify-between text-xs font-semibold">
+              <span>Confidence</span>
+              <span>{snapshot.confidence}%</span>
             </div>
+            <div className="h-2 overflow-hidden rounded-full bg-ink/10">
+              <div className="h-full rounded-full bg-ok" style={{ width: `${snapshot.confidence}%` }} />
+            </div>
+            <p className="mt-1 text-xs text-muted">{snapshot.confidenceNote}</p>
+            <p className="mt-4 text-xs text-muted">
+              Rate Radar never changes a price anywhere — enter rates in your own system.
+            </p>
           </div>
         </div>
-
-        {superior && (
-          <>
-            <hr className="divider" />
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">{superior.label}</div>
-                <div className="font-serif text-3xl font-semibold">${superior.recommended}</div>
-                <div className="text-[10px] font-semibold uppercase tracking-widest text-muted">Recommended rate</div>
-                <div className="mt-1 text-sm text-muted">
-                  +${superior.recommended - std.recommended} premium over standard · range ${superior.range[0]}–${superior.range[1]}
-                  {listedSup != null && <> · listed ${listedSup}</>}
-                </div>
-              </div>
-              <div className="self-end text-left sm:text-right">
-                <p className="text-xs text-muted">
-                  Rate Radar never changes a price anywhere — enter rates in your own system.
-                </p>
-              </div>
-            </div>
-          </>
-        )}
       </div>
 
       {snapshot.parity.length > 0 && (() => {
