@@ -16,10 +16,10 @@ function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-// CARTO basemaps: free, keyless, retina — the clean cartography modern
-// dashboards use. Light/dark variants follow the OS theme.
+// CARTO basemaps: free, keyless, retina. Voyager is the warm, Apple-Maps-like
+// style (cream land, soft water/parks); Dark Matter covers dark mode.
 const TILE_URL = (dark: boolean) =>
-  `https://{s}.basemaps.cartocdn.com/${dark ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`;
+  `https://{s}.basemaps.cartocdn.com/${dark ? 'dark_all' : 'rastertiles/voyager'}/{z}/{x}/{y}{r}.png`;
 const ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
