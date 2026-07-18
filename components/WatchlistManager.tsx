@@ -6,8 +6,10 @@ import type { WatchlistHotel } from '../lib/watchlist';
 interface Props {
   propertyId: string;
   property: { name: string; lat: number; lng: number };
-  /** Tonight's harvested competitor prices — matched to watchlist names by substring. */
+  /** Latest harvested competitor prices — matched to watchlist names by substring. */
   compsetEntries: { name: string; price: number }[];
+  /** The night those prices are for (YYYY-MM-DD) — shown so nobody compares across dates. */
+  compsetDate?: string;
 }
 
 interface Suggestion {
@@ -19,7 +21,10 @@ interface Suggestion {
   isLodging: boolean;
 }
 
-export default function WatchlistManager({ propertyId, property, compsetEntries }: Props) {
+export default function WatchlistManager({ propertyId, property, compsetEntries, compsetDate }: Props) {
+  const nightLabel = compsetDate
+    ? new Date(`${compsetDate}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+    : null;
   const [hotels, setHotels] = useState<WatchlistHotel[] | null>(null);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -137,7 +142,10 @@ export default function WatchlistManager({ propertyId, property, compsetEntries 
         <CompsetMap pins={pins} />
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2.5 text-xs text-muted">
           <span><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-accent align-middle" />{property.name} (you)</span>
-          <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-muted align-middle" />watchlist competitor · label = latest harvested price (tomorrow night)</span>
+          <span>
+            <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-muted align-middle" />
+            watchlist competitor · label = harvested price{nightLabel ? ` for ${nightLabel} night` : ''}
+          </span>
           {unlocated > 0 && <span>{unlocated} hotel{unlocated === 1 ? '' : 's'} without a map pin yet — use “locate” below</span>}
         </div>
       </div>
@@ -214,7 +222,7 @@ export default function WatchlistManager({ propertyId, property, compsetEntries 
         ) : (
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr><th className="th">Hotel</th><th className="th">Map pin</th><th className="th">Latest price</th><th className="th" /></tr>
+              <tr><th className="th">Hotel</th><th className="th">Map pin</th><th className="th">{nightLabel ? `Price · ${nightLabel} night` : 'Latest price'}</th><th className="th" /></tr>
             </thead>
             <tbody>
               {hotels.map((h) => {

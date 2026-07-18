@@ -119,6 +119,7 @@ export default async function Competitors() {
         propertyId={property.id}
         property={{ name: property.name, lat: property.lat, lng: property.lng }}
         compsetEntries={compsets[0]?.entries ?? []}
+        compsetDate={compsets[0]?.date}
       />
 
       {compsets.length === 0 && (
