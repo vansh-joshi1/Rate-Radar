@@ -2,15 +2,15 @@
 import Script from 'next/script';
 
 /**
- * DigitalFingerprint (OriginID) visitor identification.
- * Mounted on the public landing page ONLY (owner request) — signed-in app
- * pages are not fingerprinted.
+ * DigitalFingerprint (OriginID) visitor identification — CDN script-tag
+ * integration (no npm dependency). Mounted on the public landing page ONLY
+ * (owner request) — signed-in app pages are not fingerprinted.
  *
- * Loads the browser SDK from /originid.global.js (drop the file into public/;
- * it ships as dist/originid.global.js in the @visitoriq/client package, which
- * is not on the public npm registry yet — get it from the vendor). Renders
- * nothing until NEXT_PUBLIC_ORIGINID_API_KEY is set, so the site never 404s
- * a script it doesn't have.
+ * Script source: NEXT_PUBLIC_ORIGINID_SCRIPT_URL (a vendor CDN URL), or the
+ * default /originid.global.js served from public/ (drop the vendor's
+ * dist/originid.global.js there). Renders nothing until
+ * NEXT_PUBLIC_ORIGINID_API_KEY is set, so the site never 404s a script it
+ * doesn't have.
  *
  * Docs: https://docs.digitalfingerprintjs.com/#quickstart
  */
@@ -34,6 +34,7 @@ declare global {
 }
 
 const ENDPOINT = 'https://api.digitalfingerprintjs.com/api/identify';
+const SCRIPT_SRC = process.env.NEXT_PUBLIC_ORIGINID_SCRIPT_URL || '/originid.global.js';
 
 export default function OriginIdInit() {
   const apiKey = process.env.NEXT_PUBLIC_ORIGINID_API_KEY;
@@ -63,10 +64,14 @@ export default function OriginIdInit() {
 
   return (
     <Script
-      src="/originid.global.js"
+      src={SCRIPT_SRC}
       strategy="afterInteractive"
       onLoad={start}
-      onError={() => console.warn('[originid] /originid.global.js not found — copy the SDK into public/originid.global.js')}
+      onError={() =>
+        console.warn(
+          `[originid] SDK script failed to load from ${SCRIPT_SRC} — set NEXT_PUBLIC_ORIGINID_SCRIPT_URL to the vendor CDN URL, or copy the SDK into public/originid.global.js`
+        )
+      }
     />
   );
 }
