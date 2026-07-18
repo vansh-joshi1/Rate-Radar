@@ -1,25 +1,32 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { COOKIE_NAME, verifySession } from './lib/auth';
+import NextAuth from 'next-auth';
+import { NextResponse } from 'next/server';
+import authConfig from './auth.config';
 
-export async function middleware(req: NextRequest) {
-  const ok = await verifySession(req.cookies.get(COOKIE_NAME)?.value);
-  if (ok) return NextResponse.next();
+/**
+ * Gate everything except the public marketing/auth surface behind a NextAuth
+ * session (JWT cookie, verified at the edge). API routes get a JSON 401;
+ * pages get bounced to /login with the intended destination in ?next.
+ */
+const { auth } = NextAuth(authConfig);
+
+export default auth((req) => {
+  if (req.auth) return NextResponse.next();
+
   if (req.nextUrl.pathname.startsWith('/api/')) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
-  // Remember where they were headed so login can send them back.
   const next = req.nextUrl.pathname + req.nextUrl.search;
   const login = new URL('/login', req.url);
   if (next && next !== '/') login.searchParams.set('next', next);
   return NextResponse.redirect(login);
-}
+});
 
 export const config = {
   matcher: [
     // Everything except: public marketing/auth pages ($ = the landing page at "/"),
-    // login + logout endpoints, ingest (bearer-token protected), the v1 API
-    // (its own key auth in lib/api/auth.ts), static assets
-    // api/watchlist self-authenticates (session cookie OR ingest secret — the collector calls it)
-    '/((?!$|login|signup|onboarding|api/login|api/logout|api/ingest|api/v1|api/health|api/watchlist|_next/static|_next/image|favicon.ico|robots.txt|originid.global.js).*)',
+    // NextAuth's own endpoints, ingest (bearer-token protected), the v1 API
+    // (its own key auth), health, watchlist (self-auths: session OR ingest
+    // secret — the collector calls it), static assets
+    '/((?!$|login|signup|onboarding|api/auth|api/ingest|api/v1|api/health|api/watchlist|_next/static|_next/image|favicon.ico|robots.txt|originid.global.js).*)',
   ],
 };

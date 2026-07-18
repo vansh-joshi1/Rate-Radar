@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { auth } from '../../../auth';
 import { getStore } from '../../../lib/store';
-import { COOKIE_NAME, verifySession } from '../../../lib/auth';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
 import { hasHotel, loadWatchlist, normalizeName, saveWatchlist, type WatchlistHotel } from '../../../lib/watchlist';
 
@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic';
 async function authorized(req: NextRequest): Promise<boolean> {
   const bearer = req.headers.get('authorization');
   if (process.env.INGEST_SECRET && bearer === `Bearer ${process.env.INGEST_SECRET}`) return true;
-  return verifySession(req.cookies.get(COOKIE_NAME)?.value);
+  return Boolean((await auth())?.user);
 }
 
 function propertyIdFrom(req: NextRequest): string {

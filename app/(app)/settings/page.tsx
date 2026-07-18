@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Chip, SampleBadge, SectionTitle } from '../../../components/ui';
 import BaselineEditor from '../../../components/BaselineEditor';
+import TeamManager from '../../../components/TeamManager';
 import { demoInvoices } from '../../../lib/demo';
 import { DEFAULT_PROPERTY_ID } from '../../../lib/properties';
 
@@ -54,33 +55,9 @@ export default function Settings() {
       )}
 
       {tab === 'Team' && (
-        <div className="max-w-2xl">
+        <div>
           <H4>Members</H4>
-          <div className="card mb-4 p-0">
-            <table className="w-full border-collapse text-sm">
-              <thead><tr><th className="th">Member</th><th className="th">Role</th><th className="th" /></tr></thead>
-              <tbody>
-                {[
-                  { name: 'Vansh Joshi', email: 'vansh@hotel.com', role: 'Owner' },
-                  { name: 'Front Desk', email: 'desk@hotel.com', role: 'Revenue Manager' },
-                  { name: 'Family', email: 'family@hotel.com', role: 'Viewer' },
-                ].map((m) => (
-                  <tr key={m.email} className="hover:bg-ink/[0.03]">
-                    <td className="td">
-                      <div className="font-semibold">{m.name}</div>
-                      <div className="text-xs text-muted">{m.email}</div>
-                    </td>
-                    <td className="td"><Chip tone={m.role === 'Owner' ? 'bad' : 'neutral'}>{m.role}</Chip></td>
-                    <td className="td text-right"><button className="btn btn-sm">Edit</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex gap-2">
-            <input className="field max-w-xs" placeholder="teammate@hotel.com" />
-            <button className="btn btn-primary">Invite</button>
-          </div>
+          <TeamManager />
         </div>
       )}
 

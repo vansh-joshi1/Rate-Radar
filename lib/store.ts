@@ -10,6 +10,7 @@ export interface Store {
   lrange<T>(key: string, start: number, stop: number): Promise<T[]>;
   /** Atomic counter with TTL set on first increment — used for rate limiting. */
   incr(key: string, ttlSeconds: number): Promise<number>;
+  del(key: string): Promise<void>;
 }
 
 /** Upstash Redis via REST (Vercel Marketplace injects KV_REST_API_URL / KV_REST_API_TOKEN). */
@@ -58,6 +59,9 @@ class UpstashStore implements Store {
     const n = await this.cmd<number>(['INCR', key]);
     if (n === 1) await this.cmd(['EXPIRE', key, ttlSeconds]);
     return n;
+  }
+  async del(key: string): Promise<void> {
+    await this.cmd(['DEL', key]);
   }
 }
 
@@ -116,6 +120,11 @@ export class FileStore implements Store {
     d.kv[key] = live;
     this.write(d);
     return live.n;
+  }
+  async del(key: string): Promise<void> {
+    const d = this.read();
+    delete d.kv[key];
+    this.write(d);
   }
 }
 

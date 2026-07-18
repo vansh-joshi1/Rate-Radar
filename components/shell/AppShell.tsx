@@ -2,6 +2,7 @@
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import {
   GridIcon, CalendarIcon, UsersIcon, PieIcon, BellIcon, GearIcon,
   HomeIcon, LogoutIcon, MenuIcon,
@@ -22,7 +23,21 @@ const PROPERTIES = [
   { id: 'sunrise-cookeville', label: 'Sunrise Suites — Cookeville, TN (demo)' },
 ];
 
-export default function AppShell({ children, freshness }: { children: ReactNode; freshness?: string }) {
+interface ShellUser {
+  name: string;
+  email?: string;
+  role: string;
+}
+
+export default function AppShell({
+  children,
+  freshness,
+  user,
+}: {
+  children: ReactNode;
+  freshness?: string;
+  user?: ShellUser | null;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -63,15 +78,21 @@ export default function AppShell({ children, freshness }: { children: ReactNode;
         </nav>
         <div className="border-t border-line p-5">
           <div className="flex items-center gap-2.5">
-            <div className="flex-1">
-              <div className="text-sm font-semibold">Vansh Joshi</div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold" title={user?.email ?? user?.name}>
+                {user?.name ?? 'Signed in'}
+              </div>
               <span className="mt-0.5 inline-block rounded-sm bg-accent-muted px-1.5 py-px text-[10px] font-extrabold uppercase text-accent">
-                Pro
+                {user?.role ?? 'viewer'}
               </span>
             </div>
-            <a href="/api/logout" title="Sign out" className="text-muted hover:text-ink">
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              title="Sign out"
+              className="text-muted hover:text-ink"
+            >
               <LogoutIcon size={16} />
-            </a>
+            </button>
           </div>
         </div>
       </aside>
