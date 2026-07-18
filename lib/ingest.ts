@@ -4,7 +4,7 @@ import type { Store } from './store';
 import { scoreEvent, nightScore } from './scoring/score';
 import { recommendNight, upliftPct, confidence } from './scoring/recommend';
 import { buildReasoning } from './scoring/reason';
-import { evaluateAlerts, type HolidayEntry } from './alerts/rules';
+import { evaluateAlerts, type HolidayEntry, type SourceHealth } from './alerts/rules';
 import { sendAlertEmail } from './alerts/email';
 import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compset';
 import { DEFAULT_PROPERTY_ID, propKey } from './properties';
@@ -171,10 +171,16 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   const prevEmailed = (await store.get<Record<string, number>>('emailed:state')) ?? {};
   const fingerprints = (await store.get<Record<string, string>>('alert:fingerprints')) ?? {};
   const seenEventIds = (await store.get<string[]>('events:seen')) ?? [];
+  // Scoped per property: parity checks share names (rate:expedia, …) across
+  // hotels, and market sources arrive once per property bundle.
+  const bundlePropertyId = bundle.propertyId ?? DEFAULT_PROPERTY_ID;
+  const healthKey = `source:health:${bundlePropertyId}`;
+  const sourceHealth = (await store.get<Record<string, SourceHealth>>(healthKey)) ?? {};
 
   const alertResult = evaluateAlerts({
     nights, parity, weatherAlerts, holidays: holidayEntries,
     prevEmailed, fingerprints, seenEventIds, now: now.toISOString(),
+    sources: bundle.sources, sourceHealth,
   });
 
   // --- persist snapshot + state ---
@@ -190,10 +196,9 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   // Property-scoped keys are the durable layout (multi-hotel ready); the
   // legacy unscoped keys are dual-written for the default property so the
   // existing dashboard and older readers keep working unchanged.
-  const propertyId = bundle.propertyId ?? DEFAULT_PROPERTY_ID;
-  await store.set(propKey.snapshotLatest(propertyId), snapshot);
-  await store.set(propKey.snapshotRun(propertyId, today, runId), snapshot, 30 * 86400);
-  if (propertyId === DEFAULT_PROPERTY_ID) {
+  await store.set(propKey.snapshotLatest(bundlePropertyId), snapshot);
+  await store.set(propKey.snapshotRun(bundlePropertyId, today, runId), snapshot, 30 * 86400);
+  if (bundlePropertyId === DEFAULT_PROPERTY_ID) {
     await store.set('snapshot:latest', snapshot);
     await store.set(`snapshot:${today}:${runId}`, snapshot, 30 * 86400);
   }
@@ -218,6 +223,7 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   await store.set('emailed:state', alertResult.newEmailedState);
   await store.set('alert:fingerprints', alertResult.newFingerprints);
   await store.set('events:seen', alertResult.newSeenEventIds);
+  await store.set(healthKey, alertResult.newSourceHealth);
 
   let emailStatus: 'sent' | 'skipped' | 'none' = 'none';
   if (alertResult.triggers.length > 0) emailStatus = await sendAlertEmail(alertResult.triggers);

@@ -1,4 +1,4 @@
-import type { NightRecommendation, RateCheck, WeatherAlert } from '../scoring/types';
+import type { NightRecommendation, RateCheck, SourceResult, WeatherAlert } from '../scoring/types';
 
 export interface HolidayEntry {
   name: string;
@@ -7,10 +7,18 @@ export interface HolidayEntry {
 }
 
 export interface Trigger {
-  type: 'rate-change' | 'parity-gap' | 'new-event' | 'weather' | 'holiday';
+  type: 'rate-change' | 'parity-gap' | 'new-event' | 'weather' | 'holiday' | 'source-health';
   date?: string;
   /** The final one-line sentence used in the email. */
   line: string;
+}
+
+/** Consecutive-failure tracking per data source (and per parity check as `rate:{source}`). */
+export interface SourceHealth {
+  consecutiveFails: number;
+  lastOkAt?: string;
+  /** True once the broken-source alert has fired — drives the recovery notice. */
+  alerting?: boolean;
 }
 
 export interface AlertInput {
@@ -24,6 +32,10 @@ export interface AlertInput {
   fingerprints: Record<string, string>;
   seenEventIds: string[];
   now: string;
+  /** Collector source results this run (optional — omitted by older callers/tests). */
+  sources?: Pick<SourceResult, 'source' | 'status'>[];
+  /** Prior consecutive-failure state, keyed by source name. */
+  sourceHealth?: Record<string, SourceHealth>;
 }
 
 export interface AlertResult {
@@ -31,6 +43,7 @@ export interface AlertResult {
   newFingerprints: Record<string, string>;
   newEmailedState: Record<string, number>;
   newSeenEventIds: string[];
+  newSourceHealth: Record<string, SourceHealth>;
 }
 
 // Thresholds (see design spec — normative)
@@ -41,6 +54,8 @@ const PARITY_GAP_PCT = 10;
 const NEW_EVENT_MIN_SCORE = 40;
 const HOLIDAY_LOOKAHEAD_DAYS = 14;
 const DEDUPE_HOURS = 24;
+// ~half a day at 7 runs/day — one bot-blocked run is noise, three in a row is a broken source.
+const SOURCE_FAIL_THRESHOLD = 3;
 const SEVERE = new Set(['Severe', 'Extreme']);
 
 function fmtDate(date: string): string {
@@ -134,7 +149,40 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
     }
   }
 
-  // 5) Holiday within 14 days, flagged once
+  // 5) Source health: N consecutive failed runs → alert (refires daily via the
+  // 24h dedupe while broken), plus a one-line recovery notice. Parity checks
+  // are tracked individually as `rate:{source}` — the `rates` source result is
+  // "ok" even when every individual check came back needs-manual-check.
+  const newSourceHealth: Record<string, SourceHealth> = {};
+  const observations: { name: string; ok: boolean }[] = [
+    ...(input.sources ?? []).map((s) => ({ name: s.source, ok: s.status === 'ok' })),
+    ...input.parity.map((p) => ({ name: `rate:${p.source}`, ok: p.status === 'ok' })),
+  ];
+  for (const { name, ok } of observations) {
+    const prev = input.sourceHealth?.[name] ?? { consecutiveFails: 0 };
+    if (ok) {
+      if (prev.alerting) {
+        fire(`source-recovered:${name}`, {
+          type: 'source-health',
+          line: `Data source "${name}" is healthy again after ${prev.consecutiveFails} failed runs.`,
+        });
+      }
+      newSourceHealth[name] = { consecutiveFails: 0, lastOkAt: input.now };
+    } else {
+      const fails = prev.consecutiveFails + 1;
+      const health: SourceHealth = { ...prev, consecutiveFails: fails };
+      if (fails >= SOURCE_FAIL_THRESHOLD) {
+        health.alerting = true;
+        fire(`source-health:${name}`, {
+          type: 'source-health',
+          line: `Data source "${name}" has failed ${fails} consecutive runs${prev.lastOkAt ? ` (last good data ${prev.lastOkAt.slice(0, 10)})` : ''} — its data is going stale; the scraper/selectors may need a refresh.`,
+        });
+      }
+      newSourceHealth[name] = health;
+    }
+  }
+
+  // 6) Holiday within 14 days, flagged once
   for (const h of input.holidays) {
     const days = (new Date(`${h.date}T12:00:00Z`).getTime() - nowMs) / 86400_000;
     if (days >= 0 && days <= HOLIDAY_LOOKAHEAD_DAYS) {
@@ -146,5 +194,5 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
     }
   }
 
-  return { triggers, newFingerprints, newEmailedState, newSeenEventIds };
+  return { triggers, newFingerprints, newEmailedState, newSeenEventIds, newSourceHealth };
 }
