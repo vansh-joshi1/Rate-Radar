@@ -107,7 +107,17 @@ export function demoSnapshot(): Snapshot {
     confidenceNote: '3 of 4 rate sources fresh, event data 2h old',
     nights,
     parity: [
-      { source: 'redroof', status: 'ok', price: 89, room: 'Standard Room', fetchedAt: ago(2) },
+      {
+        source: 'redroof', status: 'ok', price: 89,
+        room: 'cheapest room, public flexible rate (member rates excluded)',
+        rooms: [
+          { room: 'Deluxe 2 Queen Beds Non-Smoking', price: 89, memberPrice: 80, tierId: 'standard' },
+          { room: 'Deluxe King Non-Smoking', price: 89, memberPrice: 80, tierId: 'standard' },
+          { room: 'Superior King Non-Smoking', price: 104, memberPrice: 94, tierId: 'superior' },
+          { room: 'Superior 2 Queen Beds Non-Smoking', price: 104, memberPrice: 94, tierId: 'superior' },
+        ],
+        fetchedAt: ago(2),
+      },
       { source: 'expedia', status: 'ok', price: 101, room: 'Standard Room', fetchedAt: ago(14) },
       { source: 'booking', status: 'ok', price: 99, room: 'Standard Room', fetchedAt: ago(22) },
       { source: 'google', status: 'needs-manual-check', error: 'Bot-blocked page — expected behavior for some aggregators.', fetchedAt: ago(240) },

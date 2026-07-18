@@ -8,6 +8,20 @@ import type { CompsetConfig } from '../lib/scoring/compset';
  * URLs can live in GitHub secrets exactly as they always have.
  */
 
+/** Maps scraped room names to pricing tiers: first substring match wins, '*' is the catch-all. */
+export interface RoomTierRule {
+  match: string;
+  tierId: string;
+}
+
+export function mapRoomToTier(room: string, rules: RoomTierRule[]): string | undefined {
+  const lower = room.toLowerCase();
+  for (const r of rules) {
+    if (r.match === '*' || lower.includes(r.match.toLowerCase())) return r.tierId;
+  }
+  return undefined;
+}
+
 export interface RatePropertyConfig {
   id: string;
   name: string;
@@ -16,6 +30,7 @@ export interface RatePropertyConfig {
   /** City string for the Booking.com search-results compset fallback. */
   bookingSearchLocation: string;
   compset: CompsetConfig;
+  roomTierMap: RoomTierRule[];
 }
 
 function resolve(value: string | null | undefined): string | undefined {
@@ -30,6 +45,7 @@ interface RawProperty {
   googleHotelsQuery?: string;
   bookingSearchLocation: string;
   compset: CompsetConfig | null;
+  roomTierMap?: RoomTierRule[];
 }
 
 export function loadProperties(): RatePropertyConfig[] {
@@ -47,6 +63,7 @@ export function loadProperties(): RatePropertyConfig[] {
       googleHotelsQuery: resolve(p.googleHotelsQuery),
       bookingSearchLocation: p.bookingSearchLocation,
       compset: p.compset ?? (defaultCompset as CompsetConfig),
+      roomTierMap: p.roomTierMap ?? [],
     };
   });
 }

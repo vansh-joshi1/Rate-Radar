@@ -23,6 +23,15 @@ export default async function Overview() {
   const ageHours = (Date.now() - new Date(snapshot.runAt).getTime()) / 3600_000;
   const failed = snapshot.sources.filter((s) => s.status !== 'ok');
 
+  // Your actual listed rate per tier (scraped from redroof.com, tomorrow night)
+  const directRooms = snapshot.parity.find((p) => p.source === 'redroof' && p.status === 'ok')?.rooms ?? [];
+  const listedFor = (tierId: string): number | undefined => {
+    const prices = directRooms.filter((r) => r.tierId === tierId).map((r) => r.price);
+    return prices.length > 0 ? Math.min(...prices) : undefined;
+  };
+  const listedStd = listedFor(std.tierId);
+  const listedSup = superior ? listedFor(superior.tierId) : undefined;
+
   return (
     <div>
       <div className="mb-5 flex items-center justify-between gap-4">
@@ -53,6 +62,11 @@ export default async function Overview() {
             <div className="my-2 font-serif text-7xl font-semibold leading-none text-accent">${std.recommended}</div>
             <div className="font-semibold text-ok">{night.upliftPct > 0 ? `+${night.upliftPct}% uplift` : 'baseline'}</div>
             <div className="mt-1.5 text-sm text-muted">Range: ${std.range[0]} – ${std.range[1]}</div>
+            {listedStd != null && (
+              <div className={`mt-2 text-sm font-semibold ${Math.abs(listedStd - std.recommended) > 3 ? 'text-warn' : 'text-muted'}`}>
+                Listed on redroof.com: ${listedStd} <span className="font-normal text-muted">(tomorrow night)</span>
+              </div>
+            )}
           </div>
           <div>
             <h3 className="mb-4 text-base font-semibold">Reasoning</h3>
@@ -90,6 +104,7 @@ export default async function Overview() {
                 <div className="font-serif text-3xl font-semibold">${superior.recommended}</div>
                 <div className="text-sm text-muted">
                   +${superior.recommended - std.recommended} premium over standard · range ${superior.range[0]}–${superior.range[1]}
+                  {listedSup != null && <> · listed ${listedSup}</>}
                 </div>
               </div>
               <div className="self-end text-left sm:text-right">

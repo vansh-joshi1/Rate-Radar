@@ -1,8 +1,8 @@
 import type { Browser, Page } from 'playwright';
-import type { CompsetEntry, RateCheck, SourceResult } from '../../lib/scoring/types';
+import type { CompsetEntry, RateCheck, RoomRate, SourceResult } from '../../lib/scoring/types';
 import { matchCompset, type CompsetConfig } from '../../lib/scoring/compset';
 import compsetConfig from '../../config/compset.json';
-import { loadProperties, type RatePropertyConfig } from '../properties';
+import { loadProperties, mapRoomToTier, type RatePropertyConfig, type RoomTierRule } from '../properties';
 
 /**
  * Rate parity: our own listed rate on 4 public sources, checked independently.
@@ -118,7 +118,7 @@ const ATTEMPTS = 2;
 
 function makeChecker(
   source: RateCheck['source'],
-  run: (page: Page) => Promise<{ price: number; room?: string } | null>
+  run: (page: Page) => Promise<{ price: number; room?: string; rooms?: RoomRate[] } | null>
 ): Checker {
   return async (browser) => {
     const fetchedAt = new Date().toISOString();
@@ -174,7 +174,62 @@ export function parseRedroofPublicPrices(body: string): number[] {
   return prices;
 }
 
-const checkRedroof = (url: string) => makeChecker('redroof', async (page) => {
+/**
+ * Room-level breakdown from the same rendered text: each card is
+ * "<Room name> / Sleeps N guests / [member block] / public Flexible Rate".
+ * The public price is the first non-member price after the room name; the
+ * member price is the lowest price inside the member block (the first one is
+ * the struck-through public rate). Returns [] on unrecognized structure —
+ * callers fall back to the flat public-price scan.
+ */
+export function parseRedroofRooms(body: string): Omit<RoomRate, 'tierId'>[] {
+  const lines = body.split('\n').map((l) => l.trim());
+  const priceAt = (i: number): number | null => {
+    const m = lines[i].match(/^(\d{2,3})\.\d{2}(\s*USD\/night)?$/i);
+    if (!m) return null;
+    if (!m[2] && !/^USD\/night/i.test(lines[i + 1] ?? '')) return null;
+    const p = Number(m[1]);
+    return p >= 40 && p <= 500 ? p : null;
+  };
+
+  const rooms: Omit<RoomRate, 'tierId'>[] = [];
+  let current: string | null = null;
+  let inMember = false;
+  let memberPrices: number[] = [];
+  let publicCaptured = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^Sleeps \d+ guests?$/i.test(line)) {
+      // the nearest non-empty line above is the room name — a new card begins
+      for (let j = i - 1; j >= 0; j--) {
+        if (lines[j]) { current = lines[j]; break; }
+      }
+      inMember = false;
+      memberPrices = [];
+      publicCaptured = false;
+      continue;
+    }
+    if (/^Member\b/i.test(line)) { inMember = true; continue; }
+    if (/Sign in or Join to book this Member rate/i.test(line)) { inMember = false; continue; }
+
+    const p = priceAt(i);
+    if (p == null || !current) continue;
+    if (inMember) {
+      memberPrices.push(p);
+    } else if (!publicCaptured) {
+      rooms.push({
+        room: current,
+        price: p,
+        memberPrice: memberPrices.length > 0 ? Math.min(...memberPrices) : undefined,
+      });
+      publicCaptured = true;
+    }
+  }
+  return rooms;
+}
+
+const checkRedroof = (url: string, tierRules: RoomTierRule[] = []) => makeChecker('redroof', async (page) => {
   // The checkout page loads rates via XHR — capture it as a last resort (it
   // can't distinguish member pricing, so the DOM parse is preferred).
   let apiPrice: number | null = null;
@@ -191,6 +246,16 @@ const checkRedroof = (url: string) => makeChecker('redroof', async (page) => {
   });
   await page.goto(rewriteDates(url), { waitUntil: 'domcontentloaded' }).catch(() => undefined);
   const body = await settlePage(page, /USD\/night/);
+  // Preferred: full room-level breakdown, tier-tagged via config.
+  const parsedRooms = parseRedroofRooms(body).map((r) => ({ ...r, tierId: mapRoomToTier(r.room, tierRules) }));
+  if (parsedRooms.length > 0) {
+    return {
+      price: Math.min(...parsedRooms.map((r) => r.price)),
+      room: 'cheapest room, public flexible rate (member rates excluded)',
+      rooms: parsedRooms,
+    };
+  }
+  // Structure drifted from the room-card layout — flat public-price scan.
   const publicPrices = parseRedroofPublicPrices(body);
   if (publicPrices.length > 0) {
     return { price: Math.min(...publicPrices), room: 'cheapest room, public flexible rate (member rates excluded)' };
@@ -274,7 +339,7 @@ const checkBooking = (url: string) => makeChecker('booking', async (page) => {
 /** The checkers a property's config actually supports — unset URLs are skipped, not failed. */
 function buildCheckers(prop: RatePropertyConfig): Checker[] {
   const checkers: Checker[] = [];
-  if (prop.rateUrls.redroof) checkers.push(checkRedroof(prop.rateUrls.redroof));
+  if (prop.rateUrls.redroof) checkers.push(checkRedroof(prop.rateUrls.redroof, prop.roomTierMap));
   if (prop.googleHotelsQuery) checkers.push(checkGoogle(prop.googleHotelsQuery, prop.compset));
   if (prop.rateUrls.expedia) checkers.push(checkExpedia(prop.rateUrls.expedia));
   if (prop.rateUrls.booking) checkers.push(checkBooking(prop.rateUrls.booking));

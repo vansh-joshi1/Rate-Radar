@@ -82,6 +82,30 @@ export default async function Competitors() {
         {isDemo && <SampleBadge />}
       </div>
 
+      {(() => {
+        // Market position: your lead (cheapest public) rate vs the compset —
+        // lead-vs-lead is the honest cross-hotel comparison; room-level
+        // matching across brands compares different products.
+        const block = compsets.find((c) => c.date === tomorrow) ?? compsets[0];
+        if (!block || block.entries.length === 0 || directListed == null) return null;
+        const cheaper = block.entries.filter((e) => e.price < directListed).length;
+        const vsMedian = block.median ? Math.round(((directListed - block.median) / block.median) * 100) : null;
+        return (
+          <div className="card mb-6 flex flex-wrap items-baseline gap-x-6 gap-y-2">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-widest text-muted">Your lead rate ({fmt(block.date)})</div>
+              <div className="font-serif text-3xl font-semibold text-accent">${directListed}</div>
+            </div>
+            <div className="text-sm">
+              <span className="font-semibold">#{cheaper + 1} cheapest</span> of {block.entries.length + 1} tracked hotels
+              {vsMedian != null && (
+                <span className="text-muted"> · {vsMedian === 0 ? 'at' : `${Math.abs(vsMedian)}% ${vsMedian > 0 ? 'above' : 'below'}`} compset median (${Math.round(block.median!)})</span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       <WatchlistManager
         propertyId={property.id}
         property={{ name: property.name, lat: property.lat, lng: property.lng }}

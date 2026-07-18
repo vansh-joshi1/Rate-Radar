@@ -11,7 +11,11 @@
       },
       "googleHotelsQuery": "env:GOOGLE_HOTELS_QUERY",
       "bookingSearchLocation": "Franklin, Tennessee",
-      "compset": null
+      "compset": null,
+      "roomTierMap": [
+        { "match": "superior", "tierId": "superior" },
+        { "match": "*", "tierId": "standard" }
+      ]
     }
   ]
 }

@@ -66,6 +66,19 @@ export default async function Parity() {
                 <>
                   <div className={`my-2 font-serif text-4xl font-semibold ${sourceGap > 0 ? 'text-bad' : ''}`}>${p.price}</div>
                   {p.room && <div className="text-sm">{p.room}</div>}
+                  {p.rooms && p.rooms.length > 0 && (
+                    <div className="mt-3 space-y-1 border-t border-line pt-3">
+                      {p.rooms.map((r) => (
+                        <div key={r.room} className="flex items-baseline justify-between gap-2 text-xs">
+                          <span className="truncate text-muted" title={r.room}>{r.room}</span>
+                          <span className="shrink-0 tabular-nums">
+                            <span className="font-serif text-sm font-semibold">${r.price}</span>
+                            {r.memberPrice != null && <span className="ml-1 text-muted">(${r.memberPrice} member)</span>}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-4 text-[11px] uppercase tracking-wider text-muted">Checked {checkedAt(p.fetchedAt)}</div>
                   <div className={`mt-2 text-xs font-semibold ${isDirect ? 'text-ok' : sourceGap > 0 ? 'text-bad' : 'text-ok'}`}>
                     {isDirect ? '✓ Baseline source' : sourceGap > 0 ? `⚠ $${sourceGap} above direct` : '✓ In parity'}

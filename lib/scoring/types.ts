@@ -46,11 +46,23 @@ export interface WeatherAlert {
   area: string;
 }
 
+/** One room type's public price as scraped from our own site. */
+export interface RoomRate {
+  room: string;
+  price: number;
+  /** Member/loyalty-gated price, informational — parity uses public rates. */
+  memberPrice?: number;
+  /** Which pricing tier this room maps to (config/properties.json roomTierMap). */
+  tierId?: string;
+}
+
 export interface RateCheck {
   source: 'redroof' | 'google' | 'expedia' | 'booking';
   status: 'ok' | 'needs-manual-check';
   price?: number;
   room?: string;
+  /** Per-room breakdown when the source page exposes it (own site only). */
+  rooms?: RoomRate[];
   error?: string;
   fetchedAt: string;
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parseRedroofPublicPrices } from '../collector/sources/rates';
+import { parseRedroofPublicPrices, parseRedroofRooms } from '../collector/sources/rates';
+import { mapRoomToTier } from '../collector/properties';
 
 /**
  * Fixture: rendered text of the live redroof.com room list (RRI1430,
@@ -77,5 +78,30 @@ describe('redroof public-rate parsing (member rates excluded)', () => {
 
   it('applies the price sanity window', () => {
     expect(parseRedroofPublicPrices('999.00\nUSD/night\n20.00\nUSD/night\n75.00\nUSD/night')).toEqual([75]);
+  });
+});
+
+describe('room-level parsing + tier mapping', () => {
+  it('captures each room with its public and member price', () => {
+    const rooms = parseRedroofRooms(LIVE_PAGE_TEXT);
+    expect(rooms).toEqual([
+      { room: 'Deluxe 2 Queen Beds Non-Smoking', price: 75, memberPrice: 67 },
+      { room: 'Superior King Non-Smoking', price: 80, memberPrice: 72 },
+      { room: 'ADA Accessible Deluxe 1 Queen Bed with Roll-In Shower Non-Smoking', price: 75, memberPrice: 67 },
+    ]);
+  });
+
+  it('returns [] on unrecognized structure (callers fall back to the flat scan)', () => {
+    expect(parseRedroofRooms('some page with no room cards\n75.00\nUSD/night')).toEqual([]);
+  });
+
+  it('maps room names to tiers by first-substring-match with * catch-all', () => {
+    const rules = [
+      { match: 'superior', tierId: 'superior' },
+      { match: '*', tierId: 'standard' },
+    ];
+    expect(mapRoomToTier('Superior King Non-Smoking', rules)).toBe('superior');
+    expect(mapRoomToTier('Deluxe 2 Queen Beds Non-Smoking', rules)).toBe('standard');
+    expect(mapRoomToTier('anything', [])).toBeUndefined();
   });
 });
