@@ -16,22 +16,22 @@ export default function NoteBox({ date, initial }: { date: string; initial: stri
   }
 
   return (
-    <section>
-      <h2>Manual note for today</h2>
-      <p className="muted small" style={{ marginBottom: 8 }}>
-        For things no feed knows about — e.g. a recruiting day at Nissan NA or CHS, a vendor visit, a group booking rumor.
+    <div className="card">
+      <h3 className="mb-2 font-serif text-xl font-bold">Manual notes</h3>
+      <p className="mb-3 text-sm text-muted">
+        For things no feed knows about — a recruiting day at a nearby campus, a vendor visit, a group booking rumor.
       </p>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={2}
-          style={{ flex: 1 }}
-          placeholder="e.g. Nissan all-hands Thursday — expect corporate walk-ins"
-        />
-        <button onClick={save}>Save</button>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        className="field mb-3"
+        placeholder="e.g. Nissan all-hands Thursday — expect corporate walk-ins"
+      />
+      <div className="flex items-center gap-3">
+        <button onClick={save} className="btn">Save note</button>
+        {status && <span className="text-sm text-muted">{status}</span>}
       </div>
-      {status && <p className="muted small" style={{ marginTop: 6 }}>{status}</p>}
-    </section>
+    </div>
   );
 }

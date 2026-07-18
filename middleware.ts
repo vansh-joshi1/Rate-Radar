@@ -12,7 +12,9 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything except: login page + endpoint, ingest (bearer-token protected), static assets
-    '/((?!login|api/login|api/ingest|_next/static|_next/image|favicon.ico|robots.txt).*)',
+    // Everything except: public marketing/auth pages ($ = the landing page at "/"),
+    // login + logout endpoints, ingest (bearer-token protected), the v1 API
+    // (its own key auth in lib/api/auth.ts), static assets
+    '/((?!$|login|signup|onboarding|api/login|api/logout|api/ingest|api/v1|_next/static|_next/image|favicon.ico|robots.txt).*)',
   ],
 };
