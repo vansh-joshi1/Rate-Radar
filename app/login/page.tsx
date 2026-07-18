@@ -13,8 +13,14 @@ export default function Login() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     });
-    if (res.ok) window.location.href = '/overview';
-    else setError('Wrong password.');
+    if (res.ok) {
+      // Return to the page they were originally headed to; internal paths only
+      // (must start with exactly one "/") so ?next can't become an open redirect.
+      const next = new URLSearchParams(window.location.search).get('next');
+      window.location.href = next && /^\/(?!\/)/.test(next) ? next : '/overview';
+    } else {
+      setError('Wrong password.');
+    }
   }
 
   return (
