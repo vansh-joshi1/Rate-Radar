@@ -8,7 +8,7 @@ import { evaluateAlerts, type HolidayEntry, type SourceHealth } from './alerts/r
 import { sendAlertEmail } from './alerts/email';
 import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compset';
 import { DEFAULT_PROPERTY_ID, propKey } from './properties';
-import { watchlistKey, watchlistCompsetConfig, type WatchlistHotel } from './watchlist';
+import { loadWatchlist, saveWatchlist, watchlistKey, watchlistCompsetConfig, type WatchlistHotel } from './watchlist';
 import { loadRatesConfig } from './rates-config';
 import type {
   CompsetEntry, CompsetInfo, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
@@ -110,6 +110,22 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
 
   const ratesData = src('rates')?.status === 'ok' ? src('rates')!.data : null;
   const { parity, compsets: rawCompsets } = parseRatesData(ratesData, addDays(chicagoToday(now), 1));
+
+  // Persist collector-resolved Booking URLs onto the watchlist so future runs
+  // price those hotels directly without re-resolving.
+  const resolvedUrls = (ratesData as { resolvedBookingUrls?: Record<string, string> } | null)?.resolvedBookingUrls;
+  if (resolvedUrls && Object.keys(resolvedUrls).length > 0) {
+    const list = await loadWatchlist(store, bundlePropertyId);
+    let changed = false;
+    for (const hotel of list) {
+      const url = resolvedUrls[hotel.name];
+      if (url && !hotel.bookingUrl) {
+        hotel.bookingUrl = url;
+        changed = true;
+      }
+    }
+    if (changed) await saveWatchlist(store, bundlePropertyId, list);
+  }
   // Filter against the UI-editable watchlist when one exists (the collector
   // harvested with the same list); config/compset.json remains the fallback.
   const uiWatchlist = await store.get<WatchlistHotel[]>(watchlistKey(bundlePropertyId));

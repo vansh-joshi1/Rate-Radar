@@ -16,6 +16,8 @@ export interface WatchlistHotel {
   lat?: number;
   lng?: number;
   address?: string;
+  /** Booking.com property page — resolved once by the collector, then priced directly every run. */
+  bookingUrl?: string;
   addedAt: string;
 }
 

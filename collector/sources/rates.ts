@@ -346,13 +346,127 @@ function buildCheckers(prop: RatePropertyConfig): Checker[] {
   return checkers;
 }
 
+/** Booking.com property URL with explicit stay dates (2 adults, USD). */
+export function bookingUrlWithDates(baseUrl: string, checkin: string): string {
+  const d = new Date(`${checkin}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  const checkout = d.toISOString().slice(0, 10);
+  const sep = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${sep}checkin=${checkin}&checkout=${checkout}&group_adults=2&no_rooms=1&selected_currency=USD`;
+}
+
+// Tokens too common in hotel names/slugs to prove identity on their own.
+const GENERIC_NAME_TOKENS = new Set(['the', 'and', 'inn', 'hotel', 'suites', 'resort', 'lodge']);
+
 /**
- * Competitor prices for one night. Primary: the Google Hotels page for OUR
- * property with that night's dates — its "similar hotels" carousel carries
- * date-consistent competitor prices, and Google demonstrably renders on
- * GitHub runners. Fallback: Booking's Franklin search (serves a JS shell to
- * runners, but its embedded JSON often carries display-formatted prices the
- * position-based scan can still catch).
+ * Does a Booking property slug plausibly belong to this hotel? Requires a
+ * distinctive name token in the slug — search ranking is NOT identity
+ * (observed live: searching "Baymont Franklin" returned Comfort Inn first;
+ * accepting it would mislabel a competitor's price).
+ */
+export function bookingSlugMatchesName(slug: string, hotelName: string): boolean {
+  const tokens = hotelName.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  const distinctive = tokens.filter((t) => t.length >= 3 && !GENERIC_NAME_TOKENS.has(t));
+  const pool = distinctive.length > 0 ? distinctive : tokens; // e.g. "Motel 6" has no long tokens
+  return pool.some((t) => slug.toLowerCase().includes(t));
+}
+
+/**
+ * Find a watchlist hotel's own Booking.com property page via Booking search.
+ * Scans the top results and accepts only a slug that matches the hotel's
+ * name. Resolved once, persisted to the watchlist by ingest, reused after.
+ */
+async function resolveBookingUrl(browser: Browser, hotelName: string, location: string): Promise<string | null> {
+  let page: Page | null = null;
+  try {
+    page = await newPage(browser);
+    const q = `${hotelName} ${location}`;
+    await page.goto(
+      `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(q)}&selected_currency=USD`,
+      { waitUntil: 'domcontentloaded' }
+    );
+    await settlePage(page, /hotel/i, 12_000).catch(() => undefined);
+    const anchors = await page.locator('a[href*="/hotel/"]').all();
+    for (const a of anchors.slice(0, 10)) {
+      const href = await a.getAttribute('href').catch(() => null);
+      if (!href) continue;
+      const url = new URL(href, 'https://www.booking.com');
+      if (bookingSlugMatchesName(url.pathname, hotelName)) {
+        return `${url.origin}${url.pathname}`; // strip volatile query/session params
+      }
+    }
+    return null; // no confident match — better no price than a mislabeled one
+  } catch {
+    return null;
+  } finally {
+    await page?.context().close().catch(() => undefined);
+  }
+}
+
+// Resolving URLs costs a search-page load each — spread across runs so one
+// run never balloons; with 7 runs/day a 10-hotel list fully resolves in a day.
+const MAX_RESOLVES_PER_RUN = 3;
+const DIRECT_CHECK_PACING_MS = 1500;
+
+/**
+ * The accuracy fix: price each watchlist hotel from ITS OWN Booking.com page
+ * with explicit dates — no more hoping competitors appear in Google's
+ * carousel or a search page. Sequential with pacing to stay polite.
+ */
+async function competitorDirectChecks(
+  browser: Browser,
+  prop: RatePropertyConfig,
+  checkin: string
+): Promise<{ entries: CompsetEntry[]; resolvedUrls: Record<string, string> }> {
+  const hotels = prop.watchlistHotels ?? [];
+  const entries: CompsetEntry[] = [];
+  const resolvedUrls: Record<string, string> = {};
+  let resolves = 0;
+
+  for (const hotel of hotels) {
+    let url = hotel.bookingUrl;
+    if (!url && resolves < MAX_RESOLVES_PER_RUN) {
+      resolves += 1;
+      url = (await resolveBookingUrl(browser, hotel.name, prop.bookingSearchLocation)) ?? undefined;
+      if (url) {
+        resolvedUrls[hotel.name] = url;
+        console.log(`[compset-direct] resolved ${hotel.name} → ${url}`);
+      } else {
+        console.warn(`[compset-direct] could not resolve a Booking page for ${hotel.name}`);
+      }
+    }
+    if (!url) continue;
+
+    let page: Page | null = null;
+    try {
+      page = await newPage(browser);
+      await page.goto(bookingUrlWithDates(url, checkin), { waitUntil: 'domcontentloaded' });
+      await settlePage(page, /\$\d{2,4}/, 12_000);
+      const result = await extractPrice(page, BOOKING_PRICE_SELECTORS);
+      const { min, max } = prop.compset.priceSanity;
+      if (result && result.price >= min && result.price <= max) {
+        entries.push({ name: hotel.name, price: result.price });
+      } else {
+        console.warn(`[compset-direct] ${hotel.name}: no usable price this run${result ? ` (got $${result.price}, outside sanity)` : ''}`);
+      }
+    } catch (err) {
+      console.warn(`[compset-direct] ${hotel.name} failed: ${String(err).slice(0, 120)}`);
+    } finally {
+      await page?.context().close().catch(() => undefined);
+    }
+    await new Promise((r) => setTimeout(r, DIRECT_CHECK_PACING_MS));
+  }
+
+  console.log(`[compset-direct] ${checkin}: ${entries.length}/${hotels.length} hotels priced from their own Booking pages`);
+  return { entries, resolvedUrls };
+}
+
+/**
+ * Harvest fallback — competitor prices for one night from aggregation pages.
+ * Primary: the Google Hotels page for OUR property with that night's dates —
+ * its "similar hotels" carousel carries date-consistent competitor prices.
+ * Fallback: Booking's city search. Used for event nights and to backfill
+ * hotels the direct checks couldn't price.
  */
 async function compsetForDate(
   browser: Browser,
@@ -414,14 +528,35 @@ export async function collect(
     // Compset: tomorrow always, plus approved event nights (already capped upstream).
     const tomorrowDate = tomorrow().checkin;
     const dates = [tomorrowDate, ...eventNights.filter((dte) => dte !== tomorrowDate)];
+
+    // Accuracy-first: price each watchlist hotel from its own Booking page.
+    const direct = await competitorDirectChecks(browser, prop, tomorrowDate);
+    const directNames = new Set(direct.entries.map((e) => e.name.toLowerCase()));
+    const fullCoverage =
+      (prop.watchlistHotels?.length ?? 0) > 0 && direct.entries.length === prop.watchlistHotels!.length;
+
     const compsets: { date: string; entries: CompsetEntry[] }[] = [];
     const sig = (e: CompsetEntry[]) => e.map((x) => `${x.name}@${x.price}`).sort().join('|');
     for (const date of dates) {
       const tomorrowSig = date !== tomorrowDate ? sig(compsets.find((c) => c.date === tomorrowDate)?.entries ?? []) : undefined;
-      let entries = await compsetForDate(browser, date, prop, tomorrowSig || undefined);
+      // Skip the harvest entirely when direct checks priced every hotel.
+      let entries =
+        date === tomorrowDate && fullCoverage
+          ? []
+          : await compsetForDate(browser, date, prop, tomorrowSig || undefined);
       // Google's carousel harvest (same-run side product) backfills tomorrow if Booking gave nothing
-      if (entries.length === 0 && date === tomorrowDate && compsetHarvest.length > 0) {
+      if (entries.length === 0 && date === tomorrowDate && compsetHarvest.length > 0 && !fullCoverage) {
         entries = compsetHarvest;
+      }
+      if (date === tomorrowDate && direct.entries.length > 0) {
+        // Direct prices win; harvest only backfills hotels the direct pass missed.
+        const backfill = entries.filter(
+          (e) =>
+            ![...directNames].some(
+              (dn) => e.name.toLowerCase().includes(dn) || dn.includes(e.name.toLowerCase())
+            )
+        );
+        entries = [...direct.entries, ...backfill];
       }
       // Honesty guard: identical prices to tomorrow's block means the source
       // ignored our dates (observed live: Google serving default-date carousel
@@ -438,7 +573,12 @@ export async function collect(
       source: 'rates',
       status: 'ok',
       fetchedAt,
-      data: { checks, compsets },
+      data: {
+        checks,
+        compsets,
+        // Ingest persists these onto the watchlist so future runs skip resolution.
+        ...(Object.keys(direct.resolvedUrls).length > 0 ? { resolvedBookingUrls: direct.resolvedUrls } : {}),
+      },
     };
   } catch (err) {
     return { source: 'rates', status: 'failed', fetchedAt, error: String(err).slice(0, 300) };

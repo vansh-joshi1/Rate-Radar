@@ -31,6 +31,8 @@ export interface RatePropertyConfig {
   bookingSearchLocation: string;
   compset: CompsetConfig;
   roomTierMap: RoomTierRule[];
+  /** Live watchlist (name + resolved Booking URL) fetched from the dashboard at run start. */
+  watchlistHotels?: { name: string; bookingUrl?: string }[];
 }
 
 function resolve(value: string | null | undefined): string | undefined {

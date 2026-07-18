@@ -29,7 +29,7 @@ import type { RawEvent, SourceResult } from '../lib/scoring/types';
  * unset, endpoint down) falls back to the config-file whitelist — a stale
  * compset beats no compset.
  */
-async function fetchWatchlist(propertyId: string): Promise<string[] | null> {
+async function fetchWatchlist(propertyId: string): Promise<{ name: string; bookingUrl?: string }[] | null> {
   const base = process.env.DASHBOARD_URL;
   const secret = process.env.INGEST_SECRET;
   if (!base || !secret) return null;
@@ -38,8 +38,8 @@ async function fetchWatchlist(propertyId: string): Promise<string[] | null> {
       headers: { Authorization: `Bearer ${secret}` },
     });
     if (!res.ok) return null;
-    const { hotels } = (await res.json()) as { hotels: { name: string }[] };
-    return hotels.length > 0 ? hotels.map((h) => h.name) : null;
+    const { hotels } = (await res.json()) as { hotels: { name: string; bookingUrl?: string }[] };
+    return hotels.length > 0 ? hotels : null;
   } catch {
     return null;
   }
@@ -92,8 +92,10 @@ async function main() {
     if (!skipRates) {
       const liveWatchlist = await fetchWatchlist(prop.id);
       if (liveWatchlist) {
-        console.log(`[watchlist] ${prop.id}: using ${liveWatchlist.length} hotels from the dashboard watchlist`);
-        prop.compset = { ...prop.compset, competitors: liveWatchlist };
+        const withUrls = liveWatchlist.filter((h) => h.bookingUrl).length;
+        console.log(`[watchlist] ${prop.id}: ${liveWatchlist.length} hotels from the dashboard (${withUrls} with resolved Booking URLs)`);
+        prop.compset = { ...prop.compset, competitors: liveWatchlist.map((h) => h.name) };
+        prop.watchlistHotels = liveWatchlist;
       }
       try {
         sources.push(await rates(eventNights, prop));
