@@ -120,22 +120,22 @@ export default async function Competitors() {
       )}
 
       {compsets.map((c) => {
-        // Compare like with like: our row for a night uses that night's data —
-        // the scraped direct rate for tomorrow (what parity actually checked),
-        // otherwise that night's recommendation, clearly labeled as such.
+        // Only ACTUAL prices in these tables: our row is the scraped
+        // redroof.com listed rate, which exists for tomorrow (the night parity
+        // checks). Other nights get no "you" row — we don't know your listed
+        // rate for those dates, and a recommendation isn't a market price.
         const heading = c.date === today ? 'Tonight' : c.date === tomorrow ? 'Tomorrow' : 'Event night';
-        const nightRec = snapshot.nights.find((n) => n.date === c.date)?.tiers.find((t) => t.tierId === 'standard')?.recommended;
         const useListed = c.date === tomorrow && directListed != null;
-        const ourPrice = useListed ? directListed : nightRec;
-        const ourLabel = useListed
-          ? `${property.name} (you — listed on redroof.com)`
-          : `${property.name} (you — recommended)`;
         return (
           <div key={c.date}>
             <h3 className="mb-3 text-lg font-bold tracking-tight">
               {heading} — {fmt(c.date)}
             </h3>
-            <CompsetTable c={c} ourPrice={ourPrice} ourLabel={ourLabel} />
+            <CompsetTable
+              c={c}
+              ourPrice={useListed ? directListed : undefined}
+              ourLabel={`${property.name} (you — listed on redroof.com)`}
+            />
           </div>
         );
       })}
