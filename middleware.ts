@@ -27,6 +27,6 @@ export const config = {
     // NextAuth's own endpoints, ingest (bearer-token protected), the v1 API
     // (its own key auth), health, watchlist (self-auths: session OR ingest
     // secret — the collector calls it), static assets
-    '/((?!$|login|signup|onboarding|api/auth|api/ingest|api/v1|api/health|api/watchlist|_next/static|_next/image|favicon.ico|robots.txt|originid.global.js).*)',
+    '/((?!$|login|signup|onboarding|api/auth|api/ingest|api/v1|api/health|api/watchlist|api/cron|_next/static|_next/image|favicon.ico|robots.txt|originid.global.js).*)',
   ],
 };
