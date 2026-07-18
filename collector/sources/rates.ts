@@ -145,8 +145,38 @@ function makeChecker(
   };
 }
 
+/**
+ * Public (non-member) nightly prices from redroof.com rendered text. Each room
+ * card lists a member-gated discount FIRST (strikethrough public price + the
+ * ~10%-off member price), closed by "Sign in or Join to book this Member
+ * rate.", then the public Flexible Rate (verified live 2026-07-17). Parity
+ * compares public rates across sites, so member-gated prices are excluded —
+ * min() over everything used to report the member rate as "our rate".
+ * Prices render WITHOUT a $ sign: "75.00\nUSD/night".
+ */
+export function parseRedroofPublicPrices(body: string): number[] {
+  // Longest token first: the sign-in sentence contains the word "Member" and
+  // must be consumed whole, or it would re-open the member block it closes.
+  const re = /Sign in or Join to book this Member rate\.?|\bMember\b|(\d{2,3})\.\d{2}\s*\n?\s*USD\/night/gi;
+  const prices: number[] = [];
+  let inMember = false;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body))) {
+    if (m[1] !== undefined) {
+      const p = Number(m[1]);
+      if (!inMember && p >= 40 && p <= 500) prices.push(p);
+    } else if (/^member$/i.test(m[0])) {
+      inMember = true;
+    } else {
+      inMember = false; // "Sign in or Join…" closes the member block
+    }
+  }
+  return prices;
+}
+
 const checkRedroof = (url: string) => makeChecker('redroof', async (page) => {
-  // The checkout page loads rates via XHR — capture it if it fires, fall back to DOM.
+  // The checkout page loads rates via XHR — capture it as a last resort (it
+  // can't distinguish member pricing, so the DOM parse is preferred).
   let apiPrice: number | null = null;
   page.on('response', async (res) => {
     if (!/rate|room|avail/i.test(res.url()) || apiPrice) return;
@@ -161,12 +191,11 @@ const checkRedroof = (url: string) => makeChecker('redroof', async (page) => {
   });
   await page.goto(rewriteDates(url), { waitUntil: 'domcontentloaded' }).catch(() => undefined);
   const body = await settlePage(page, /USD\/night/);
-  if (apiPrice) return { price: apiPrice, room: 'cheapest available (from rates API)' };
-  // redroof renders prices WITHOUT a $ sign: "68.00\nUSD/night" (verified live 2026-07-12)
-  const usd = [...body.matchAll(/(\d{2,3})\.\d{2}\s*\n?\s*USD\/night/g)]
-    .map((m) => Number(m[1]))
-    .filter((p) => p >= 40 && p <= 500);
-  if (usd.length > 0) return { price: Math.min(...usd), room: 'cheapest available (flexible rate)' };
+  const publicPrices = parseRedroofPublicPrices(body);
+  if (publicPrices.length > 0) {
+    return { price: Math.min(...publicPrices), room: 'cheapest room, public flexible rate (member rates excluded)' };
+  }
+  if (apiPrice) return { price: apiPrice, room: 'cheapest available (from rates API — may include member pricing)' };
   return extractPrice(page, REDROOF_PRICE_SELECTORS);
 });
 
