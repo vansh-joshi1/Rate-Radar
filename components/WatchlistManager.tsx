@@ -63,7 +63,7 @@ export default function WatchlistManager({ propertyId, property, compsetEntries 
         <CompsetMap pins={pins} />
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2.5 text-xs text-muted">
           <span><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-accent align-middle" />{property.name} (you)</span>
-          <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-muted align-middle" />watchlist competitor · label = tonight&apos;s harvested price</span>
+          <span><span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-muted align-middle" />watchlist competitor · label = latest harvested price (tomorrow night)</span>
           {unlocated > 0 && <span>{unlocated} hotel{unlocated === 1 ? '' : 's'} without a map pin yet — use “locate” below</span>}
         </div>
       </div>
@@ -103,7 +103,7 @@ export default function WatchlistManager({ propertyId, property, compsetEntries 
         ) : (
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr><th className="th">Hotel</th><th className="th">Map pin</th><th className="th">Tonight</th><th className="th" /></tr>
+              <tr><th className="th">Hotel</th><th className="th">Map pin</th><th className="th">Latest price</th><th className="th" /></tr>
             </thead>
             <tbody>
               {hotels.map((h) => {

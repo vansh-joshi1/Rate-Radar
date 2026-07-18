@@ -61,7 +61,7 @@ export default function CompsetMap({ pins }: { pins: MapPin[] }) {
         marker.bindPopup(
           `<strong>${esc(p.name)}</strong>` +
             (p.address ? `<br>${esc(p.address)}` : '') +
-            (p.price != null ? `<br>$${p.price} tonight` : '<br>no price captured this run')
+            (p.price != null ? `<br>$${p.price} · latest harvested price` : '<br>no price captured this run')
         );
       }
 

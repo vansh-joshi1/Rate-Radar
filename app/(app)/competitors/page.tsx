@@ -1,4 +1,5 @@
 import { loadSnapshot } from '../../../lib/dashboard-data';
+import { chicagoToday } from '../../../lib/ingest';
 import { Chip, SampleBadge, SectionTitle } from '../../../components/ui';
 import WatchlistManager from '../../../components/WatchlistManager';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
@@ -11,14 +12,20 @@ const fmt = (d: string) =>
     weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
   });
 
-function CompsetTable({ c, ourPrice }: { c: CompsetInfo; ourPrice?: number }) {
+function addDays(date: string, n: number): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function CompsetTable({ c, ourPrice, ourLabel }: { c: CompsetInfo; ourPrice?: number; ourLabel?: string }) {
   if (c.entries.length === 0) {
     return <p className="text-sm text-muted">No competitor prices captured for {fmt(c.date)} this run.</p>;
   }
   type Row = { name: string; price: number; kind: 'competitor' | 'us' | 'median' };
   const rows: Row[] = [
     ...c.entries.map((e): Row => ({ ...e, kind: 'competitor' })),
-    ...(ourPrice != null ? [{ name: 'Red Roof Inn (you)', price: ourPrice, kind: 'us' } as Row] : []),
+    ...(ourPrice != null ? [{ name: ourLabel ?? 'You', price: ourPrice, kind: 'us' } as Row] : []),
     ...(c.median != null ? [{ name: 'Compset median', price: c.median, kind: 'median' } as Row] : []),
   ].sort((a, b) => a.price - b.price);
 
@@ -61,9 +68,12 @@ function CompsetTable({ c, ourPrice }: { c: CompsetInfo; ourPrice?: number }) {
 export default async function Competitors() {
   const { snapshot, isDemo } = await loadSnapshot();
   const compsets = (snapshot.compsets ?? (snapshot.compset ? [snapshot.compset] : [])).filter(Boolean);
-  const ourTonight = snapshot.nights[0]?.tiers.find((t) => t.tierId === 'standard')?.recommended;
-
   const property = getProperty(DEFAULT_PROPERTY_ID)!;
+
+  const today = chicagoToday();
+  const tomorrow = addDays(today, 1);
+  // Parity checks price tomorrow night — our actual listed rate applies to that date only.
+  const directListed = snapshot.parity.find((p) => p.source === 'redroof' && p.status === 'ok' && p.price != null)?.price;
 
   return (
     <div>
@@ -85,14 +95,26 @@ export default async function Competitors() {
         </p>
       )}
 
-      {compsets.map((c, i) => (
-        <div key={c.date}>
-          <h3 className="mb-3 text-lg font-bold tracking-tight">
-            {i === 0 ? 'Tonight' : 'Future date'} — {fmt(c.date)}
-          </h3>
-          <CompsetTable c={c} ourPrice={i === 0 ? ourTonight : undefined} />
-        </div>
-      ))}
+      {compsets.map((c) => {
+        // Compare like with like: our row for a night uses that night's data —
+        // the scraped direct rate for tomorrow (what parity actually checked),
+        // otherwise that night's recommendation, clearly labeled as such.
+        const heading = c.date === today ? 'Tonight' : c.date === tomorrow ? 'Tomorrow' : 'Event night';
+        const nightRec = snapshot.nights.find((n) => n.date === c.date)?.tiers.find((t) => t.tierId === 'standard')?.recommended;
+        const useListed = c.date === tomorrow && directListed != null;
+        const ourPrice = useListed ? directListed : nightRec;
+        const ourLabel = useListed
+          ? `${property.name} (you — listed on redroof.com)`
+          : `${property.name} (you — recommended)`;
+        return (
+          <div key={c.date}>
+            <h3 className="mb-3 text-lg font-bold tracking-tight">
+              {heading} — {fmt(c.date)}
+            </h3>
+            <CompsetTable c={c} ourPrice={ourPrice} ourLabel={ourLabel} />
+          </div>
+        );
+      })}
 
       <p className="text-xs text-muted">
         Compset is a sanity bound on quiet nights only — event nights are never capped. The whitelist lives in
