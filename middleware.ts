@@ -15,6 +15,7 @@ export const config = {
     // Everything except: public marketing/auth pages ($ = the landing page at "/"),
     // login + logout endpoints, ingest (bearer-token protected), the v1 API
     // (its own key auth in lib/api/auth.ts), static assets
-    '/((?!$|login|signup|onboarding|api/login|api/logout|api/ingest|api/v1|api/health|_next/static|_next/image|favicon.ico|robots.txt).*)',
+    // api/watchlist self-authenticates (session cookie OR ingest secret — the collector calls it)
+    '/((?!$|login|signup|onboarding|api/login|api/logout|api/ingest|api/v1|api/health|api/watchlist|_next/static|_next/image|favicon.ico|robots.txt).*)',
   ],
 };

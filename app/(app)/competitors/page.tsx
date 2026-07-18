@@ -1,5 +1,7 @@
 import { loadSnapshot } from '../../../lib/dashboard-data';
 import { Chip, SampleBadge, SectionTitle } from '../../../components/ui';
+import WatchlistManager from '../../../components/WatchlistManager';
+import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
 import type { CompsetInfo } from '../../../lib/scoring/types';
 
 export const dynamic = 'force-dynamic';
@@ -61,12 +63,20 @@ export default async function Competitors() {
   const compsets = (snapshot.compsets ?? (snapshot.compset ? [snapshot.compset] : [])).filter(Boolean);
   const ourTonight = snapshot.nights[0]?.tiers.find((t) => t.tierId === 'standard')?.recommended;
 
+  const property = getProperty(DEFAULT_PROPERTY_ID)!;
+
   return (
     <div>
       <div className="mb-5 flex items-center justify-between gap-4">
         <SectionTitle>Nearby competitors</SectionTitle>
         {isDemo && <SampleBadge />}
       </div>
+
+      <WatchlistManager
+        propertyId={property.id}
+        property={{ name: property.name, lat: property.lat, lng: property.lng }}
+        compsetEntries={compsets[0]?.entries ?? []}
+      />
 
       {compsets.length === 0 && (
         <p className="text-sm text-muted">

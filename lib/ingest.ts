@@ -8,6 +8,7 @@ import { evaluateAlerts, type HolidayEntry, type SourceHealth } from './alerts/r
 import { sendAlertEmail } from './alerts/email';
 import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compset';
 import { DEFAULT_PROPERTY_ID, propKey } from './properties';
+import { watchlistKey, watchlistCompsetConfig, type WatchlistHotel } from './watchlist';
 import type {
   CompsetEntry, CompsetInfo, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
 } from './scoring/types';
@@ -67,6 +68,7 @@ function addDays(date: string, n: number): string {
 }
 
 export async function processBundle(bundle: Bundle, store: Store, now = new Date()) {
+  const bundlePropertyId = bundle.propertyId ?? DEFAULT_PROPERTY_ID;
   const today = chicagoToday(now);
   const window = Array.from({ length: WINDOW_NIGHTS }, (_, i) => addDays(today, i));
   const windowSet = new Set(window);
@@ -107,8 +109,12 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
 
   const ratesData = src('rates')?.status === 'ok' ? src('rates')!.data : null;
   const { parity, compsets: rawCompsets } = parseRatesData(ratesData, addDays(chicagoToday(now), 1));
+  // Filter against the UI-editable watchlist when one exists (the collector
+  // harvested with the same list); config/compset.json remains the fallback.
+  const uiWatchlist = await store.get<WatchlistHotel[]>(watchlistKey(bundlePropertyId));
+  const compsetCfg = uiWatchlist && uiWatchlist.length > 0 ? watchlistCompsetConfig(uiWatchlist) : undefined;
   const compsets: CompsetInfo[] = rawCompsets.map((c) => {
-    const entries = matchCompset(c.entries);
+    const entries = matchCompset(c.entries, compsetCfg);
     return { date: c.date, entries, median: compsetMedian(entries) };
   });
   const compsetByDate = new Map(compsets.map((c) => [c.date, c]));
@@ -173,7 +179,6 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   const seenEventIds = (await store.get<string[]>('events:seen')) ?? [];
   // Scoped per property: parity checks share names (rate:expedia, …) across
   // hotels, and market sources arrive once per property bundle.
-  const bundlePropertyId = bundle.propertyId ?? DEFAULT_PROPERTY_ID;
   const healthKey = `source:health:${bundlePropertyId}`;
   const sourceHealth = (await store.get<Record<string, SourceHealth>>(healthKey)) ?? {};
 

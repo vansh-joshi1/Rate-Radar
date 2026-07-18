@@ -23,6 +23,28 @@ import type { RawEvent, SourceResult } from '../lib/scoring/types';
  *   --skip-rates  skip the Playwright rate checks (fast local testing)
  */
 
+/**
+ * The UI-editable watchlist lives in the dashboard's store; fetch it so edits
+ * take effect on the next run without a deploy. Any failure (local dev, URL
+ * unset, endpoint down) falls back to the config-file whitelist — a stale
+ * compset beats no compset.
+ */
+async function fetchWatchlist(propertyId: string): Promise<string[] | null> {
+  const base = process.env.DASHBOARD_URL;
+  const secret = process.env.INGEST_SECRET;
+  if (!base || !secret) return null;
+  try {
+    const res = await fetch(`${base.replace(/\/$/, '')}/api/watchlist?propertyId=${encodeURIComponent(propertyId)}`, {
+      headers: { Authorization: `Bearer ${secret}` },
+    });
+    if (!res.ok) return null;
+    const { hotels } = (await res.json()) as { hotels: { name: string }[] };
+    return hotels.length > 0 ? hotels.map((h) => h.name) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function postBundle(bundle: unknown): Promise<unknown> {
   const base = process.env.DASHBOARD_URL;
   const secret = process.env.INGEST_SECRET;
@@ -68,6 +90,11 @@ async function main() {
   for (const prop of properties) {
     const sources: SourceResult[] = [...marketSources];
     if (!skipRates) {
+      const liveWatchlist = await fetchWatchlist(prop.id);
+      if (liveWatchlist) {
+        console.log(`[watchlist] ${prop.id}: using ${liveWatchlist.length} hotels from the dashboard watchlist`);
+        prop.compset = { ...prop.compset, competitors: liveWatchlist };
+      }
       try {
         sources.push(await rates(eventNights, prop));
       } catch (err) {

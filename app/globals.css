@@ -96,3 +96,22 @@ body {
     @apply mb-1 block text-sm font-semibold;
   }
 }
+
+/* ---- map (Leaflet) ---- */
+.map-price {
+  background: rgb(var(--card-rgb));
+  color: rgb(var(--ink-rgb));
+  border: 1px solid rgb(var(--line-rgb));
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-family: 'Archivo', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: none;
+}
+.map-price::before {
+  display: none; /* hide leaflet's tooltip arrow — labels read as chips */
+}
+.leaflet-container {
+  font: inherit;
+}
