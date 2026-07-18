@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { loadSnapshot } from '../../../lib/dashboard-data';
 import { loadCurrentRates } from '../../../lib/current-rates';
 import { DEFAULT_PROPERTY_ID } from '../../../lib/properties';
@@ -144,7 +143,6 @@ export default async function Overview() {
                 Your listed rate by source
                 {flagged && <span className="ml-2 rounded-full bg-bad px-2.5 py-0.5 text-xs font-bold text-white">${gap} gap</span>}
               </h3>
-              <Link href="/parity" className="text-sm font-semibold text-accent">Full parity monitor →</Link>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {snapshot.parity.map((p) => (

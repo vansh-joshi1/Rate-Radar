@@ -3,14 +3,13 @@ import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  GridIcon, CalendarIcon, ShieldIcon, UsersIcon, PieIcon, BellIcon, GearIcon,
+  GridIcon, CalendarIcon, UsersIcon, PieIcon, BellIcon, GearIcon,
   HomeIcon, LogoutIcon, MenuIcon,
 } from './Icons';
 
 const NAV = [
   { href: '/overview', label: 'Overview', Icon: GridIcon },
   { href: '/calendar', label: 'Rate Calendar', Icon: CalendarIcon },
-  { href: '/parity', label: 'Parity', Icon: ShieldIcon },
   { href: '/competitors', label: 'Competitors', Icon: UsersIcon },
   { href: '/analytics', label: 'Analytics', Icon: PieIcon },
   { href: '/alerts', label: 'Alerts', Icon: BellIcon },
