@@ -117,9 +117,11 @@ body {
   border-color: rgb(var(--accent-deep-rgb));
   color: #fff;
 }
-.map-chip-dot {
-  padding: 2px 6px;
+.map-chip-missing {
+  padding: 2px 8px;
   color: rgb(var(--muted-rgb));
+  border-style: dashed;
+  background: rgb(var(--card-rgb) / 0.75);
 }
 /* soften leaflet chrome to match the card language */
 .leaflet-control-zoom a {

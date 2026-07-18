@@ -1,18 +1,14 @@
 import { loadSnapshot } from '../../../lib/dashboard-data';
 import { getStore } from '../../../lib/store';
 import { loadCurrentRates } from '../../../lib/current-rates';
+import { loadWatchlist } from '../../../lib/watchlist';
 import { chicagoToday } from '../../../lib/ingest';
-import { Chip, SampleBadge, SectionTitle } from '../../../components/ui';
+import { SampleBadge, SectionTitle } from '../../../components/ui';
+import CompsetExplorer, { type ExplorerBlock } from '../../../components/CompsetExplorer';
 import WatchlistManager from '../../../components/WatchlistManager';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
-import type { CompsetInfo } from '../../../lib/scoring/types';
 
 export const dynamic = 'force-dynamic';
-
-const fmt = (d: string) =>
-  new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  });
 
 function addDays(date: string, n: number): string {
   const d = new Date(`${date}T12:00:00Z`);
@@ -20,69 +16,51 @@ function addDays(date: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function CompsetTable({ c, ourPrice, ourLabel }: { c: CompsetInfo; ourPrice?: number; ourLabel?: string }) {
-  if (c.entries.length === 0) {
-    return <p className="text-sm text-muted">No competitor prices captured for {fmt(c.date)} this run.</p>;
-  }
-  type Row = { name: string; price: number; kind: 'competitor' | 'us' | 'median' };
-  const rows: Row[] = [
-    ...c.entries.map((e): Row => ({ ...e, kind: 'competitor' })),
-    ...(ourPrice != null ? [{ name: ourLabel ?? 'You', price: ourPrice, kind: 'us' } as Row] : []),
-    ...(c.median != null ? [{ name: 'Compset median', price: c.median, kind: 'median' } as Row] : []),
-  ].sort((a, b) => a.price - b.price);
-
-  return (
-    <div className="card mb-6 p-0">
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr><th className="th">Hotel</th><th className="th">Nightly rate</th><th className="th" /></tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr
-                key={r.name}
-                className={
-                  r.kind === 'us'
-                    ? 'bg-accent/5 font-semibold [&>td:first-child]:border-l-4 [&>td:first-child]:border-l-accent'
-                    : r.kind === 'median'
-                      ? 'bg-ink/[0.04] font-bold uppercase'
-                      : 'hover:bg-ink/[0.03]'
-                }
-              >
-                <td className="td">{r.name}</td>
-                <td className={`td font-serif text-lg ${r.kind === 'us' ? 'text-accent' : ''}`}>
-                  ${Math.round(r.price)}
-                </td>
-                <td className="td text-right">
-                  {r.kind === 'us' && <Chip tone="bad">You</Chip>}
-                  {r.kind === 'median' && <Chip>Median</Chip>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
+const sublabel = (d: string) =>
+  new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
+  });
 
 export default async function Competitors() {
   const { snapshot, isDemo } = await loadSnapshot();
-  const compsets = (snapshot.compsets ?? (snapshot.compset ? [snapshot.compset] : [])).filter(Boolean);
+  const store = getStore();
   const property = getProperty(DEFAULT_PROPERTY_ID)!;
 
   const today = chicagoToday();
   const tomorrow = addDays(today, 1);
+
+  // Night tabs exist only for nights we actually collected prices for.
+  const compsets = (snapshot.compsets ?? (snapshot.compset ? [snapshot.compset] : [])).filter(Boolean);
+  const blocks: ExplorerBlock[] = compsets.map((c) => ({
+    date: c.date,
+    label:
+      c.date === today
+        ? 'Tonight'
+        : c.date === tomorrow
+          ? 'Tomorrow'
+          : new Date(`${c.date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
+    sublabel: sublabel(c.date),
+    entries: c.entries,
+  }));
+
   // Your rate: owner-entered (authoritative — you set your prices) beats the
   // scraped direct rate, which redroof.com's bot wall often blocks anyway.
-  const ownerRates = isDemo ? null : await loadCurrentRates(getStore(), property.id);
+  const ownerRates = isDemo ? null : await loadCurrentRates(store, property.id);
   const ownerStandard = ownerRates?.tiers['standard'];
   const scrapedDirect = snapshot.parity.find((p) => p.source === 'redroof' && p.status === 'ok' && p.price != null)?.price;
-  const yourRate = ownerStandard ?? scrapedDirect;
-  const yourRateLabel = ownerStandard != null
-    ? `${property.name} (you — current rate)`
-    : `${property.name} (you — listed on redroof.com)`;
+  const yourRate =
+    ownerStandard != null
+      ? { price: ownerStandard, source: 'owner' as const }
+      : scrapedDirect != null
+        ? { price: scrapedDirect, source: 'scrape' as const }
+        : null;
+
+  const watchlist = (await loadWatchlist(store, property.id)).map((h) => ({
+    name: h.name,
+    lat: h.lat,
+    lng: h.lng,
+    address: h.address,
+  }));
 
   return (
     <div>
@@ -91,63 +69,23 @@ export default async function Competitors() {
         {isDemo && <SampleBadge />}
       </div>
 
-      {(() => {
-        // Market position: your lead (cheapest public) rate vs the compset —
-        // lead-vs-lead is the honest cross-hotel comparison; room-level
-        // matching across brands compares different products.
-        const block = compsets.find((c) => c.date === tomorrow) ?? compsets[0];
-        if (!block || block.entries.length === 0 || yourRate == null) return null;
-        const cheaper = block.entries.filter((e) => e.price < yourRate!).length;
-        const vsMedian = block.median ? Math.round(((yourRate! - block.median) / block.median) * 100) : null;
-        return (
-          <div className="card mb-6 flex flex-wrap items-baseline gap-x-6 gap-y-2">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-widest text-muted">Your lead rate ({fmt(block.date)})</div>
-              <div className="font-serif text-3xl font-semibold text-accent">${yourRate}</div>
-            </div>
-            <div className="text-sm">
-              <span className="font-semibold">#{cheaper + 1} cheapest</span> of {block.entries.length + 1} tracked hotels
-              {vsMedian != null && (
-                <span className="text-muted"> · {vsMedian === 0 ? 'at' : `${Math.abs(vsMedian)}% ${vsMedian > 0 ? 'above' : 'below'}`} compset median (${Math.round(block.median!)})</span>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-
-      <WatchlistManager
-        propertyId={property.id}
-        property={{ name: property.name, lat: property.lat, lng: property.lng }}
-        compsetEntries={compsets[0]?.entries ?? []}
-        compsetDate={compsets[0]?.date}
-      />
-
-      {compsets.length === 0 && (
-        <p className="text-sm text-muted">
-          No competitor prices captured this run (harvested from Booking.com search results — if this persists, the
-          whitelist in config/compset.json may need refreshing).
+      {blocks.length > 0 ? (
+        <CompsetExplorer
+          property={{ name: property.name, lat: property.lat, lng: property.lng }}
+          yourRate={yourRate}
+          blocks={blocks}
+          watchlist={watchlist}
+        />
+      ) : (
+        <p className="mb-6 text-sm text-muted">
+          No competitor prices captured yet — they appear after the next collection run.
         </p>
       )}
 
-      {compsets.map((c) => {
-        // Only ACTUAL prices in these tables: our row is your current rate
-        // (owner-entered, else scraped from redroof.com). It applies to
-        // tomorrow's block — the night the competitor prices were checked for.
-        const heading = c.date === today ? 'Tonight' : c.date === tomorrow ? 'Tomorrow' : 'Event night';
-        const useListed = c.date === tomorrow && yourRate != null;
-        return (
-          <div key={c.date}>
-            <h3 className="mb-3 text-lg font-bold tracking-tight">
-              {heading} — {fmt(c.date)}
-            </h3>
-            <CompsetTable c={c} ourPrice={useListed ? yourRate : undefined} ourLabel={yourRateLabel} />
-          </div>
-        );
-      })}
+      <WatchlistManager propertyId={property.id} />
 
-      <p className="text-xs text-muted">
-        Compset is a sanity bound on quiet nights only — event nights are never capped. The whitelist lives in
-        config/compset.json.
+      <p className="mt-4 text-xs text-muted">
+        Compset is a sanity bound on quiet nights only — event nights are never capped.
       </p>
     </div>
   );
