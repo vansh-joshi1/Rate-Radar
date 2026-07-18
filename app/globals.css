@@ -92,21 +92,40 @@ body {
   }
 }
 
-/* ---- map (Leaflet) ---- */
-.map-price {
+/* ---- map (Leaflet + CARTO basemap) ---- */
+.leaflet-container {
+  font: inherit;
+}
+/* marker chips — centered on the location, modern pill look */
+.map-chip {
+  display: inline-block;
+  transform: translate(-50%, -50%);
   background: rgb(var(--card-rgb));
   color: rgb(var(--ink-rgb));
   border: 1px solid rgb(var(--line-rgb));
   border-radius: 9999px;
-  padding: 1px 7px;
+  padding: 2px 9px;
   font-family: 'Inter', sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  box-shadow: none;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+  cursor: pointer;
 }
-.map-price::before {
-  display: none; /* hide leaflet's tooltip arrow — labels read as chips */
+.map-chip-you {
+  background: rgb(var(--accent-rgb));
+  border-color: rgb(var(--accent-deep-rgb));
+  color: #fff;
 }
-.leaflet-container {
-  font: inherit;
+.map-chip-dot {
+  padding: 2px 6px;
+  color: rgb(var(--muted-rgb));
+}
+/* soften leaflet chrome to match the card language */
+.leaflet-control-zoom a {
+  border-radius: 8px !important;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
 }
