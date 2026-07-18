@@ -34,8 +34,11 @@ export default function AppShell({ children, freshness }: { children: ReactNode;
         className={`fixed z-40 flex h-screen w-60 flex-col border-r border-line bg-card transition-transform ${open ? '' : 'max-[820px]:-translate-x-full'}`}
       >
         <div className="border-b border-line p-5">
-          <Link href="/overview" className="font-serif text-xl font-bold text-ink">Rate Radar</Link>
-          <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+          <Link href="/overview" className="flex items-center gap-2 text-lg font-bold tracking-tight text-ink">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />
+            Rate Radar
+          </Link>
+          <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
             Recommends only — a human decides
           </div>
         </div>

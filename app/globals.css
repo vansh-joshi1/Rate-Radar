@@ -3,28 +3,28 @@
 @tailwind utilities;
 
 /* ============================================================
-   Rate Radar — "the motel ledger", SaaS edition
-   Warm paper, ink text, one committed accent (Red Roof red).
-   Fraunces carries the numbers; Archivo does the working text.
+   Rate Radar — one design language everywhere.
+   Inter for text, Fraunces only for the big rate numbers,
+   white rounded cards on warm cream, slate ink, one red accent.
    Colors are RGB channel triplets so Tailwind opacity modifiers
    (bg-ink/5 etc.) work; the full-value aliases below exist for
    the few places raw CSS needs a complete color.
    ============================================================ */
 
 :root {
-  --paper-rgb: 246 241 231;
-  --card-rgb: 255 253 247;
-  --ink-rgb: 36 31 22;
-  --muted-rgb: 94 88 78;
-  --line-rgb: 209 201 188;
+  --paper-rgb: 245 244 240;
+  --card-rgb: 255 255 255;
+  --ink-rgb: 15 23 42;
+  --muted-rgb: 100 116 139;
+  --line-rgb: 226 232 240;
 
   --accent-rgb: 200 16 46;
   --accent-deep-rgb: 160 13 37;
-  --accent-muted-rgb: 243 220 216;
+  --accent-muted-rgb: 248 222 226;
 
-  --ok-rgb: 45 106 79;
-  --warn-rgb: 176 125 5;
-  --bad-rgb: 200 16 46;
+  --ok-rgb: 5 150 105;
+  --warn-rgb: 180 83 9;
+  --bad-rgb: 220 38 38;
 
   /* full-value aliases for raw CSS (svg strokes, accent-color, etc.) */
   --bg-paper: rgb(var(--paper-rgb));
@@ -33,46 +33,41 @@
   --border-color: rgb(var(--line-rgb));
 }
 
-/* night desk: warm dark, same ledger */
+/* night mode: same language in dark slate */
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper-rgb: 26 24 20;
-    --card-rgb: 36 33 28;
-    --ink-rgb: 230 225 214;
-    --muted-rgb: 163 156 143;
-    --line-rgb: 61 55 46;
+    --paper-rgb: 15 23 42;
+    --card-rgb: 30 41 59;
+    --ink-rgb: 241 245 249;
+    --muted-rgb: 148 163 184;
+    --line-rgb: 51 65 85;
 
     --accent-rgb: 239 90 114;
     --accent-deep-rgb: 243 124 143;
     --accent-muted-rgb: 74 28 34;
 
-    --ok-rgb: 111 185 143;
-    --warn-rgb: 217 163 60;
-    --bad-rgb: 239 106 126;
+    --ok-rgb: 52 211 153;
+    --warn-rgb: 251 191 36;
+    --bad-rgb: 248 113 113;
   }
 }
 
 body {
-  background:
-    radial-gradient(1200px 500px at 70% -10%, rgb(var(--accent-rgb) / 0.045), transparent 60%),
-    var(--bg-paper);
+  background: var(--bg-paper);
   color: rgb(var(--ink-rgb));
-  font-family: 'Archivo', 'Helvetica Neue', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 @layer components {
   .card {
-    @apply border border-line bg-card p-6 shadow-sm;
+    @apply rounded-xl border border-line bg-card p-6 shadow-sm;
   }
-  /* double-rule divider, like a printed rate card */
   .divider {
-    border: none;
-    border-top: 3px double var(--border-color);
-    @apply my-6;
+    @apply my-6 border-0 border-t border-line;
   }
   .btn {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 border border-line bg-card px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-paper;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-paper disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
     @apply border-accent bg-accent text-white hover:border-accent-deep hover:bg-accent-deep;
@@ -81,19 +76,19 @@ body {
     @apply px-3 py-1.5 text-xs;
   }
   .chip {
-    @apply inline-block rounded-sm border border-current px-2 py-px text-[11px] font-bold uppercase tracking-wider;
+    @apply inline-block rounded-full border border-current px-2.5 py-px text-[11px] font-bold uppercase tracking-wider;
   }
   .th {
-    @apply border-b-2 border-line px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-widest text-muted;
+    @apply border-b border-line px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-widest text-muted;
   }
   .td {
     @apply border-b border-line px-3 py-2.5 align-top tabular-nums;
   }
   .field {
-    @apply w-full border border-line bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:ring-2 focus:ring-accent;
+    @apply w-full rounded-lg border border-line bg-card px-3.5 py-2.5 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20;
   }
   .label {
-    @apply mb-1 block text-sm font-semibold;
+    @apply mb-1.5 block text-sm font-semibold;
   }
 }
 
@@ -102,9 +97,9 @@ body {
   background: rgb(var(--card-rgb));
   color: rgb(var(--ink-rgb));
   border: 1px solid rgb(var(--line-rgb));
-  border-radius: 3px;
-  padding: 1px 6px;
-  font-family: 'Archivo', sans-serif;
+  border-radius: 9999px;
+  padding: 1px 7px;
+  font-family: 'Inter', sans-serif;
   font-size: 11px;
   font-weight: 700;
   box-shadow: none;

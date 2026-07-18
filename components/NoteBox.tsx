@@ -17,7 +17,7 @@ export default function NoteBox({ date, initial }: { date: string; initial: stri
 
   return (
     <div className="card">
-      <h3 className="mb-2 font-serif text-xl font-bold">Manual notes</h3>
+      <h3 className="mb-2 text-lg font-bold tracking-tight">Manual notes</h3>
       <p className="mb-3 text-sm text-muted">
         For things no feed knows about — a recruiting day at a nearby campus, a vendor visit, a group booking rumor.
       </p>

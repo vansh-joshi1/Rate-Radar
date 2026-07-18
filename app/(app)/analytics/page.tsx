@@ -40,7 +40,7 @@ export default async function Analytics() {
       </div>
 
       <div className="card mb-8">
-        <h3 className="mb-4 font-serif text-xl font-bold">Recommended vs. actually charged</h3>
+        <h3 className="mb-4 text-lg font-bold tracking-tight">Recommended vs. actually charged</h3>
         <div className="relative flex h-72 items-center justify-center border border-dashed border-line bg-ink/[0.02]">
           <svg width="100%" height="200" viewBox="0 0 400 200" preserveAspectRatio="none" className="max-w-2xl">
             <path d="M0,150 Q50,140 100,160 T200,130 T300,140 T400,100" fill="none" stroke="var(--accent-red)" strokeWidth="2" />
@@ -50,7 +50,7 @@ export default async function Analytics() {
         </div>
       </div>
 
-      <h3 className="mb-3 font-serif text-xl font-bold">Event-night performance <SampleBadge /></h3>
+      <h3 className="mb-3 text-lg font-bold tracking-tight">Event-night performance <SampleBadge /></h3>
       <div className="card mb-8 p-0">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
@@ -75,7 +75,7 @@ export default async function Analytics() {
         </div>
       </div>
 
-      <h3 className="mb-1 font-serif text-xl font-bold">History — recommended vs. actually charged</h3>
+      <h3 className="mb-1 text-lg font-bold tracking-tight">History — recommended vs. actually charged</h3>
       <p className="mb-3 text-sm text-muted">
         Enter what you actually charged so you can judge over time whether this thing is useful.
       </p>

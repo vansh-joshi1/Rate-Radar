@@ -43,7 +43,7 @@ export default function Alerts() {
         </div>
 
         <div className="card">
-          <h3 className="mb-4 font-serif text-xl font-bold">Alert settings</h3>
+          <h3 className="mb-4 text-lg font-bold tracking-tight">Alert settings</h3>
           <div className="mb-6">
             <div className="mb-2.5 text-xs font-semibold uppercase tracking-widest text-muted">Notifications</div>
             {['Rate recommendations', 'Parity gaps > $5', 'Source errors'].map((l) => (

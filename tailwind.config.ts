@@ -24,8 +24,9 @@ const config: Config = {
         bad: c('bad-rgb'),
       },
       fontFamily: {
+        // Fraunces is reserved for the big rate numbers — everything else is Inter.
         serif: ['Fraunces', 'Georgia', 'serif'],
-        sans: ['Archivo', '"Helvetica Neue"', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
         inter: ['Inter', 'system-ui', 'sans-serif'],
       },
     },

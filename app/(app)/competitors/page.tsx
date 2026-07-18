@@ -87,7 +87,7 @@ export default async function Competitors() {
 
       {compsets.map((c, i) => (
         <div key={c.date}>
-          <h3 className="mb-3 font-serif text-xl font-bold">
+          <h3 className="mb-3 text-lg font-bold tracking-tight">
             {i === 0 ? 'Tonight' : 'Future date'} — {fmt(c.date)}
           </h3>
           <CompsetTable c={c} ourPrice={i === 0 ? ourTonight : undefined} />

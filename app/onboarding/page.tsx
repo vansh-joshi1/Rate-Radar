@@ -7,7 +7,10 @@ const STEPS = [
 export default function Onboarding() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-xl px-5 py-12">
-      <div className="mb-10 text-center font-serif text-2xl font-bold">Rate Radar</div>
+      <div className="mb-10 flex items-center justify-center gap-2 text-2xl font-bold tracking-tight">
+        <span className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />
+        Rate Radar
+      </div>
 
       <div className="relative mb-14 flex justify-between">
         <div className="absolute left-0 right-0 top-4 h-0.5 bg-line" />
@@ -36,7 +39,7 @@ export default function Onboarding() {
       </div>
 
       <div className="card">
-        <h2 className="mb-2 font-serif text-2xl font-bold">Connect your listings</h2>
+        <h2 className="mb-2 text-2xl font-bold tracking-tight">Connect your listings</h2>
         <p className="mb-6 text-sm text-muted">
           Paste the URLs to your property&apos;s public pages. We use these to monitor rate parity — best-effort against
           bot-protected pages, so &quot;needs manual check&quot; now and then is expected, not failure.

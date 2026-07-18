@@ -27,7 +27,7 @@ export function DemandChip({ score }: { score: number }) {
 }
 
 export function SectionTitle({ children }: { children: ReactNode }) {
-  return <h2 className="mb-5 font-serif text-2xl font-bold">{children}</h2>;
+  return <h2 className="mb-5 text-2xl font-extrabold tracking-tight">{children}</h2>;
 }
 
 /** Truthful marker for panels rendered from sample data (no live feed yet). */

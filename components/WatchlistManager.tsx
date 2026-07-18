@@ -69,7 +69,7 @@ export default function WatchlistManager({ propertyId, property, compsetEntries 
       </div>
 
       <div className="card">
-        <h3 className="mb-1 font-serif text-xl font-bold">Watchlist</h3>
+        <h3 className="mb-1 text-lg font-bold tracking-tight">Watchlist</h3>
         <p className="mb-4 text-sm text-muted">
           These names are what the collector matches against booking-site results — keep them short (brand + area),
           the sites phrase full names differently. Changes take effect on the next collection run.

@@ -31,13 +31,13 @@ export default async function Overview() {
       </div>
 
       {ageHours > 6 && (
-        <div className="mb-5 flex items-center gap-3 border-l-4 border-warn bg-warn/10 p-4 text-sm">
+        <div className="mb-5 flex items-center gap-3 rounded-lg border-l-4 border-warn bg-warn/10 p-4 text-sm">
           <WarnIcon className="shrink-0 text-warn" />
           <span><strong>Stale data:</strong> last run {Math.round(ageHours)}h ago — the collector may not be running. Check GitHub Actions.</span>
         </div>
       )}
       {failed.length > 0 && (
-        <div className="mb-5 flex items-center gap-3 border-l-4 border-warn bg-warn/10 p-4 text-sm">
+        <div className="mb-5 flex items-center gap-3 rounded-lg border-l-4 border-warn bg-warn/10 p-4 text-sm">
           <WarnIcon className="shrink-0 text-warn" />
           <span>
             <strong>Source warning:</strong>{' '}
@@ -73,8 +73,8 @@ export default async function Overview() {
                 <span>Confidence</span>
                 <span>{snapshot.confidence}%</span>
               </div>
-              <div className="h-2 overflow-hidden border border-line bg-paper">
-                <div className="h-full bg-ok" style={{ width: `${snapshot.confidence}%` }} />
+              <div className="h-2 overflow-hidden rounded-full bg-ink/10">
+                <div className="h-full rounded-full bg-ok" style={{ width: `${snapshot.confidence}%` }} />
               </div>
               <p className="mt-1 text-xs text-muted">{snapshot.confidenceNote}</p>
             </div>

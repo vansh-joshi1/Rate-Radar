@@ -96,7 +96,7 @@ export default function Settings() {
           <H4>Current plan</H4>
           <div className="card mb-8 flex items-center justify-between">
             <div>
-              <div className="font-serif text-2xl font-bold">Pro Plan</div>
+              <div className="text-2xl font-bold tracking-tight">Pro Plan</div>
               <div className="text-sm text-muted">$29 / month · billed monthly · Stripe test mode</div>
             </div>
             <button className="btn">Change plan</button>
