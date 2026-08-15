@@ -1,9 +1,11 @@
 'use client';
 import { useState } from 'react';
+import { ReadOnlyNote, useCanWrite } from './RoleProvider';
 
 export default function NoteBox({ date, initial }: { date: string; initial: string }) {
   const [text, setText] = useState(initial);
   const [status, setStatus] = useState('');
+  const canWrite = useCanWrite();
 
   async function save() {
     setStatus('saving…');
@@ -27,11 +29,17 @@ export default function NoteBox({ date, initial }: { date: string; initial: stri
         rows={3}
         className="field mb-3"
         placeholder="e.g. Nissan all-hands Thursday — expect corporate walk-ins"
+        readOnly={!canWrite}
+        disabled={!canWrite}
       />
-      <div className="flex items-center gap-3">
-        <button onClick={save} className="btn">Save note</button>
-        {status && <span className="text-sm text-muted">{status}</span>}
-      </div>
+      {canWrite ? (
+        <div className="flex items-center gap-3">
+          <button onClick={save} className="btn">Save note</button>
+          {status && <span className="text-sm text-muted">{status}</span>}
+        </div>
+      ) : (
+        <ReadOnlyNote what="Editing notes" />
+      )}
     </div>
   );
 }

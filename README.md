@@ -47,6 +47,21 @@ Use accounts tied to the hotel/family business (a shared family email), not a pe
 ### 5. Site password
 `SITE_PASSWORD` is whatever you choose; share it with the family. `SESSION_SECRET` and `INGEST_SECRET`: generate each with `openssl rand -hex 32`. The site also sets `robots.txt` disallow + `noindex` headers on every page — it won't appear in search engines.
 
+## Who can do what
+
+Three roles, assigned per teammate in **Settings → Team** (the owner is whoever `OWNER_EMAIL` names, always):
+
+| | viewer | manager | owner |
+|---|---|---|---|
+| Read the dashboard, compset, history, API docs | ✓ | ✓ | ✓ |
+| Baseline rates, current rates, watchlist, notes, recorded actuals | | ✓ | ✓ |
+| Recompute, on-demand collection run | | ✓ | ✓ |
+| Invite/remove teammates | | | ✓ |
+
+Enforcement is **server-side**, in the route handler — `requireRole()` in `lib/auth/guard.ts`, one two-line prelude per mutating endpoint. Being signed in is not permission to write; a viewer's `POST` gets a 403 with the role it would need. The UI hides those controls too, but that's only courtesy — the check that matters is the one on the server.
+
+`tests/role-guard.test.ts` fails the build if a new mutating route ships without a role check, so the gap can't quietly reopen. Routes authenticated by something other than a session (`/api/ingest` via `INGEST_SECRET`, `/api/v1/*` via API key, the cron heartbeat) are listed there by name with the reason. The collector reads `/api/watchlist` with `INGEST_SECRET`; that secret opens `GET` only.
+
 ## Verifying the pipeline end to end
 
 1. GitHub → Actions → **collect** → Run workflow (manual runs bypass the hour gate).

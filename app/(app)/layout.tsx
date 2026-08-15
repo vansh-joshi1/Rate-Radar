@@ -1,6 +1,8 @@
 import AppShell from '../../components/shell/AppShell';
+import { RoleProvider } from '../../components/RoleProvider';
 import { auth } from '../../auth';
 import { loadSnapshot } from '../../lib/dashboard-data';
+import type { Role } from '../../lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,16 +12,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const freshness = isDemo
     ? 'Sample data — run the collector to go live'
     : `Data fresh as of ${mins < 60 ? `${mins}m` : `${Math.round(mins / 60)}h`} ago`;
+  const role = ((session?.user as { role?: string } | undefined)?.role ?? 'viewer') as Role;
   const user = session?.user
     ? {
         name: session.user.name ?? session.user.email ?? 'Signed in',
         email: session.user.email ?? undefined,
-        role: ((session.user as { role?: string }).role ?? 'viewer') as string,
+        role: role as string,
       }
     : null;
   return (
-    <AppShell freshness={freshness} user={user}>
-      {children}
-    </AppShell>
+    <RoleProvider role={role}>
+      <AppShell freshness={freshness} user={user}>
+        {children}
+      </AppShell>
+    </RoleProvider>
   );
 }

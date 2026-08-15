@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireRole } from '../../../lib/auth/guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -6,9 +7,12 @@ export const dynamic = 'force-dynamic';
  * Kick off a real collection run by dispatching the GitHub Actions workflow.
  * Needs a fine-grained PAT with Actions read/write on the repo, set in Vercel
  * as GITHUB_DISPATCH_TOKEN (optional — without it, callers fall back to the
- * schedule). Session-gated by the middleware.
+ * schedule). Manager+ — it spends CI minutes and hits third-party sites.
  */
 export async function POST() {
+  const gate = await requireRole('manager');
+  if (!gate.ok) return gate.response;
+
   const token = process.env.GITHUB_DISPATCH_TOKEN;
   const repo = process.env.GITHUB_REPO ?? 'vansh-joshi1/Rate-Radar';
   if (!token) {

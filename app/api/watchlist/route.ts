@@ -3,6 +3,7 @@ import { auth } from '../../../auth';
 import { getStore } from '../../../lib/store';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
 import { hasHotel, loadWatchlist, normalizeName, saveWatchlist, type WatchlistHotel } from '../../../lib/watchlist';
+import { requireRole, type RoleGate } from '../../../lib/auth/guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,16 +13,30 @@ export const dynamic = 'force-dynamic';
  *   - the dashboard UI (session cookie)
  *   - the GitHub Actions collector fetching the current whitelist (INGEST_SECRET)
  *
+ * The collector only ever reads, so the secret opens GET and nothing else;
+ * edits require a manager session. Who we watch decides which prices the
+ * compset is bounded by, so it is not a viewer-level control.
+ *
  * Geocoding uses OSM Nominatim (free, 1 req/s) at add/locate time only — the
  * result is stored, so the map never geocodes at render time. A hotel that
  * fails to geocode still joins the watchlist (it matches prices); it just has
  * no map pin until located.
  */
 
-async function authorized(req: NextRequest): Promise<boolean> {
+function isCollector(req: NextRequest): boolean {
   const bearer = req.headers.get('authorization');
-  if (process.env.INGEST_SECRET && bearer === `Bearer ${process.env.INGEST_SECRET}`) return true;
+  return Boolean(process.env.INGEST_SECRET) && bearer === `Bearer ${process.env.INGEST_SECRET}`;
+}
+
+/** Read: the collector's secret, or any signed-in member. */
+async function authorizedRead(req: NextRequest): Promise<boolean> {
+  if (isCollector(req)) return true;
   return Boolean((await auth())?.user);
+}
+
+/** Write: manager+ session only. */
+async function authorizedWrite(): Promise<RoleGate> {
+  return requireRole('manager');
 }
 
 function propertyIdFrom(req: NextRequest): string {
@@ -49,14 +64,16 @@ async function geocode(name: string, city: string): Promise<Pick<WatchlistHotel,
 }
 
 export async function GET(req: NextRequest) {
-  if (!(await authorized(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await authorizedRead(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const propertyId = propertyIdFrom(req);
   const hotels = await loadWatchlist(getStore(), propertyId);
   return NextResponse.json({ propertyId, hotels });
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await authorized(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const gate = await authorizedWrite();
+  if (!gate.ok) return gate.response;
+
   const propertyId = propertyIdFrom(req);
   const property = getProperty(propertyId);
   if (!property) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
@@ -89,7 +106,9 @@ export async function POST(req: NextRequest) {
 
 /** PATCH { name } — (re)geocode an existing entry that has no pin yet. */
 export async function PATCH(req: NextRequest) {
-  if (!(await authorized(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const gate = await authorizedWrite();
+  if (!gate.ok) return gate.response;
+
   const propertyId = propertyIdFrom(req);
   const property = getProperty(propertyId);
   if (!property) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
@@ -108,7 +127,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  if (!(await authorized(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const gate = await authorizedWrite();
+  if (!gate.ok) return gate.response;
+
   const propertyId = propertyIdFrom(req);
   const { name } = (await req.json().catch(() => ({}))) as { name?: string };
   const store = getStore();

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import type { CurrentRates } from '../lib/current-rates';
+import { ReadOnlyNote, useCanWrite } from './RoleProvider';
 
 interface Props {
   propertyId: string;
@@ -17,6 +18,7 @@ export default function CurrentRatesCard({ propertyId, tiers }: Props) {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [status, setStatus] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const canWrite = useCanWrite();
 
   useEffect(() => {
     (async () => {
@@ -65,7 +67,8 @@ export default function CurrentRatesCard({ propertyId, tiers }: Props) {
       </div>
       <p className="mb-4 text-sm text-muted">
         What you&apos;re charging right now — you set your prices, so this is the authoritative number for market
-        comparisons. Update it whenever you change rates. (The parity monitor still cross-checks booking sites when it can.)
+        comparisons. {canWrite ? 'Update it whenever you change rates.' : 'Only a manager can change it.'}{' '}
+        (The parity monitor still cross-checks booking sites when it can.)
       </p>
       <div className="flex flex-wrap items-end gap-4">
         {tiers.map((t) => (
@@ -83,15 +86,20 @@ export default function CurrentRatesCard({ propertyId, tiers }: Props) {
                 }}
                 placeholder="—"
                 aria-label={`${t.label} current rate`}
+                readOnly={!canWrite}
+                disabled={!canWrite}
               />
             </div>
           </div>
         ))}
-        <button className="btn btn-primary" onClick={save} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
+        {canWrite && (
+          <button className="btn btn-primary" onClick={save} disabled={saving}>
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        )}
         {status && <span className={`text-sm ${status.tone === 'ok' ? 'text-ok' : 'text-bad'}`}>{status.text}</span>}
       </div>
+      {!canWrite && <div className="mt-3"><ReadOnlyNote what="Changing your listed rates" /></div>}
     </div>
   );
 }

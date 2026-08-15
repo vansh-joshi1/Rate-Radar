@@ -1,11 +1,13 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { Chip } from './ui';
+import { ReadOnlyNote, useCanWrite } from './RoleProvider';
 import type { Member, Role } from '../lib/auth/members';
 
 /**
  * Team tab — the invite list that gates magic-link sign-in. Owner adds an
  * email + role; that address can then sign in from /login or /signup.
+ * Everyone may see who is on the team; only an owner may change it.
  */
 export default function TeamManager() {
   const [members, setMembers] = useState<Member[] | null>(null);
@@ -13,6 +15,7 @@ export default function TeamManager() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('viewer');
   const [busy, setBusy] = useState(false);
+  const isOwner = useCanWrite('owner');
   const [notice, setNotice] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
 
   const refresh = useCallback(async () => {
@@ -82,7 +85,9 @@ export default function TeamManager() {
                 <td className="td">{m.email}</td>
                 <td className="td"><Chip tone={m.role === 'owner' ? 'bad' : 'neutral'}>{m.role}</Chip></td>
                 <td className="td text-right">
-                  <button className="btn btn-sm" disabled={busy} onClick={() => remove(m.email)}>remove</button>
+                  {isOwner && (
+                    <button className="btn btn-sm" disabled={busy} onClick={() => remove(m.email)}>remove</button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -96,22 +101,26 @@ export default function TeamManager() {
         </table>
       </div>
 
-      <form onSubmit={invite} className="flex flex-wrap gap-2">
-        <input
-          className="field max-w-xs"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="teammate@hotel.com"
-          required
-        />
-        <select className="field w-32" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-          <option value="viewer">viewer</option>
-          <option value="manager">manager</option>
-          <option value="owner">owner</option>
-        </select>
-        <button type="submit" className="btn btn-primary" disabled={busy}>Invite</button>
-      </form>
+      {isOwner ? (
+        <form onSubmit={invite} className="flex flex-wrap gap-2">
+          <input
+            className="field max-w-xs"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="teammate@hotel.com"
+            required
+          />
+          <select className="field w-32" value={role} onChange={(e) => setRole(e.target.value as Role)}>
+            <option value="viewer">viewer</option>
+            <option value="manager">manager</option>
+            <option value="owner">owner</option>
+          </select>
+          <button type="submit" className="btn btn-primary" disabled={busy}>Invite</button>
+        </form>
+      ) : (
+        <ReadOnlyNote what="Inviting and removing teammates" required="owner" />
+      )}
       {notice && <p className={`mt-3 text-sm ${notice.tone === 'ok' ? 'text-ok' : 'text-bad'}`}>{notice.text}</p>}
       <p className="mt-3 text-xs text-muted">
         Invited emails sign in via magic link. Note: on Resend&apos;s free tier (no verified domain), links only
