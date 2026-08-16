@@ -1,46 +1,122 @@
 import Link from 'next/link';
 import OriginIdInit from '../components/OriginIdInit';
+import { RadarIcon } from '../components/RadarMark';
 
 /*
- * Marketing landing — modern SaaS look (announcement bar, sticky nav, gradient
- * hero + dark data panel, eyebrow-labeled sections, rounded cards). Deliberately
- * fixed-light and Inter-set; the app behind login keeps the motel-ledger theme.
+ * Marketing landing — "market radar" design language: deep-navy data surfaces,
+ * a single cobalt accent, mint for positive deltas, Sora for display type.
+ * Deliberately fixed-light and self-contained: it hardcodes its own palette
+ * rather than reading the app tokens, because the app behind login keeps the
+ * motel-ledger theme (warm paper + Red Roof red) and the two should not drift
+ * into each other. Icons are inline SVG on purpose — the shared root layout is
+ * used by every logged-in page, so a global icon font for one page isn't worth it.
  */
 
-const RED = '#c8102e';
-const RED_DEEP = '#8f0b21';
+// ---------------------------------------------------------------- icons
 
-const PLATFORM_CARDS = [
+type IconProps = { className?: string };
+
+function svgProps({ className }: IconProps) {
+  return {
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.75,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    className,
+    'aria-hidden': true,
+  } as const;
+}
+
+const HotelIcon = (p: IconProps) => (
+  <svg {...svgProps(p)}>
+    <path d="M3 21h18" /><path d="M5 21V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v17" />
+    <path d="M15 9h3a1 1 0 0 1 1 1v11" />
+    <path d="M8 7h2M8 11h2M8 15h2" />
+  </svg>
+);
+
+const EventIcon = (p: IconProps) => (
+  <svg {...svgProps(p)}>
+    <rect x="3" y="4.5" width="18" height="16" rx="2" />
+    <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+    <path d="m12 12.5 1.1 2.2 2.4.35-1.75 1.7.4 2.4-2.15-1.13-2.15 1.13.4-2.4L8.5 15.05l2.4-.35Z" />
+  </svg>
+);
+
+const WeatherIcon = (p: IconProps) => (
+  <svg {...svgProps(p)}>
+    <path d="M7 17.5a4 4 0 0 1 .5-7.97 5.5 5.5 0 0 1 10.4 1.55A3.5 3.5 0 0 1 17.5 17.5Z" />
+    <path d="M9 21l-.7 1.2M13 20.5l-.7 1.2M17 21l-.7 1.2" />
+  </svg>
+);
+
+const CurveIcon = (p: IconProps) => (
+  <svg {...svgProps(p)}>
+    <path d="M3 20V4M3 20h18" />
+    <path d="M6.5 16c2.5 0 3-6 5.5-6s3.5 4 5.5 4 2.5-2 3-3" />
+  </svg>
+);
+
+const CheckIcon = (p: IconProps) => (
+  <svg {...svgProps(p)}><path d="m4.5 12.5 5 5 10-11" /></svg>
+);
+
+const CheckCircleIcon = (p: IconProps) => (
+  <svg {...svgProps(p)}><circle cx="12" cy="12" r="9.25" /><path d="m8 12.2 2.8 2.8L16 9.5" /></svg>
+);
+
+const ArrowIcon = (p: IconProps) => (
+  <svg {...svgProps(p)}><path d="M4.5 12h15M13 5.5l6.5 6.5-6.5 6.5" /></svg>
+);
+
+const PlayIcon = (p: IconProps) => (
+  <svg {...svgProps(p)}><circle cx="12" cy="12" r="9.25" /><path d="M10 8.5v7l5.5-3.5Z" /></svg>
+);
+
+const TrendIcon = (p: IconProps) => (
+  <svg {...svgProps(p)}><path d="M3.5 16.5 9 11l3.5 3.5L20.5 6.5" /><path d="M15.5 6.5h5v5" /></svg>
+);
+
+const BoltIcon = (p: IconProps) => (
+  <svg {...svgProps(p)}><path d="M13 2.5 4.5 13.5H11l-.5 8 8.5-11H13Z" /></svg>
+);
+
+// ---------------------------------------------------------------- content
+
+const FEATURES = [
   {
-    title: 'Transparent reasoning',
-    body: 'Every recommendation ships with its math: baseline, event score, distance dampener, compset bound. No black box — you see the data behind every dollar.',
+    title: 'Hands-free parity monitoring',
+    body:
+      'Your listed rate on your own site, Expedia, Booking.com and Google Hotels, checked seven times a day. Gaps get flagged before they cost you direct bookings — no manual browsing, no spreadsheet.',
+    tinted: false,
   },
   {
-    title: 'Event radar',
-    body: 'Concerts, college football, conventions, holidays — demand signals scored per night, weeks ahead, with sellout likelihood and travel draw factored in.',
+    title: 'Zero-effort event tracking',
+    body:
+      'Concerts, college football, conventions, holidays and weather alerts are pulled automatically and scored per night, weeks ahead — with travel draw and sellout likelihood already factored in.',
+    tinted: false,
   },
   {
-    title: 'Parity monitoring',
-    body: 'Your listed rate on your own site, Expedia, Booking.com, and Google Hotels, checked 7× a day. Gaps get flagged before they cost you direct bookings.',
-  },
-  {
-    title: 'Compset guardrail',
-    body: 'Nearby competitor prices bound your quiet-night rates so you never drift off-market. Event nights are never capped — that’s when you earn.',
-  },
-  {
-    title: 'Email alerts that matter',
-    body: 'One email when something actually merits attention — a rate move, a parity gap, a big event added. No daily noise, no dashboard babysitting.',
-  },
-  {
-    title: 'Honest states',
-    body: '“Needs manual check” and “too small to matter” are first-class verdicts, shown to you — never silently hidden. You always know what the system knows.',
+    title: 'Transparent reasoning engine',
+    body:
+      'Every recommendation ships with its math: baseline, event score, distance dampener, compset bound. Deterministic scoring, no black box — you see the data behind every dollar, then you set the price.',
+    tinted: true,
   },
 ];
 
+const FACTORS = [
+  { Icon: HotelIcon, title: 'Nearby hotel pricing', body: 'Competitor rates and availability, bounding your quiet-night recommendations so you never drift off-market.' },
+  { Icon: EventIcon, title: 'Upcoming local events', body: 'Concerts, games, conferences and festivals scored for overflow likelihood — not just listed on a calendar.' },
+  { Icon: WeatherIcon, title: 'Weather & advisories', body: 'National Weather Service alerts and airport status, for the last-minute demand a calendar can’t see.' },
+  { Icon: CurveIcon, title: 'Day-of-week curves', body: 'Your property’s own occupancy and booking pace, so the baseline reflects how your rooms actually sell.' },
+];
+
 const STEPS = [
-  { n: '1', title: 'Collect', body: 'Ticketmaster, college football, weather, holiday calendars, and your OTA listings — gathered automatically, 7 times a day.' },
+  { n: '1', title: 'Collect', body: 'Ticketmaster, college football, weather, holiday calendars and your OTA listings — gathered automatically, seven times a day.' },
   { n: '2', title: 'Score', body: 'Every event gets a deterministic overflow-likelihood score. Uplift compounds per night with diminishing returns — no ML mystery.' },
-  { n: '3', title: 'You decide', body: 'A recommendation with reasoning lands on your dashboard (and inbox when it matters). You set the price. We never touch it.' },
+  { n: '3', title: 'You decide', body: 'A recommendation with its reasoning lands on your dashboard, and in your inbox when it matters. You set the price. We never touch it.' },
 ];
 
 const PLANS = [
@@ -61,266 +137,440 @@ const PLANS = [
   },
 ];
 
+const ASSURANCES = [
+  'Deterministic scoring you can audit, line by line',
+  'Recommendation only — it never writes a price anywhere',
+  '“Needs manual check” and “too small to matter” are shown, never hidden',
+];
+
 function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <div className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{children}</div>;
+  return (
+    <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-[#085ac0]">
+      {children}
+    </div>
+  );
 }
+
+// ---------------------------------------------------------------- radar panel
+
+/* The hero's signature visual: a miniature of the actual compset map, with the
+   property pulsing at center and competitor rates pinned around it. */
+function RadarPanel() {
+  const pins = [
+    { top: '22%', left: '20%', price: '$96' },
+    { top: '31%', left: '74%', price: '$112' },
+    { top: '66%', left: '28%', price: '$84' },
+    { top: '58%', left: '66%', price: '$101' },
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white shadow-[0_24px_60px_-20px_rgba(11,28,48,0.45)]">
+      {/* window chrome */}
+      <div className="flex h-11 items-center gap-2 border-b border-slate-200 bg-slate-50 px-4">
+        <div className="flex gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+        </div>
+        <div className="ml-auto text-[11px] font-medium text-slate-400">
+          Red Roof Inn · Franklin, TN
+        </div>
+      </div>
+
+      {/* radar surface */}
+      <div className="relative h-[340px] bg-[#131b2e]">
+        <div
+          className="absolute inset-0 opacity-25"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, #adc6ff 1px, transparent 0)',
+            backgroundSize: '24px 24px',
+          }}
+        />
+
+        {/* your property, pulsing */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="relative flex items-center justify-center">
+            <span className="absolute h-48 w-48 animate-ping rounded-full border border-[#085ac0]/40 opacity-20" />
+            <span
+              className="absolute h-32 w-32 animate-ping rounded-full border border-[#085ac0]/50 opacity-40"
+              style={{ animationDelay: '1s' }}
+            />
+            <span className="h-3.5 w-3.5 rounded-full bg-[#085ac0] shadow-[0_0_16px_rgba(8,90,192,0.9)]" />
+            <span className="absolute -top-7 whitespace-nowrap rounded bg-[#085ac0] px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white">
+              YOUR PROPERTY
+            </span>
+          </div>
+        </div>
+
+        {/* competitor rates */}
+        {pins.map((p) => (
+          <div key={p.price} className="absolute" style={{ top: p.top, left: p.left }}>
+            <span className="block h-2 w-2 rounded-full bg-[#67dca8] shadow-[0_0_10px_rgba(103,220,168,0.7)]" />
+            <span className="absolute -top-6 left-1/2 -translate-x-1/2 rounded border border-white/15 bg-white/90 px-1.5 text-[10px] font-semibold text-slate-700">
+              {p.price}
+            </span>
+          </div>
+        ))}
+
+        <div className="absolute left-4 top-4 rounded border border-[#085ac0]/40 bg-[#085ac0]/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#adc6ff] backdrop-blur">
+          Radar active
+        </div>
+
+        {/* the recommendation itself */}
+        <div className="absolute bottom-4 right-4 min-w-[150px] rounded-xl border border-white/15 bg-white/95 p-3.5 text-center shadow-xl backdrop-blur">
+          <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Tonight · Standard
+          </div>
+          <div className="font-serif text-[32px] font-semibold leading-none text-[#0b1c30]">$89</div>
+          <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] font-semibold text-emerald-600">
+            <TrendIcon className="h-3 w-3" />
+            +12% · event uplift
+          </div>
+        </div>
+
+        <div className="absolute bottom-5 left-4 text-[10px] font-medium uppercase tracking-[0.14em] text-[#adc6ff]/60">
+          4 competitors tracked
+        </div>
+      </div>
+
+      {/* reasoning strip — the honest states, on the marketing page too */}
+      <div className="space-y-2.5 px-5 py-4 text-[13px]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-slate-700">Morgan Wallen @ Nissan Stadium</span>
+          <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
+            score 82 · major
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-slate-500">Vanderbilt home game</span>
+          <span className="shrink-0 text-[11px] text-slate-400">too small to matter — shown anyway</span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-slate-700">Expedia listing $101</span>
+          <span className="shrink-0 rounded bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
+            $12 parity gap
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- page
 
 export default function Landing() {
   return (
-    <div className="font-inter bg-white text-slate-900">
+    <div className="bg-[#f9f9ff] font-inter text-[#1a1b20] antialiased">
       {/* Visitor identification runs on the public landing page only. */}
       <OriginIdInit />
-      {/* announcement bar */}
-      <div className="bg-slate-900 px-4 py-2.5 text-center text-[13px] text-slate-200">
-        Every night gets a verdict — even &quot;this event is too small to matter.&quot;{' '}
-        <Link href="#platform" className="font-semibold text-white underline underline-offset-2">Why that matters</Link>
-      </div>
 
-      {/* sticky nav */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: RED }} />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full" style={{ background: RED }} />
-            </span>
-            <div className="text-xl font-bold tracking-tight">Rate Radar</div>
-          </div>
-          <div className="hidden items-center gap-8 text-[15px] font-medium text-slate-700 md:flex">
-            <Link href="#platform" className="hover:text-slate-900">Product</Link>
-            <Link href="#how" className="hover:text-slate-900">How it works</Link>
-            <Link href="#pricing" className="hover:text-slate-900">Pricing</Link>
-            <Link href="/login" className="hover:text-slate-900">Demo</Link>
-          </div>
+      {/* nav */}
+      <header className="sticky top-0 z-50 border-b border-[#c4c6cd]/40 bg-[#f9f9ff]/90 backdrop-blur-md">
+        <div className="mx-auto flex h-20 max-w-[1200px] items-center justify-between px-6">
+          <Link href="/" className="flex items-center gap-2">
+            <RadarIcon className="h-7 w-7 text-[#085ac0]" />
+            <span className="font-display text-xl font-bold tracking-tight text-[#0b1c30]">Rate Radar</span>
+          </Link>
+
+          <nav className="hidden items-center gap-8 md:flex">
+            <Link href="#platform" className="text-[13px] font-semibold tracking-wide text-[#44474d] transition-colors hover:text-[#085ac0]">Product</Link>
+            <Link href="#factors" className="text-[13px] font-semibold tracking-wide text-[#44474d] transition-colors hover:text-[#085ac0]">How it works</Link>
+            <Link href="#pricing" className="text-[13px] font-semibold tracking-wide text-[#44474d] transition-colors hover:text-[#085ac0]">Pricing</Link>
+          </nav>
+
           <div className="flex items-center gap-4">
-            <Link href="/login" className="text-[15px] font-medium text-slate-700 hover:text-slate-900">Sign in</Link>
+            <Link href="/login" className="text-[13px] font-semibold text-[#44474d] transition-colors hover:text-[#085ac0]">
+              Sign in
+            </Link>
             <Link
               href="/signup"
-              className="rounded-full px-5 py-2.5 text-[15px] font-semibold text-white transition-colors"
-              style={{ background: RED }}
+              className="rounded-lg bg-[#085ac0] px-5 py-2.5 text-[13px] font-semibold text-white shadow-sm transition-all hover:brightness-110"
             >
-              Get started
+              Get access
             </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* hero */}
-      <header
-        className="px-5 py-20 text-white md:py-28"
-        style={{
-          background: `radial-gradient(900px 480px at 28% 18%, #ef3a55 0%, transparent 62%), linear-gradient(160deg, ${RED} 0%, ${RED_DEEP} 78%)`,
-        }}
-      >
-        <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1.05fr_1fr]">
-          <div>
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-white/70">
-              For independent hotels &amp; motels
-            </div>
-            <h1 className="mt-5 text-5xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
-              Know what to charge tonight.
-            </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/85">
-              Demand-driven rate recommendations for independent hotels. Events, holidays, weather, and competitor
-              prices in; a nightly rate with transparent reasoning out.{' '}
-              <span className="font-semibold text-white">It never changes a price anywhere — it recommends, a human decides.</span>
-            </p>
-            <div className="mt-9 flex flex-wrap gap-4">
-              <Link
-                href="/login"
-                className="rounded-full bg-white px-7 py-3.5 text-[15px] font-semibold text-slate-900 shadow-sm transition-transform hover:scale-[1.02]"
-              >
-                Try live demo
-              </Link>
-              <Link
-                href="#how"
-                className="rounded-full border border-white/50 px-7 py-3.5 text-[15px] font-semibold text-white hover:bg-white/10"
-              >
-                See how it works
-              </Link>
-            </div>
-          </div>
-
-          {/* dark panel — a miniature of the actual dashboard */}
-          <div className="rounded-2xl bg-slate-900 p-6 shadow-2xl ring-1 ring-white/10 md:p-7">
-            <div className="flex items-baseline justify-between">
-              <div className="text-sm font-semibold text-slate-300">Red Roof Inn · Franklin, TN</div>
-              <div className="text-xs text-slate-400">updated 2m ago</div>
-            </div>
-
-            <div className="mt-5 flex items-end justify-between gap-4 rounded-xl bg-white/5 p-5">
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Tonight · Standard</div>
-                <div className="mt-1 font-serif text-6xl font-semibold leading-none text-white">$89</div>
-              </div>
-              <div className="pb-1 text-right">
-                <span className="rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">+12% uplift</span>
-                <div className="mt-2 text-xs text-slate-400">Superior $104 · range $84–94</div>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-3 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-slate-300">Morgan Wallen @ Nissan Stadium</span>
-                <span className="shrink-0 rounded-md bg-amber-500/15 px-2 py-0.5 text-xs font-bold text-amber-400">score 82 · major</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-slate-400">Vanderbilt home game</span>
-                <span className="shrink-0 text-xs text-slate-500">too small to matter — shown anyway</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-slate-300">Expedia listing $101</span>
-                <span className="shrink-0 rounded-md bg-rose-500/15 px-2 py-0.5 text-xs font-bold text-rose-400">$12 gap</span>
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <div className="mb-1.5 flex justify-between text-xs text-slate-400">
-                <span>Confidence</span><span>78%</span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-emerald-400" style={{ width: '78%' }} />
-              </div>
-            </div>
-
-            <div className="mt-5 border-t border-white/10 pt-4 text-xs text-slate-400">
-              Deterministic scoring · checked 7×/day · never writes prices
-            </div>
           </div>
         </div>
       </header>
 
-      {/* platform */}
-      <section id="platform" className="px-5 py-24">
-        <div className="mx-auto max-w-6xl">
-          <Eyebrow>Platform</Eyebrow>
-          <h2 className="max-w-2xl text-4xl font-extrabold tracking-tight md:text-5xl">
-            Rate recommendations that hold up under pressure
-          </h2>
-          <p className="mt-5 max-w-2xl text-lg text-slate-600">
-            Demand signals in, an explainable nightly rate out. Everything the system knows — and doesn&apos;t know — is
-            on the dashboard.
-          </p>
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {PLATFORM_CARDS.map((c) => (
-              <div key={c.title} className="rounded-xl border border-slate-200 bg-white p-7 shadow-sm transition-shadow hover:shadow-md">
-                <h3 className="text-lg font-bold">{c.title}</h3>
-                <p className="mt-2.5 leading-relaxed text-slate-600">{c.body}</p>
-              </div>
-            ))}
+      <main>
+        {/* hero */}
+        <section className="relative overflow-hidden px-6 pb-28 pt-20">
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute right-0 top-0 h-[700px] w-3/4 rounded-bl-full bg-gradient-to-b from-[#e5eeff] to-transparent opacity-60 blur-3xl" />
+            <div className="absolute bottom-0 left-10 h-[380px] w-1/2 rounded-full bg-[#d8e2ff]/40 blur-3xl" />
           </div>
-        </div>
-      </section>
 
-      {/* how it works */}
-      <section id="how" className="bg-[#f5f4f0] px-5 py-24">
-        <div className="mx-auto max-w-6xl text-center">
-          <Eyebrow>How it works</Eyebrow>
-          <h2 className="mx-auto max-w-2xl text-4xl font-extrabold tracking-tight md:text-5xl">
-            How a night gets its rate
-          </h2>
-          <div className="mt-14 grid gap-6 text-left md:grid-cols-3">
-            {STEPS.map((s) => (
-              <div key={s.n} className="rounded-xl border border-slate-200 bg-white p-7 shadow-sm">
-                <div
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-base font-bold text-white"
-                  style={{ background: RED }}
-                >
-                  {s.n}
-                </div>
-                <h3 className="mt-4 text-lg font-bold">{s.title}</h3>
-                <p className="mt-2 leading-relaxed text-slate-600">{s.body}</p>
+          <div className="mx-auto grid max-w-[1200px] items-center gap-16 lg:grid-cols-[1.05fr_1fr]">
+            <div>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-[#085ac0]/20 bg-[#e5eeff] px-3 py-1">
+                <BoltIcon className="h-3.5 w-3.5 text-[#085ac0]" />
+                <span className="text-[12px] font-semibold tracking-wide text-[#085ac0]">
+                  For independent hotels &amp; motels
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* pricing */}
-      <section id="pricing" className="px-5 py-24">
-        <div className="mx-auto max-w-6xl text-center">
-          <Eyebrow>Pricing</Eyebrow>
-          <h2 className="text-4xl font-extrabold tracking-tight md:text-5xl">Simple, fair pricing.</h2>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-slate-600">
-            Built lean on purpose — priced for independent properties, not enterprise chains.
-          </p>
-          <div className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-3">
-            {PLANS.map((p) => (
-              <div
-                key={p.name}
-                className={`relative rounded-2xl border bg-white p-8 text-left shadow-sm ${
-                  p.popular ? 'border-[#c8102e] ring-1 ring-[#c8102e]' : 'border-slate-200'
-                }`}
-              >
-                {p.popular && (
-                  <div
-                    className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-bold uppercase tracking-wide text-white"
-                    style={{ background: RED }}
-                  >
-                    Popular
-                  </div>
-                )}
-                <h3 className="text-lg font-bold">{p.name}</h3>
-                <div className="mt-3 text-4xl font-extrabold tracking-tight">
-                  {p.price}
-                  {p.per && <span className="text-lg font-medium text-slate-500">{p.per}</span>}
-                </div>
-                <p className="mt-2 text-sm text-slate-600">{p.blurb}</p>
-                <ul className="mt-6 space-y-2.5 border-t border-slate-100 pt-6 text-[15px]">
-                  {p.items.map((i) => (
-                    <li key={i} className="flex gap-2.5">
-                      <span className="font-bold text-emerald-600">✓</span>
-                      {i}
-                    </li>
-                  ))}
-                </ul>
+              <h1 className="mt-6 font-display text-[42px] font-bold leading-[1.08] tracking-tight text-[#0b1c30] md:text-[56px]">
+                Stop guessing.
+                <br />
+                <span className="text-[#085ac0]">Know what tonight is worth.</span>
+              </h1>
+
+              <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-[#44474d]">
+                Rate Radar does the research. It watches competitor prices, local events, weather and holidays
+                around the clock, then hands you a nightly rate with the reasoning attached.{' '}
+                <span className="font-semibold text-[#0b1c30]">
+                  It never changes a price anywhere — it recommends, a human decides.
+                </span>
+              </p>
+
+              <div className="mt-9 flex flex-col gap-4 sm:flex-row">
                 <Link
                   href="/signup"
-                  className={`mt-8 block rounded-full py-3 text-center text-[15px] font-semibold transition-colors ${
-                    p.popular ? 'text-white' : 'border border-slate-300 text-slate-900 hover:bg-slate-50'
-                  }`}
-                  style={p.popular ? { background: RED } : undefined}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#085ac0] px-7 py-3.5 text-[14px] font-semibold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110"
                 >
-                  {p.cta}
+                  Get access
+                  <ArrowIcon className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#c4c6cd] bg-white px-7 py-3.5 text-[14px] font-semibold text-[#0b1c30] transition-colors hover:bg-[#e5eeff]"
+                >
+                  <PlayIcon className="h-4 w-4" />
+                  See the live demo
                 </Link>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* bottom CTA */}
-      <section
-        className="px-5 py-20 text-center text-white"
-        style={{ background: `linear-gradient(160deg, ${RED} 0%, ${RED_DEEP} 85%)` }}
-      >
-        <h2 className="mx-auto max-w-2xl text-4xl font-extrabold tracking-tight">
-          Stop guessing what tonight is worth.
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-white/85">
-          Set up in an afternoon. Free tier forever. Your prices stay yours.
-        </p>
-        <Link
-          href="/signup"
-          className="mt-8 inline-block rounded-full bg-white px-8 py-4 text-[15px] font-semibold text-slate-900 shadow-sm transition-transform hover:scale-[1.02]"
-        >
-          Get started free
-        </Link>
-      </section>
+              <p className="mt-6 text-[13px] text-[#74777d]">
+                Runs on sample data until your property is connected — so you can see exactly how it reasons first.
+              </p>
+            </div>
+
+            <RadarPanel />
+          </div>
+        </section>
+
+        {/* platform */}
+        <section id="platform" className="border-y border-[#c4c6cd]/25 bg-white px-6 py-24">
+          <div className="mx-auto max-w-[1200px]">
+            <div className="mx-auto mb-14 max-w-2xl text-center">
+              <Eyebrow>Platform</Eyebrow>
+              <h2 className="font-display text-[32px] font-bold tracking-tight text-[#0b1c30] md:text-[38px]">
+                Rate recommendations that hold up under pressure
+              </h2>
+              <p className="mt-4 text-[17px] leading-relaxed text-[#44474d]">
+                Demand signals in, an explainable nightly rate out. Everything the system knows — and everything
+                it doesn’t — is on the dashboard.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {FEATURES.map((f) => (
+                <div
+                  key={f.title}
+                  className={`group rounded-2xl border p-8 transition-all duration-300 hover:-translate-y-0.5 ${
+                    f.tinted
+                      ? 'border-[#085ac0]/30 bg-[#e5eeff]/40 hover:border-[#085ac0] hover:shadow-[0_8px_24px_rgba(8,90,192,0.12)]'
+                      : 'border-[#c4c6cd] bg-white hover:border-[#085ac0]/50 hover:shadow-[0_8px_24px_rgba(11,28,48,0.07)]'
+                  }`}
+                >
+                  <div
+                    className={`mb-6 flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
+                      f.tinted ? 'bg-[#085ac0] text-white' : 'bg-[#e8e7ee] text-[#0b1c30] group-hover:bg-[#085ac0]/10 group-hover:text-[#085ac0]'
+                    }`}
+                  >
+                    <RadarIcon className="h-6 w-6" />
+                  </div>
+                  <h3 className="font-display text-[20px] font-semibold text-[#0b1c30]">{f.title}</h3>
+                  <p className="mt-3 text-[14px] leading-relaxed text-[#44474d]">{f.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* rate factors */}
+        <section id="factors" className="bg-[#f3f3fa] px-6 py-24">
+          <div className="mx-auto max-w-[1200px]">
+            <div className="mx-auto mb-14 max-w-2xl text-center">
+              <Eyebrow>Rate factors</Eyebrow>
+              <h2 className="font-display text-[32px] font-bold tracking-tight text-[#0b1c30] md:text-[38px]">
+                What actually moves the number
+              </h2>
+              <p className="mt-4 text-[17px] leading-relaxed text-[#44474d]">
+                Four inputs, each one traceable back to a source you can check yourself.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+              {FACTORS.map(({ Icon, title, body }) => (
+                <div
+                  key={title}
+                  className="flex flex-col items-center rounded-2xl border border-[#c4c6cd]/50 bg-white p-7 text-center transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#085ac0]/10">
+                    <Icon className="h-7 w-7 text-[#085ac0]" />
+                  </div>
+                  <h3 className="font-display text-[15px] font-semibold text-[#0b1c30]">{title}</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-[#44474d]">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* how it works */}
+        <section className="bg-white px-6 py-24">
+          <div className="mx-auto max-w-[1200px]">
+            <div className="mx-auto mb-14 max-w-2xl text-center">
+              <Eyebrow>How it works</Eyebrow>
+              <h2 className="font-display text-[32px] font-bold tracking-tight text-[#0b1c30] md:text-[38px]">
+                How a night gets its rate
+              </h2>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {STEPS.map((s) => (
+                <div key={s.n} className="rounded-2xl border border-[#c4c6cd] bg-white p-8 shadow-sm">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#085ac0] font-display text-[15px] font-bold text-white">
+                    {s.n}
+                  </div>
+                  <h3 className="mt-5 font-display text-[20px] font-semibold text-[#0b1c30]">{s.title}</h3>
+                  <p className="mt-2.5 text-[14px] leading-relaxed text-[#44474d]">{s.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* pricing */}
+        <section id="pricing" className="border-t border-[#c4c6cd]/25 bg-[#f3f3fa] px-6 py-24">
+          <div className="mx-auto max-w-[1000px]">
+            <div className="mx-auto mb-14 max-w-2xl text-center">
+              <Eyebrow>Pricing</Eyebrow>
+              <h2 className="font-display text-[32px] font-bold tracking-tight text-[#0b1c30] md:text-[38px]">
+                Simple, fair pricing
+              </h2>
+              <p className="mt-4 text-[17px] leading-relaxed text-[#44474d]">
+                Built lean on purpose — priced for independent properties, not enterprise chains.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {PLANS.map((p) => (
+                <div
+                  key={p.name}
+                  className={`relative flex flex-col rounded-2xl bg-white p-8 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${
+                    p.popular ? 'border-2 border-[#085ac0] shadow-lg' : 'border border-[#c4c6cd]'
+                  }`}
+                >
+                  {p.popular && (
+                    <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#085ac0] px-4 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-white">
+                      Most popular
+                    </div>
+                  )}
+                  <h3 className="font-display text-[20px] font-semibold text-[#0b1c30]">{p.name}</h3>
+                  <div className="mt-3">
+                    <span className="font-display text-[34px] font-bold tracking-tight text-[#0b1c30]">{p.price}</span>
+                    {p.per && <span className="text-[15px] font-medium text-[#74777d]">{p.per}</span>}
+                  </div>
+                  <p className="mt-2 text-[13px] text-[#44474d]">{p.blurb}</p>
+
+                  <ul className="mt-6 flex-grow space-y-3 border-t border-[#c4c6cd]/40 pt-6">
+                    {p.items.map((i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#1a1b20]">
+                        <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#085ac0]" />
+                        {i}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href="/signup"
+                    className={`mt-8 block rounded-lg py-3 text-center text-[14px] font-semibold transition-all ${
+                      p.popular
+                        ? 'bg-[#085ac0] text-white hover:brightness-110'
+                        : 'border border-[#c4c6cd] text-[#0b1c30] hover:bg-[#e5eeff]'
+                    }`}
+                  >
+                    {p.cta}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* closing CTA */}
+        <section className="relative overflow-hidden bg-[#0b1c30] px-6 py-24">
+          <div aria-hidden className="pointer-events-none absolute inset-0 z-0 opacity-25">
+            <div className="absolute left-1/4 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-[#085ac0] blur-[120px]" />
+          </div>
+
+          <div className="relative z-10 mx-auto grid max-w-[1200px] items-center gap-16 md:grid-cols-2">
+            <div>
+              <h2 className="font-display text-[32px] font-bold leading-tight tracking-tight text-white md:text-[38px]">
+                Ready to outpace your comp set?
+              </h2>
+              <p className="mt-5 text-[17px] leading-relaxed text-[#75859d]">
+                Set up in an afternoon. Free tier forever. Your prices stay yours — Rate Radar recommends, and
+                nothing else.
+              </p>
+              <ul className="mt-8 space-y-4">
+                {ASSURANCES.map((a) => (
+                  <li key={a} className="flex items-start gap-3 text-[15px] text-white">
+                    <CheckCircleIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#67dca8]" />
+                    {a}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-[#c4c6cd]/30 bg-white p-8 shadow-2xl">
+              <h3 className="font-display text-[20px] font-semibold text-[#0b1c30]">See it on real data</h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-[#44474d]">
+                Rate Radar accounts are invite-based — the property owner adds teammates from Settings → Team.
+                Already invited? Sign in and you’re straight into the dashboard. Curious first? The live demo runs
+                on sample data shaped exactly like the real thing.
+              </p>
+
+              <div className="mt-7 space-y-3">
+                <Link
+                  href="/signup"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#085ac0] px-4 py-3.5 text-[14px] font-semibold text-white shadow-sm transition-all hover:brightness-110"
+                >
+                  Get access
+                  <ArrowIcon className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/login"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#c4c6cd] px-4 py-3.5 text-[14px] font-semibold text-[#0b1c30] transition-colors hover:bg-[#e5eeff]"
+                >
+                  <PlayIcon className="h-4 w-4" />
+                  Open the live demo
+                </Link>
+              </div>
+
+              <p className="mt-5 text-center text-[11px] leading-relaxed text-[#74777d]">
+                No card required. Rate Radar never pushes a price to your PMS, your website, or any OTA.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
 
       {/* footer */}
-      <footer className="border-t border-slate-200 px-5 py-12">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 text-sm text-slate-500 md:flex-row">
-          <div className="flex items-center gap-2 text-base font-bold text-slate-900">
-            <span className="inline-block h-2 w-2 rounded-full" style={{ background: RED }} />
-            Rate Radar
+      <footer className="border-t border-[#c4c6cd]/30 bg-[#f8f9ff] px-6 py-12">
+        <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-6 text-[13px] text-[#44474d] md:flex-row">
+          <div className="flex items-center gap-2">
+            <RadarIcon className="h-6 w-6 text-[#085ac0]" />
+            <span className="font-display text-[17px] font-bold text-[#0b1c30]">Rate Radar</span>
           </div>
           <div className="flex gap-8">
-            <Link href="#platform" className="hover:text-slate-900">Product</Link>
-            <Link href="#pricing" className="hover:text-slate-900">Pricing</Link>
-            <Link href="/login" className="hover:text-slate-900">Sign in</Link>
+            <Link href="#platform" className="transition-colors hover:text-[#085ac0]">Product</Link>
+            <Link href="#pricing" className="transition-colors hover:text-[#085ac0]">Pricing</Link>
+            <Link href="/login" className="transition-colors hover:text-[#085ac0]">Sign in</Link>
           </div>
-          <p>© 2026 Rate Radar. All rights reserved.</p>
+          <p className="text-[#74777d]">© 2026 Rate Radar. All rights reserved.</p>
         </div>
       </footer>
     </div>

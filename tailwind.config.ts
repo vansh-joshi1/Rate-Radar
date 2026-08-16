@@ -26,6 +26,8 @@ const config: Config = {
       fontFamily: {
         // Fraunces is reserved for the big rate numbers — everything else is Inter.
         serif: ['Fraunces', 'Georgia', 'serif'],
+        // Sora is the marketing-landing display face; the app behind login never uses it.
+        display: ['Sora', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
         inter: ['Inter', 'system-ui', 'sans-serif'],
       },
