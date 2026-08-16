@@ -1,4 +1,5 @@
 import type { Store } from '../store';
+import type { Role } from './roles';
 
 /**
  * Invite list — who may sign in with an email magic link, and their role.
@@ -7,7 +8,7 @@ import type { Store } from '../store';
  * allowed (bootstrap), even with an empty list.
  */
 
-export type Role = 'owner' | 'manager' | 'viewer';
+export type { Role };
 
 export interface Member {
   email: string;

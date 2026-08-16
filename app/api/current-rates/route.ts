@@ -2,10 +2,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getStore } from '../../../lib/store';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
 import { loadCurrentRates, saveCurrentRates, validateCurrentRates } from '../../../lib/current-rates';
+import { requireRole } from '../../../lib/auth/guard';
 
 export const dynamic = 'force-dynamic';
 
-/** Owner-entered current rates per property. Session-gated by the middleware. */
+/**
+ * The rates the property is actually listing right now — the authoritative
+ * "your rate" every comparison is drawn against. Readable by any member,
+ * writable by manager+.
+ */
 
 function propertyIdFrom(req: NextRequest): string {
   return new URL(req.url).searchParams.get('propertyId') ?? DEFAULT_PROPERTY_ID;
@@ -19,6 +24,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const gate = await requireRole('manager');
+  if (!gate.ok) return gate.response;
+
   const propertyId = propertyIdFrom(req);
   if (!getProperty(propertyId)) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
 

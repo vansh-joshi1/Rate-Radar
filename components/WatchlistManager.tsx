@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WatchlistHotel } from '../lib/watchlist';
+import { ReadOnlyNote, useCanWrite } from './RoleProvider';
 
 interface Props {
   propertyId: string;
@@ -25,6 +26,7 @@ export default function WatchlistManager({ propertyId }: Props) {
   const [hotels, setHotels] = useState<WatchlistHotel[] | null>(null);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
+  const canWrite = useCanWrite();
   const [notice, setNotice] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [searching, setSearching] = useState(false);
@@ -131,6 +133,9 @@ export default function WatchlistManager({ propertyId }: Props) {
         Changes take effect on the next collection run.
       </p>
 
+      {!canWrite && <div className="mb-4"><ReadOnlyNote what="Changing who you track" /></div>}
+
+      {canWrite && (
       <form
         className="mb-4 flex gap-2"
         onSubmit={(e) => {
@@ -196,6 +201,7 @@ export default function WatchlistManager({ propertyId }: Props) {
           Add hotel
         </button>
       </form>
+      )}
       {notice && <p className="mb-3 text-sm text-warn">{notice}</p>}
 
       {hotels === null ? (
@@ -215,21 +221,25 @@ export default function WatchlistManager({ propertyId }: Props) {
                 <td className="td">
                   {h.lat != null ? (
                     <span className="chip text-ok bg-ok/5">Placed</span>
-                  ) : (
+                  ) : canWrite ? (
                     <button className="btn btn-sm" disabled={busy} onClick={() => call('PATCH', { name: h.name }, `Located ${h.name}.`)}>
                       locate
                     </button>
+                  ) : (
+                    <span className="text-xs text-muted">no pin</span>
                   )}
                 </td>
                 <td className="td text-right">
-                  <button
-                    className="btn btn-sm"
-                    disabled={busy}
-                    onClick={() => call('DELETE', { name: h.name }, `Removed ${h.name}.`)}
-                    title="Remove from watchlist"
-                  >
-                    remove
-                  </button>
+                  {canWrite && (
+                    <button
+                      className="btn btn-sm"
+                      disabled={busy}
+                      onClick={() => call('DELETE', { name: h.name }, `Removed ${h.name}.`)}
+                      title="Remove from watchlist"
+                    >
+                      remove
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

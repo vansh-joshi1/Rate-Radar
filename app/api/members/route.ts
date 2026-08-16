@@ -2,21 +2,13 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { auth } from '../../../auth';
 import { getStore } from '../../../lib/store';
 import { listMembers, ownerEmail, saveMembers, type Role } from '../../../lib/auth/members';
+import { requireRole } from '../../../lib/auth/guard';
 
 export const dynamic = 'force-dynamic';
 
 /** Team management — the invite list gating magic-link sign-in. Owner-only writes. */
 
 const ROLES: Role[] = ['owner', 'manager', 'viewer'];
-
-async function requireOwner() {
-  const session = await auth();
-  if (!session?.user) return { error: NextResponse.json({ error: 'unauthorized' }, { status: 401 }) };
-  if ((session.user as { role?: string }).role !== 'owner') {
-    return { error: NextResponse.json({ error: 'owner role required' }, { status: 403 }) };
-  }
-  return { session };
-}
 
 export async function GET() {
   const session = await auth();
@@ -26,8 +18,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = await requireOwner();
-  if (gate.error) return gate.error;
+  const gate = await requireRole('owner');
+  if (!gate.ok) return gate.response;
 
   const body = (await req.json().catch(() => ({}))) as { email?: string; role?: Role };
   const email = body.email?.trim().toLowerCase() ?? '';
@@ -48,8 +40,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const gate = await requireOwner();
-  if (gate.error) return gate.error;
+  const gate = await requireRole('owner');
+  if (!gate.ok) return gate.response;
 
   const { email } = (await req.json().catch(() => ({}))) as { email?: string };
   const e = email?.trim().toLowerCase() ?? '';

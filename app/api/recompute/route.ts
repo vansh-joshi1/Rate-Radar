@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getStore } from '../../../lib/store';
 import { processBundle, type Bundle } from '../../../lib/ingest';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
+import { requireRole } from '../../../lib/auth/guard';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -12,9 +13,12 @@ export const maxDuration = 60;
  * new watchlist hotels won't gain prices here (that needs a real collection).
  * The snapshot keeps the bundle's original runAt, so data-freshness stays
  * honest; alert rules run too (24h fingerprints prevent duplicate emails).
- * Session-gated by the middleware.
+ * Manager+ — this rewrites the published snapshot and can send alert email.
  */
 export async function POST(req: NextRequest) {
+  const gate = await requireRole('manager');
+  if (!gate.ok) return gate.response;
+
   const propertyId = new URL(req.url).searchParams.get('propertyId') ?? DEFAULT_PROPERTY_ID;
   if (!getProperty(propertyId)) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
 

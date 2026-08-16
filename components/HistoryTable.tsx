@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import type { HistoryRecord } from '../lib/scoring/types';
+import { useCanWrite } from './RoleProvider';
 
 export default function HistoryTable({
   history, actuals,
@@ -8,6 +9,7 @@ export default function HistoryTable({
   history: HistoryRecord[]; actuals: Record<string, Record<string, number>>;
 }) {
   const [saving, setSaving] = useState('');
+  const canWrite = useCanWrite();
 
   async function save(date: string, tierId: string, value: string) {
     const rate = Number(value);
@@ -45,14 +47,20 @@ export default function HistoryTable({
                 <td className="td text-muted">{h.topDriver}</td>
                 {(['standard', 'superior'] as const).map((tier) => (
                   <td key={tier} className="td">
-                    <input
-                      type="number"
-                      className="field w-24 py-1.5"
-                      defaultValue={actuals[h.date]?.[tier] ?? ''}
-                      placeholder="$"
-                      disabled={saving === h.date + tier}
-                      onBlur={(e) => e.target.value && save(h.date, tier, e.target.value)}
-                    />
+                    {canWrite ? (
+                      <input
+                        type="number"
+                        className="field w-24 py-1.5"
+                        defaultValue={actuals[h.date]?.[tier] ?? ''}
+                        placeholder="$"
+                        disabled={saving === h.date + tier}
+                        onBlur={(e) => e.target.value && save(h.date, tier, e.target.value)}
+                      />
+                    ) : (
+                      <span className="font-serif">
+                        {actuals[h.date]?.[tier] != null ? `$${actuals[h.date][tier]}` : '—'}
+                      </span>
+                    )}
                   </td>
                 ))}
               </tr>

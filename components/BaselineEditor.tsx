@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import type { DayRange, RatesConfig, TierBaseline } from '../lib/rates-config';
+import { ReadOnlyNote, useCanWrite } from './RoleProvider';
 
 const DAY_CLASSES: { key: 'weekday' | 'sunday' | 'weekend'; label: string }[] = [
   { key: 'weekday', label: 'Weekday (Mon–Thu)' },
@@ -12,6 +13,7 @@ export default function BaselineEditor({ propertyId }: { propertyId: string }) {
   const [config, setConfig] = useState<RatesConfig | null>(null);
   const [status, setStatus] = useState<{ tone: 'ok' | 'bad' | 'muted'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const canWrite = useCanWrite();
 
   useEffect(() => {
     (async () => {
@@ -75,6 +77,8 @@ export default function BaselineEditor({ propertyId }: { propertyId: string }) {
                     value={t[key].min}
                     onChange={(e) => setRange(ti, key, 'min', e.target.value)}
                     aria-label={`${t.label} ${label} minimum`}
+                    readOnly={!canWrite}
+                    disabled={!canWrite}
                   />
                   <span className="text-muted">–</span>
                   <input
@@ -83,6 +87,8 @@ export default function BaselineEditor({ propertyId }: { propertyId: string }) {
                     value={t[key].max}
                     onChange={(e) => setRange(ti, key, 'max', e.target.value)}
                     aria-label={`${t.label} ${label} maximum`}
+                    readOnly={!canWrite}
+                    disabled={!canWrite}
                   />
                 </div>
               </div>
@@ -104,6 +110,8 @@ export default function BaselineEditor({ propertyId }: { propertyId: string }) {
                 setStatus(null);
               }}
               aria-label="Event uplift cap percent"
+              readOnly={!canWrite}
+              disabled={!canWrite}
             />
             <span className="text-sm text-muted">% — the most any event night can raise a rate above baseline</span>
           </div>
@@ -111,9 +119,13 @@ export default function BaselineEditor({ propertyId }: { propertyId: string }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="btn btn-primary" onClick={save} disabled={saving}>
-          {saving ? 'Saving…' : 'Save baselines'}
-        </button>
+        {canWrite ? (
+          <button className="btn btn-primary" onClick={save} disabled={saving}>
+            {saving ? 'Saving…' : 'Save baselines'}
+          </button>
+        ) : (
+          <ReadOnlyNote what="Editing baseline rates" />
+        )}
         {status && (
           <span className={`text-sm ${status.tone === 'ok' ? 'text-ok' : status.tone === 'bad' ? 'text-bad' : 'text-muted'}`}>
             {status.text}
