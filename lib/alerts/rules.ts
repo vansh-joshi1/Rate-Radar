@@ -196,3 +196,19 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
 
   return { triggers, newFingerprints, newEmailedState, newSeenEventIds, newSourceHealth };
 }
+
+/**
+ * The thresholds above, surfaced for the Settings → Notifications panel.
+ * Exported rather than restated in the UI so the page can never claim a rule
+ * the alert engine doesn't actually apply.
+ */
+export const ALERT_THRESHOLDS = {
+  rateDeltaUsd: RATE_DELTA_USD,
+  rateDeltaPct: RATE_DELTA_PCT,
+  parityGapUsd: PARITY_GAP_USD,
+  parityGapPct: PARITY_GAP_PCT,
+  newEventMinScore: NEW_EVENT_MIN_SCORE,
+  holidayLookaheadDays: HOLIDAY_LOOKAHEAD_DAYS,
+  sourceFailThreshold: SOURCE_FAIL_THRESHOLD,
+  dedupeHours: DEDUPE_HOURS,
+} as const;
