@@ -1,5 +1,6 @@
 import { loadSnapshot } from '../../../lib/dashboard-data';
 import { DemandChip, SampleBadge, SectionTitle } from '../../../components/ui';
+import ReasoningCard from '../../../components/ReasoningCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,17 @@ export default async function Calendar() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* The working behind tonight's number, moved off the dashboard — it sits
+          with the forecast it explains. */}
+      <div className="mt-6">
+        <ReasoningCard
+          date={snapshot.nights[0].date}
+          reasoning={snapshot.nights[0].reasoning}
+          confidence={snapshot.confidence}
+          confidenceNote={snapshot.confidenceNote}
+        />
       </div>
 
       <p className="mt-4 text-center text-xs text-muted">

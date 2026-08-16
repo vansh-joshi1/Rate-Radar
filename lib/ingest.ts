@@ -240,6 +240,10 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
     nightScore: todayNight.nightScore,
     topDriver: todayNight.events[0]?.name ?? 'none',
     recordedAt: now.toISOString(),
+    // Retained so Competitor Insights can plot our rate against the market
+    // over time. Null when no competitor prices were collected this run —
+    // recorded as a genuine gap rather than carrying the last value forward.
+    compsetMedian: compsetByDate.get(today)?.median ?? null,
   });
 
   const historyDates = (await store.get<string[]>('history:dates')) ?? [];

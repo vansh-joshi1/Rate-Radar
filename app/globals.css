@@ -3,53 +3,87 @@
 @tailwind utilities;
 
 /* ============================================================
-   Rate Radar — one design language everywhere.
-   Inter for text, Fraunces only for the big rate numbers,
-   white rounded cards on warm cream, slate ink, one red accent.
+   Rate Radar — one design language everywhere: "market radar".
+   Inter for text, Sora for display headings, white cards on a
+   cool near-white canvas, one cobalt accent, deep navy for data
+   surfaces, mint for positive deltas.
    Colors are RGB channel triplets so Tailwind opacity modifiers
    (bg-ink/5 etc.) work; the full-value aliases below exist for
    the few places raw CSS needs a complete color.
+
+   These tokens are the migration seam. Pages are being redesigned
+   one at a time; retheming here means a page that hasn't been
+   redesigned yet still renders in the new palette rather than
+   clashing with the pages that have.
    ============================================================ */
 
 :root {
-  --paper-rgb: 245 244 240;
+  --paper-rgb: 248 249 255;
   --card-rgb: 255 255 255;
-  --ink-rgb: 15 23 42;
-  --muted-rgb: 100 116 139;
-  --line-rgb: 226 232 240;
+  --ink-rgb: 26 27 32;
+  --muted-rgb: 68 71 77;
+  --line-rgb: 196 198 205;
 
-  --accent-rgb: 200 16 46;
-  --accent-deep-rgb: 160 13 37;
-  --accent-muted-rgb: 248 222 226;
+  --accent-rgb: 8 90 192;
+  --accent-deep-rgb: 6 72 156;
+  --accent-muted-rgb: 229 238 255;
 
-  --ok-rgb: 5 150 105;
+  /* deep navy — data surfaces (radar panels, occupancy fills) */
+  --deep-rgb: 11 28 48;
+
+  /* heatmap ramp, low → high (occupancy-low, secondary-fixed, secondary,
+     occupancy-high). Steps 3 and 4 are dark enough to need white text. */
+  --heat-1-rgb: 211 228 254;
+  --heat-2-rgb: 216 226 255;
+  --heat-3-rgb: 8 90 192;
+  --heat-4-rgb: 19 27 46;
+
+  /* price-level dots on the watchlist grid: low / mid / high */
+  --level-low-rgb: 132 249 195;
+  --level-mid-rgb: 173 198 255;
+  --level-high-rgb: 255 218 214;
+
+  --ok-rgb: 2 151 104;
   --warn-rgb: 180 83 9;
-  --bad-rgb: 220 38 38;
+  --bad-rgb: 186 26 26;
 
   /* full-value aliases for raw CSS (svg strokes, accent-color, etc.) */
   --bg-paper: rgb(var(--paper-rgb));
-  --accent-red: rgb(var(--accent-rgb));
+  --accent-color: rgb(var(--accent-rgb));
   --text-muted: rgb(var(--muted-rgb));
   --border-color: rgb(var(--line-rgb));
 }
 
-/* night mode: same language in dark slate */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper-rgb: 15 23 42;
-    --card-rgb: 30 41 59;
-    --ink-rgb: 241 245 249;
-    --muted-rgb: 148 163 184;
-    --line-rgb: 51 65 85;
+/* Night mode is OPT-IN via a `dark` class on <html>, matching the design
+   system's `darkMode: "class"`. It is deliberately NOT wired to
+   prefers-color-scheme: the dashboard is specified as a light surface, and
+   auto-flipping on the viewer's OS setting silently replaced the whole palette
+   with this one. Nothing sets the class today, so the app renders light. */
+.dark {
+  --paper-rgb: 10 18 30;
+  --card-rgb: 19 27 46;
+  --ink-rgb: 240 240 247;
+  --muted-rgb: 155 164 180;
+  --line-rgb: 44 54 72;
 
-    --accent-rgb: 239 90 114;
-    --accent-deep-rgb: 243 124 143;
-    --accent-muted-rgb: 74 28 34;
+  --accent-rgb: 173 198 255;
+  --accent-deep-rgb: 216 226 255;
+  --accent-muted-rgb: 0 44 102;
 
-    --ok-rgb: 52 211 153;
-    --warn-rgb: 251 191 36;
-    --bad-rgb: 248 113 113;
-  }
+  --deep-rgb: 8 15 26;
+
+  --heat-1-rgb: 30 47 78;
+  --heat-2-rgb: 42 66 110;
+  --heat-3-rgb: 61 128 224;
+  --heat-4-rgb: 173 198 255;
+
+  --level-low-rgb: 46 160 118;
+  --level-mid-rgb: 91 148 253;
+  --level-high-rgb: 200 90 84;
+
+  --ok-rgb: 103 220 168;
+  --warn-rgb: 251 191 36;
+  --bad-rgb: 255 180 171;
 }
 
 body {
@@ -57,6 +91,90 @@ body {
   color: rgb(var(--ink-rgb));
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Material Symbols — icon set for the app chrome and dashboard. */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  user-select: none;
+}
+.material-symbols-outlined[data-weight='fill'] {
+  font-variation-settings: 'FILL' 1;
+}
+
+/* Entry animation, per the design system. Suppressed for viewers who ask for
+   reduced motion — content must still end up visible, so opacity resets to 1
+   rather than leaving the page blank. */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+
+/* Sidebar links nudge right on hover. */
+.nav-link {
+  transition: all 0.2s ease-in-out;
+}
+.nav-link:hover {
+  transform: translateX(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none;
+    opacity: 1;
+  }
+  .nav-link:hover {
+    transform: none;
+  }
+}
+
+/* Heatmap cell hover polish, per the design system. */
+.heatmap-cell {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
+}
+.heatmap-cell:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+  position: relative;
+  z-index: 10;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+}
+
+/* Slim scrollbars, per the design system. */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--paper-rgb));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--line-rgb));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--muted-rgb));
 }
 
 @layer components {

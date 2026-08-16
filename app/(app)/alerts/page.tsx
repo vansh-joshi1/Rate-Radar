@@ -1,12 +1,23 @@
 import { demoAlerts } from '../../../lib/demo';
 import { SampleBadge, SectionTitle } from '../../../components/ui';
 import { BellIcon, InfoIcon, ShieldIcon, TrendIcon, WarnIcon } from '../../../components/shell/Icons';
+import NoteBox from '../../../components/NoteBox';
+import { getStore } from '../../../lib/store';
+import { chicagoToday } from '../../../lib/ingest';
+import { loadSnapshot } from '../../../lib/dashboard-data';
+
+export const dynamic = 'force-dynamic';
 
 const ICONS = { accent: TrendIcon, bad: ShieldIcon, warn: WarnIcon, neutral: InfoIcon } as const;
 const COLORS = { accent: 'text-accent', bad: 'text-bad', warn: 'text-warn', neutral: 'text-muted' } as const;
 
-export default function Alerts() {
+export default async function Alerts() {
   const unread = demoAlerts.filter((a) => a.unread).length;
+  // Nightly notes moved off the dashboard — they're the human counterpart to
+  // the automated alerts on this page.
+  const { isDemo } = await loadSnapshot();
+  const today = chicagoToday();
+  const note = isDemo ? '' : ((await getStore().hget<string>('notes', today)) ?? '');
 
   return (
     <div>
@@ -48,7 +59,7 @@ export default function Alerts() {
             <div className="mb-2.5 text-xs font-semibold uppercase tracking-widest text-muted">Notifications</div>
             {['Rate recommendations', 'Parity gaps > $5', 'Source errors'].map((l) => (
               <label key={l} className="mb-2 flex items-center gap-2 text-sm">
-                <input type="checkbox" defaultChecked className="accent-[var(--accent-red)]" /> {l}
+                <input type="checkbox" defaultChecked className="accent-[var(--accent-color)]" /> {l}
               </label>
             ))}
           </div>
@@ -60,6 +71,10 @@ export default function Alerts() {
             <button className="btn btn-sm mt-2 w-full">Add recipient</button>
           </div>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <NoteBox date={today} initial={note} />
       </div>
     </div>
   );

@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { Chip, SampleBadge, SectionTitle } from '../../../components/ui';
 import BaselineEditor from '../../../components/BaselineEditor';
 import TeamManager from '../../../components/TeamManager';
+import CurrentRatesCard from '../../../components/CurrentRates';
 import { demoInvoices } from '../../../lib/demo';
 import { DEFAULT_PROPERTY_ID } from '../../../lib/properties';
+import { DEFAULT_RATES_CONFIG } from '../../../lib/rates-config';
 
 const TABS = ['Property', 'Team', 'Billing', 'API & Data'] as const;
 type Tab = (typeof TABS)[number];
@@ -51,6 +53,16 @@ export default function Settings() {
           </div>
           <H4>Room tiers &amp; baseline rates</H4>
           <BaselineEditor propertyId={DEFAULT_PROPERTY_ID} />
+
+          {/* Rate entry moved off the dashboard, which is now an at-a-glance
+              surface. It belongs next to the baselines it sits against. */}
+          <div className="mt-6">
+            <H4>Your current rates</H4>
+            <CurrentRatesCard
+              propertyId={DEFAULT_PROPERTY_ID}
+              tiers={DEFAULT_RATES_CONFIG.tiers.map((t) => ({ tierId: t.id, label: t.label }))}
+            />
+          </div>
         </div>
       )}
 

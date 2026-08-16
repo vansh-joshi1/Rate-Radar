@@ -3,45 +3,23 @@ import { getStore } from '../../../lib/store';
 import { loadCurrentRates } from '../../../lib/current-rates';
 import { loadWatchlist } from '../../../lib/watchlist';
 import { chicagoToday } from '../../../lib/ingest';
-import { SampleBadge, SectionTitle } from '../../../components/ui';
-import CompsetExplorer, { type ExplorerBlock } from '../../../components/CompsetExplorer';
-import WatchlistManager from '../../../components/WatchlistManager';
+import { SampleBadge } from '../../../components/ui';
+import CompetitorInsights, {
+  type CompsetNight,
+  type HistoryPoint,
+} from '../../../components/CompetitorInsights';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
+import { DEFAULT_RATES_CONFIG } from '../../../lib/rates-config';
+import type { HistoryRecord } from '../../../lib/scoring/types';
 
 export const dynamic = 'force-dynamic';
-
-function addDays(date: string, n: number): string {
-  const d = new Date(`${date}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-
-const sublabel = (d: string) =>
-  new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  });
 
 export default async function Competitors() {
   const { snapshot, isDemo } = await loadSnapshot();
   const store = getStore();
   const property = getProperty(DEFAULT_PROPERTY_ID)!;
 
-  const today = chicagoToday();
-  const tomorrow = addDays(today, 1);
-
-  // Night tabs exist only for nights we actually collected prices for.
   const compsets = (snapshot.compsets ?? (snapshot.compset ? [snapshot.compset] : [])).filter(Boolean);
-  const blocks: ExplorerBlock[] = compsets.map((c) => ({
-    date: c.date,
-    label:
-      c.date === today
-        ? 'Tonight'
-        : c.date === tomorrow
-          ? 'Tomorrow'
-          : new Date(`${c.date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
-    sublabel: sublabel(c.date),
-    entries: c.entries,
-  }));
 
   // Your rate: owner-entered (authoritative — you set your prices) beats the
   // scraped direct rate, which redroof.com's bot wall often blocks anyway.
@@ -62,31 +40,53 @@ export default async function Competitors() {
     address: h.address,
   }));
 
+  // Recorded history — one point per collector run. The chart plots the window
+  // that actually exists rather than padding out to a fixed 90 days.
+  const historyDates = (await store.get<string[]>('history:dates')) ?? [];
+  const history: HistoryPoint[] = [];
+  for (const d of historyDates.slice(0, 90)) {
+    const rec = await store.hget<HistoryRecord>('history', d);
+    if (rec) {
+      history.push({
+        date: rec.date,
+        recommended: rec.recommendedStandard,
+        compsetMedian: rec.compsetMedian ?? null,
+      });
+    }
+  }
+
+  // Our recommended standard rate per night, keyed for the heatmap's own row.
+  const recommendedByDate = new Map(
+    snapshot.nights.map((n) => [
+      n.date,
+      (n.tiers.find((t) => t.tierId === 'standard') ?? n.tiers[0]).recommended,
+    ]),
+  );
+  const nights: CompsetNight[] = compsets.map((c) => ({
+    date: c.date,
+    entries: c.entries,
+    median: c.median,
+    recommended: recommendedByDate.get(c.date) ?? 0,
+  }));
+
   return (
     <div>
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <SectionTitle>Nearby competitors</SectionTitle>
-        {isDemo && <SampleBadge />}
-      </div>
-
-      {blocks.length > 0 ? (
-        <CompsetExplorer
-          property={{ name: property.name, lat: property.lat, lng: property.lng }}
-          yourRate={yourRate}
-          blocks={blocks}
-          watchlist={watchlist}
-        />
-      ) : (
-        <p className="mb-6 text-sm text-muted">
-          No competitor prices captured yet — they appear after the next collection run.
-        </p>
+      {isDemo && (
+        <div className="mb-md flex justify-end">
+          <SampleBadge />
+        </div>
       )}
 
-      <WatchlistManager propertyId={property.id} />
-
-      <p className="mt-4 text-xs text-muted">
-        Compset is a sanity bound on quiet nights only — event nights are never capped.
-      </p>
+      <CompetitorInsights
+        propertyId={property.id}
+        propertyName={property.name}
+        nights={nights}
+        history={history}
+        yourRate={yourRate?.price ?? null}
+        tiers={DEFAULT_RATES_CONFIG.tiers.map((t) => ({ tierId: t.id, label: t.label }))}
+        compSetName={watchlist.length > 0 ? `Watchlist (${watchlist.length} hotels)` : 'Default comp set'}
+        initialWatchlist={watchlist.map((h) => h.name)}
+      />
     </div>
   );
 }
