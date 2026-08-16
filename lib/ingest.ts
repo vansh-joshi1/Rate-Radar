@@ -1,3 +1,4 @@
+import { todayIn } from './tz';
 import { z } from 'zod';
 import holidaysConfig from '../config/holidays.json';
 import type { Store } from './store';
@@ -58,8 +59,10 @@ export function parseRatesData(
 const WINDOW_NIGHTS = 22; // today + 21
 const HOLIDAY_ATTENDANCE: Record<string, number> = { major: 40000, meaningful: 15000, minor: 6000 };
 
+/** Property-local today. Delegates to lib/tz so client components can share
+ *  the exact same rule without importing this module's server dependencies. */
 export function chicagoToday(now = new Date()): string {
-  return now.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+  return todayIn('America/Chicago', now);
 }
 
 function addDays(date: string, n: number): string {

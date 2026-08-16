@@ -18,6 +18,42 @@ export function venueCapacity(venue: string): number | null {
 }
 
 /**
+ * Approximate coordinates for the venues we track, so Market Intelligence can
+ * place events on a map and compute distance from the property. Same precision
+ * as the property's own pin in lib/properties.ts — good to a block or so, which
+ * is all a "how far is this event" read needs.
+ *
+ * An event at a venue not listed here gets no pin and no distance rather than
+ * a guessed one; the map caption says how many were placed.
+ */
+export const VENUE_COORDS: Record<string, { lat: number; lng: number }> = {
+  'nissan stadium': { lat: 36.1665, lng: -86.7713 },
+  'geodis park': { lat: 36.1305, lng: -86.7656 },
+  'bridgestone arena': { lat: 36.1593, lng: -86.7785 },
+  'firstbank stadium': { lat: 36.1447, lng: -86.8089 },
+  'music city center': { lat: 36.1567, lng: -86.7757 },
+};
+
+export function venueCoords(venue: string): { lat: number; lng: number } | null {
+  const key = venue.trim().toLowerCase();
+  for (const [name, coords] of Object.entries(VENUE_COORDS)) {
+    if (key.includes(name)) return coords;
+  }
+  return null;
+}
+
+/** Great-circle distance in miles — for "how far is this event from us". */
+export function milesBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 3958.8 * 2 * Math.asin(Math.sqrt(h));
+}
+
+/**
  * Travel-draw multiplier: how much of this event's audience travels from out of
  * town and needs a bed — vs. locals driving home the same night.
  */
