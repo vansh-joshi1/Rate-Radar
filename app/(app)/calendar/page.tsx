@@ -1,85 +1,87 @@
 import { loadSnapshot } from '../../../lib/dashboard-data';
-import { DemandChip, SampleBadge, SectionTitle } from '../../../components/ui';
+import { SampleBadge } from '../../../components/ui';
 import ReasoningCard from '../../../components/ReasoningCard';
+import MarketIntelligence, { type MIEvent, type MINight } from '../../../components/MarketIntelligence';
+import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
+import { milesBetween, venueCoords } from '../../../lib/scoring/venues';
+import { chicagoToday } from '../../../lib/ingest';
 
 export const dynamic = 'force-dynamic';
 
-const fmt = (d: string) =>
-  new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  });
 
 export default async function Calendar() {
   const { snapshot, isDemo } = await loadSnapshot();
+  const property = getProperty(DEFAULT_PROPERTY_ID)!;
+
+  // Every scored event in the window, deduped by id — an event spanning
+  // several nights appears once, dated to its first night.
+  const seen = new Set<string>();
+  const events: MIEvent[] = [];
+  for (const night of snapshot.nights) {
+    for (const e of night.events) {
+      if (seen.has(e.id)) continue;
+      seen.add(e.id);
+      const coords = venueCoords(e.venue);
+      events.push({
+        id: e.id,
+        name: e.name,
+        venue: e.venue,
+        date: e.date,
+        kind: e.kind,
+        attendance: e.attendanceEstimate,
+        score: e.score,
+        tier: e.tier,
+        verdict: e.verdict,
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
+        miles: coords ? milesBetween(property, coords) : null,
+      });
+    }
+  }
+  events.sort((a, b) => a.date.localeCompare(b.date) || b.score - a.score);
+
+  const nights: MINight[] = snapshot.nights.map((n) => {
+    const top = [...n.events].sort((a, b) => b.score - a.score)[0];
+    return {
+      date: n.date,
+      nightScore: n.nightScore,
+      holidayName: n.holidayName,
+      // Only label a cell when the driver actually moved the number.
+      topEvent: n.holidayName ?? (top && top.tier !== 'too-small' ? top.name : undefined),
+    };
+  });
+
+  const tonight = snapshot.nights[0];
 
   return (
     <div>
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <SectionTitle>{snapshot.nights.length}-night rate forecast</SectionTitle>
-        {isDemo && <SampleBadge />}
-      </div>
-
-      <div className="card p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr>
-                <th className="th">Night</th>
-                <th className="th">Demand signal</th>
-                <th className="th">Standard</th>
-                <th className="th">Superior</th>
-                <th className="th">Uplift</th>
-                <th className="th">Primary driver</th>
-              </tr>
-            </thead>
-            <tbody>
-              {snapshot.nights.map((n, i) => {
-                const std = n.tiers.find((t) => t.tierId === 'standard') ?? n.tiers[0];
-                const sup = n.tiers.find((t) => t.tierId === 'superior');
-                const top = n.events[0];
-                const driver = n.holidayName
-                  ? n.holidayName
-                  : top
-                    ? `${top.name}${top.tier === 'too-small' || top.tier === 'minor' ? ' (unlikely to matter)' : ''}`
-                    : 'No demand signal';
-                return (
-                  <tr
-                    key={n.date}
-                    className={`hover:bg-ink/[0.03] ${n.holidayName ? 'bg-accent/5 [&>td:first-child]:border-l-4 [&>td:first-child]:border-l-accent' : ''}`}
-                  >
-                    <td className="td font-semibold">{i === 0 ? <strong>Tonight</strong> : null} {fmt(n.date)}</td>
-                    <td className="td"><DemandChip score={n.nightScore} /></td>
-                    <td className="td font-serif text-lg">${std?.recommended}</td>
-                    <td className="td font-serif text-lg">${sup?.recommended ?? '—'}</td>
-                    <td className={`td font-semibold ${n.upliftPct > 0 ? 'text-ok' : 'text-muted'}`}>
-                      {n.upliftPct > 0 ? `+${n.upliftPct}%` : '0%'}
-                    </td>
-                    <td className={`td ${!n.holidayName && (!top || top.tier === 'too-small') ? 'text-muted' : ''}`}>
-                      {driver}
-                      {n.weatherNote && <div className="text-xs text-warn">{n.weatherNote}</div>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {isDemo && (
+        <div className="mb-md flex justify-end">
+          <SampleBadge />
         </div>
-      </div>
+      )}
 
-      {/* The working behind tonight's number, moved off the dashboard — it sits
-          with the forecast it explains. */}
-      <div className="mt-6">
+      <MarketIntelligence
+        property={{ name: property.name, lat: property.lat, lng: property.lng }}
+        events={events}
+        nights={nights}
+        weather={{ note: tonight?.weatherNote, bnaNote: tonight?.bnaNote }}
+        today={chicagoToday()}
+        timeZone={property.timezone}
+      />
+
+      <div className="mt-xl space-y-lg">
         <ReasoningCard
-          date={snapshot.nights[0].date}
-          reasoning={snapshot.nights[0].reasoning}
+          date={tonight.date}
+          reasoning={tonight.reasoning}
           confidence={snapshot.confidence}
           confidenceNote={snapshot.confidenceNote}
         />
-      </div>
 
-      <p className="mt-4 text-center text-xs text-muted">
-        Events judged too small to matter are shown with that verdict — never silently dropped.
-      </p>
+        <p className="text-center text-xs text-muted">
+          Events judged too small to matter are shown with that verdict — never silently dropped.
+        </p>
+      </div>
     </div>
   );
 }

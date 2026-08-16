@@ -148,6 +148,64 @@ body {
   }
 }
 
+/* ---- Market Intelligence: event map pins + demand calendar ---- */
+.event-pin-you {
+  display: block;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: rgb(var(--accent-rgb));
+  border: 2px solid #1a1b20;
+  box-shadow: 0 0 15px rgb(var(--accent-rgb) / 0.8);
+}
+.event-pin-you::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 9999px;
+  background: rgb(var(--accent-rgb) / 0.3);
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.event-pin {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  transform: translate(-50%, -50%);
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid #1a1b20;
+  background: rgb(var(--accent-rgb));
+  color: #fff;
+  box-shadow: 0 0 20px rgb(var(--accent-rgb) / 0.6);
+  transition: transform 0.2s ease;
+}
+.event-pin:hover {
+  transform: translate(-50%, -50%) scale(1.12);
+}
+.event-pin .material-symbols-outlined {
+  font-size: 16px;
+}
+.event-pin-hot {
+  background: #84f9c3;
+  color: #002114;
+  box-shadow: 0 0 20px rgb(132 249 195 / 0.45);
+}
+/* Hover label on event pins — dark chip matching the map surface. */
+.leaflet-tooltip.event-tip {
+  background: #1a1b20;
+  border: 1px solid #2f3035;
+  color: #f0f0f7;
+  font: 600 11px 'Inter', sans-serif;
+  border-radius: 4px;
+  padding: 3px 7px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+}
+.leaflet-tooltip.event-tip::before {
+  border-top-color: #2f3035;
+}
+
 /* Heatmap cell hover polish, per the design system. */
 .heatmap-cell {
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
