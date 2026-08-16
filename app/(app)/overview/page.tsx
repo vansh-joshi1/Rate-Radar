@@ -1,60 +1,172 @@
 import { loadSnapshot } from '../../../lib/dashboard-data';
 import { loadCurrentRates } from '../../../lib/current-rates';
 import { DEFAULT_PROPERTY_ID } from '../../../lib/properties';
-import CurrentRatesCard from '../../../components/CurrentRates';
 import { getStore } from '../../../lib/store';
-import { chicagoToday } from '../../../lib/ingest';
-import NoteBox from '../../../components/NoteBox';
-import { Chip, SampleBadge, SectionTitle } from '../../../components/ui';
-import { WarnIcon } from '../../../components/shell/Icons';
+import { Chip, SampleBadge } from '../../../components/ui';
 
 export const dynamic = 'force-dynamic';
+
+/*
+ * Executive dashboard, built to the supplied design: a page header with a date
+ * range, a 12-column bento of three stat cards, and a full-width system log.
+ * The layout is the mock's; every figure is read from the live snapshot.
+ *
+ * Rate entry, parity, reasoning and notes deliberately live elsewhere now
+ * (Settings, Competitors, Rate Calendar, Alerts) so this page stays the
+ * at-a-glance surface the design intends.
+ *
+ * The two warning banners are the one addition, and they are conditional: when
+ * the collector is healthy nothing renders and the page is exactly the mock.
+ * They only appear when the data is stale or a source failed — the moment
+ * every number below becomes untrustworthy.
+ */
+
+const Icon = ({ name, fill = false, className = '' }: { name: string; fill?: boolean; className?: string }) => (
+  <span className={`material-symbols-outlined ${className}`} {...(fill ? { 'data-weight': 'fill' } : {})} aria-hidden>
+    {name}
+  </span>
+);
 
 const fmtDate = (d: string) =>
   new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC',
   });
 
+const fmtRange = (from: string, to: string) => {
+  const opts = { month: 'short', day: 'numeric', timeZone: 'UTC' } as const;
+  const a = new Date(`${from}T12:00:00Z`).toLocaleDateString('en-US', opts);
+  const b = new Date(`${to}T12:00:00Z`).toLocaleDateString('en-US', opts);
+  return `${a} - ${b}, ${new Date(`${to}T12:00:00Z`).getUTCFullYear()}`;
+};
+
+const relative = (iso: string) => {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  return hrs < 24 ? `${hrs} hr${hrs === 1 ? '' : 's'} ago` : `${Math.round(hrs / 24)}d ago`;
+};
+
+const CARD =
+  'bg-card border border-line rounded-lg p-md transition-all duration-300 hover:shadow-[0px_4px_12px_rgba(11,28,48,0.05)]';
+const STAT = `${CARD} hover:scale-[1.02]`;
+
+/* The design's six-bar chart.
+ *
+ * Height is always proportional to the value and `highlight` only changes the
+ * colour. An earlier version forced the highlighted bar to 100%, which drew
+ * tonight as the tallest bar even on nights when it was the cheapest of the
+ * six — a chart that contradicted the number printed directly above it. */
+function Bars({ values, highlight, tone = 'accent' }: { values: number[]; highlight: number; tone?: 'accent' | 'line' }) {
+  if (values.length === 0) return <div className="mt-md h-8" />;
+  const shown = values.slice(0, 6);
+  const max = Math.max(...shown);
+  const min = Math.min(...shown);
+  const span = max - min || 1;
+  return (
+    <div className="mt-md flex h-8 items-end gap-1" aria-hidden>
+      {shown.map((v, i) => (
+        <div
+          key={i}
+          title={`$${v}`}
+          className={`w-1/6 rounded-t ${
+            i === highlight ? (tone === 'accent' ? 'bg-accent' : 'bg-line') : 'bg-ink/10'
+          }`}
+          style={{ height: `${35 + ((v - min) / span) * 65}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function LogRow({ source, status, error, at }: { source: string; status: string; error?: string; at: string }) {
+  const icon = status === 'ok' ? 'sync' : status === 'awaiting-key' ? 'key_off' : 'error';
+  const text =
+    status === 'ok'
+      ? `${source} sync completed successfully.`
+      : status === 'awaiting-key'
+        ? `${source} skipped — API key not configured.`
+        : `${source} failed${error ? `: ${error.slice(0, 110)}` : '.'}`;
+  return (
+    <div className="-mx-sm flex gap-sm rounded border-b border-line/50 px-sm py-sm transition-colors last:border-0 hover:bg-paper">
+      <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-paper">
+        <span
+          className={`material-symbols-outlined text-[14px] ${status === 'ok' ? 'text-muted' : 'text-warn'}`}
+          aria-hidden
+        >
+          {icon}
+        </span>
+      </div>
+      <div>
+        <p className="font-body-md text-body-md text-ink">{text}</p>
+        <span className="font-label-md text-[10px] uppercase text-muted">
+          {new Date(at).toLocaleString('en-US', { timeZone: 'America/Chicago' })} CT • System
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default async function Overview() {
   const { snapshot, isDemo } = await loadSnapshot();
-  const today = chicagoToday();
-  const note = isDemo ? '' : ((await getStore().hget<string>('notes', today)) ?? '');
 
   const night = snapshot.nights[0];
   const std = night.tiers.find((t) => t.tierId === 'standard') ?? night.tiers[0];
-  const superior = night.tiers.find((t) => t.tierId === 'superior');
   const ageHours = (Date.now() - new Date(snapshot.runAt).getTime()) / 3600_000;
   const failed = snapshot.sources.filter((s) => s.status !== 'ok');
 
-  // Your rate per tier: owner-entered is authoritative (you set your prices);
-  // the scraped redroof.com value fills in when the owner hasn't entered one.
+  // Your rate: owner-entered is authoritative (you set your prices); the
+  // scraped redroof.com value fills in when the owner hasn't entered one.
   const ownerRates = isDemo ? null : await loadCurrentRates(getStore(), DEFAULT_PROPERTY_ID);
   const directRooms = snapshot.parity.find((p) => p.source === 'redroof' && p.status === 'ok')?.rooms ?? [];
-  const listedFor = (tierId: string): { price: number; src: 'you' | 'scrape' } | undefined => {
-    const owner = ownerRates?.tiers[tierId];
-    if (owner != null) return { price: owner, src: 'you' };
-    const prices = directRooms.filter((r) => r.tierId === tierId).map((r) => r.price);
-    return prices.length > 0 ? { price: Math.min(...prices), src: 'scrape' } : undefined;
-  };
-  const listedStd = listedFor(std.tierId);
-  const listedSup = superior ? listedFor(superior.tierId) : undefined;
+  const ownerStd = ownerRates?.tiers[std.tierId];
+  const scraped = directRooms.filter((r) => r.tierId === std.tierId).map((r) => r.price);
+  const yourRate = ownerStd ?? (scraped.length > 0 ? Math.min(...scraped) : null);
+
+  const upcoming = snapshot.nights.slice(0, 6);
+  const upcomingRates = upcoming.map(
+    (n) => (n.tiers.find((t) => t.tierId === std.tierId) ?? n.tiers[0]).recommended,
+  );
+  const compset = snapshot.compsets?.[0] ?? snapshot.compset;
+  const compsetMedian = compset?.median ?? null;
+  const topEvent = [...night.events].sort((a, b) => b.score - a.score)[0];
+  const delta = yourRate != null ? std.recommended - yourRate : null;
+  const peakIdx = upcoming.reduce((best, n, i) => (n.nightScore > upcoming[best].nightScore ? i : best), 0);
 
   return (
-    <div>
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <SectionTitle>Tonight — {fmtDate(night.date)}</SectionTitle>
-        {isDemo ? <SampleBadge /> : <Chip tone="ok">Actionable</Chip>}
+    <>
+      {/* Page Header */}
+      <div className="flex flex-col justify-between gap-md sm:flex-row sm:items-end">
+        <div>
+          <h2 className="font-headline-lg text-headline-lg-mobile text-ink md:text-headline-lg">
+            Executive Overview
+          </h2>
+          <p className="mt-1 font-body-md text-body-md text-muted">
+            Live demand signals and transparent rate reasoning for {fmtDate(night.date)}.
+          </p>
+        </div>
+        <div className="flex items-center gap-sm">
+          {isDemo ? <SampleBadge /> : <Chip tone="ok">Actionable</Chip>}
+          <span className="font-label-md text-label-md uppercase text-muted">Date Range:</span>
+          <span className="flex items-center gap-sm rounded border border-line bg-card px-sm py-xs">
+            <span className="font-data-mono text-data-mono tabular-nums text-ink">
+              {fmtRange(upcoming[0].date, upcoming[upcoming.length - 1].date)}
+            </span>
+          </span>
+        </div>
       </div>
 
       {ageHours > 6 && (
-        <div className="mb-5 flex items-center gap-3 rounded-lg border-l-4 border-warn bg-warn/10 p-4 text-sm">
-          <WarnIcon className="shrink-0 text-warn" />
-          <span><strong>Stale data:</strong> last run {Math.round(ageHours)}h ago — the collector may not be running. Check GitHub Actions.</span>
+        <div className="flex items-center gap-sm rounded-lg border-l-4 border-warn bg-warn/10 p-md font-body-md text-body-md">
+          <Icon name="warning" className="shrink-0 text-warn" />
+          <span>
+            <strong>Stale data:</strong> last run {Math.round(ageHours)}h ago — the collector may not be running.
+            Check GitHub Actions.
+          </span>
         </div>
       )}
       {failed.length > 0 && (
-        <div className="mb-5 flex items-center gap-3 rounded-lg border-l-4 border-warn bg-warn/10 p-4 text-sm">
-          <WarnIcon className="shrink-0 text-warn" />
+        <div className="flex items-center gap-sm rounded-lg border-l-4 border-warn bg-warn/10 p-md font-body-md text-body-md">
+          <Icon name="warning" className="shrink-0 text-warn" />
           <span>
             <strong>Source warning:</strong>{' '}
             {failed.map((s) => `${s.source} (${s.status}${s.error ? `: ${s.error.slice(0, 90)}` : ''})`).join(' · ')}
@@ -62,113 +174,150 @@ export default async function Overview() {
         </div>
       )}
 
-      <div className="card mb-6">
-        {/* Both tiers at the same level — equal prominence, side by side */}
-        <div className="grid gap-8 sm:grid-cols-2">
-          {[
-            { tier: std, listed: listedStd, sub: night.upliftPct > 0 ? `+${night.upliftPct}% uplift` : 'baseline' },
-            ...(superior
-              ? [{ tier: superior, listed: listedSup, sub: `+$${superior.recommended - std.recommended} over standard` }]
-              : []),
-          ].map(({ tier, listed, sub }) => (
-            <div key={tier.tierId} className="py-4 text-center">
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted">{tier.label}</div>
-              <div className="my-2 font-serif text-6xl font-semibold leading-none text-accent">${tier.recommended}</div>
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted">Recommended rate</div>
-              <div className="mt-1.5 font-semibold text-ok">{sub}</div>
-              <div className="mt-1.5 text-sm text-muted">Range: ${tier.range[0]} – ${tier.range[1]}</div>
-              {listed != null && (
-                <div className={`mt-2 text-sm font-semibold ${Math.abs(listed.price - tier.recommended) > 3 ? 'text-warn' : 'text-muted'}`}>
-                  Your current rate: ${listed.price}{' '}
-                  <span className="font-normal text-muted">
-                    {listed.src === 'you' ? '(entered by you)' : '(scraped from redroof.com, tomorrow night)'}
-                  </span>
-                </div>
-              )}
+      {/* Bento Grid Layout */}
+      <div className="grid grid-cols-4 gap-md md:grid-cols-8 md:gap-lg lg:grid-cols-12">
+        {/* Rate Analysis */}
+        <div className={`col-span-4 md:col-span-4 lg:col-span-4 ${STAT}`}>
+          <div className="mb-sm flex items-start justify-between">
+            <span className="font-label-md text-label-md uppercase text-muted">Rate Analysis</span>
+            <Icon name="payments" className="text-accent" />
+          </div>
+          <div className="flex flex-col gap-xs">
+            <div className="flex items-baseline justify-between">
+              <span className="font-label-md text-label-md uppercase text-muted">Your Rate</span>
+              <span className="font-headline-md text-headline-md tabular-nums text-ink">
+                {yourRate != null ? `$${yourRate}` : '—'}
+              </span>
             </div>
-          ))}
-        </div>
-
-        <hr className="divider" />
-
-        <div className="grid items-start gap-8 md:grid-cols-[1.5fr_1fr]">
-          <div>
-            <h3 className="mb-4 text-base font-semibold">Reasoning</h3>
-            <ul className="space-y-2 text-[15px]">
-              {night.reasoning.map((r, i) => (
-                <li
-                  key={i}
-                  className={`relative pl-5 before:absolute before:left-0 before:text-accent before:content-['•'] ${
-                    r.includes('too small') ? 'text-muted' : ''
+            <div className="flex items-baseline justify-between">
+              <span className="font-label-md text-label-md uppercase text-muted">Suggested Rate</span>
+              <span className="font-headline-md text-headline-md tabular-nums text-accent">${std.recommended}</span>
+            </div>
+          </div>
+          <div className="mt-sm flex items-center gap-xs">
+            {delta === null ? (
+              <span className="font-body-md text-body-md text-muted">No rate on file — set yours in Settings</span>
+            ) : (
+              <>
+                <span
+                  className={`font-data-mono text-data-mono font-bold tabular-nums ${
+                    delta > 0 ? 'text-ok' : delta < 0 ? 'text-warn' : 'text-muted'
                   }`}
                 >
-                  {r}
-                </li>
+                  {delta > 0 ? '+' : delta < 0 ? '−' : ''}${Math.abs(delta)}
+                </span>
+                <span className="font-body-md text-body-md text-muted">
+                  {delta > 0 ? 'optimization opportunity' : delta < 0 ? 'above recommendation' : 'matched'}
+                </span>
+              </>
+            )}
+          </div>
+          <Bars values={upcomingRates} highlight={0} />
+        </div>
+
+        {/* Comp Set */}
+        <div className={`col-span-4 md:col-span-4 lg:col-span-4 ${STAT}`}>
+          <div className="mb-sm flex items-start justify-between">
+            <span className="font-label-md text-label-md uppercase text-muted">Comp Set Median</span>
+            <Icon name="analytics" className="text-accent" />
+          </div>
+          <div className="flex items-baseline gap-sm">
+            <span className="font-headline-xl text-headline-xl tabular-nums text-ink">
+              {compsetMedian != null ? `$${compsetMedian}` : '—'}
+            </span>
+          </div>
+          <div className="mt-sm flex items-center gap-xs">
+            {compsetMedian != null ? (
+              <>
+                <span
+                  className={`font-data-mono text-data-mono font-bold tabular-nums ${
+                    std.recommended >= compsetMedian ? 'text-ok' : 'text-muted'
+                  }`}
+                >
+                  {std.recommended >= compsetMedian ? '+' : '−'}${Math.abs(std.recommended - compsetMedian)}
+                </span>
+                <span className="font-body-md text-body-md text-muted">
+                  recommended vs {compset?.entries.length ?? 0} nearby
+                </span>
+              </>
+            ) : (
+              <span className="font-body-md text-body-md text-muted">
+                No competitor prices this run — bound skipped, not guessed
+              </span>
+            )}
+          </div>
+          <Bars values={compset?.entries.map((e) => e.price) ?? []} highlight={-1} tone="line" />
+        </div>
+
+        {/* Market Events */}
+        <div className={`col-span-4 md:col-span-8 lg:col-span-4 ${STAT}`}>
+          <div className="mb-sm flex items-start justify-between">
+            <span className="font-label-md text-label-md uppercase text-muted">Market Events</span>
+            <Icon name="calendar_today" className="text-accent" />
+          </div>
+          {topEvent ? (
+            <>
+              <div className="flex flex-col gap-xs">
+                <div className="flex items-center gap-sm">
+                  <span
+                    className={`rounded px-sm py-xs text-[10px] font-bold uppercase tracking-wider ${
+                      topEvent.score >= 40 ? 'bg-accent text-white' : 'bg-ink/10 text-muted'
+                    }`}
+                  >
+                    {topEvent.tier === 'too-small' ? 'Too small to matter' : `${topEvent.tier} · score ${topEvent.score}`}
+                  </span>
+                </div>
+                <span className="mt-xs font-headline-md text-headline-md text-ink">{topEvent.name}</span>
+              </div>
+              <div className="mt-sm flex items-center gap-xs">
+                <span className="font-body-md text-body-md text-muted">{topEvent.verdict}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="font-headline-md text-headline-md text-ink">No events tonight</span>
+              <div className="mt-sm">
+                <span className="font-body-md text-body-md text-muted">
+                  Rate falls back to your day-of-week baseline
+                </span>
+              </div>
+            </>
+          )}
+          <Bars values={upcoming.map((n) => Math.max(1, n.nightScore))} highlight={peakIdx} />
+        </div>
+
+        {/* System Log — "View All Logs" sits inside <summary> because that is
+            the only part of <details> that renders while collapsed. */}
+        <div className={`col-span-4 flex h-full flex-col md:col-span-8 lg:col-span-12 ${CARD}`}>
+          <h3 className="mb-md font-headline-md text-headline-md text-ink">System Log</h3>
+          <details className="group flex-1">
+            <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+              {snapshot.sources.slice(0, 3).map((s) => (
+                <LogRow key={s.source} source={s.source} status={s.status} error={s.error} at={s.fetchedAt} />
               ))}
-            </ul>
-          </div>
-          <div>
-            <div className="mb-1 flex justify-between text-xs font-semibold">
-              <span>Confidence</span>
-              <span>{snapshot.confidence}%</span>
+              {snapshot.sources.length > 3 && (
+                <span className="mt-md block w-full text-center font-label-md text-label-md uppercase text-accent hover:underline group-open:hidden">
+                  View All Logs
+                </span>
+              )}
+            </summary>
+            {snapshot.sources.slice(3).map((s) => (
+              <LogRow key={s.source} source={s.source} status={s.status} error={s.error} at={s.fetchedAt} />
+            ))}
+            <div className="flex gap-sm rounded px-sm py-sm">
+              <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-paper">
+                <Icon name="schedule" className="text-[14px] text-muted" />
+              </div>
+              <div>
+                <p className="font-body-md text-body-md text-ink">Collector run {snapshot.runId} completed.</p>
+                <span className="font-label-md text-[10px] uppercase text-muted">
+                  {relative(snapshot.runAt)} • System
+                </span>
+              </div>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-ink/10">
-              <div className="h-full rounded-full bg-ok" style={{ width: `${snapshot.confidence}%` }} />
-            </div>
-            <p className="mt-1 text-xs text-muted">{snapshot.confidenceNote}</p>
-            <p className="mt-4 text-xs text-muted">
-              Rate Radar never changes a price anywhere — enter rates in your own system.
-            </p>
-          </div>
+          </details>
         </div>
       </div>
-
-      <CurrentRatesCard
-        propertyId={DEFAULT_PROPERTY_ID}
-        tiers={night.tiers.map((t) => ({ tierId: t.tierId, label: t.label }))}
-      />
-
-      {snapshot.parity.length > 0 && (() => {
-        const LABELS: Record<string, string> = {
-          redroof: 'Direct (your site)', expedia: 'Expedia', booking: 'Booking.com', google: 'Google Hotels',
-        };
-        const priced = snapshot.parity.filter((p) => p.status === 'ok' && p.price != null && p.source !== 'google');
-        const gap = priced.length >= 2 ? Math.max(...priced.map((p) => p.price!)) - Math.min(...priced.map((p) => p.price!)) : 0;
-        const lo = priced.length >= 2 ? Math.min(...priced.map((p) => p.price!)) : 0;
-        const flagged = priced.length >= 2 && (gap >= 8 || (gap / lo) * 100 >= 10);
-        return (
-          <div className="card mb-6">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h3 className="text-lg font-bold tracking-tight">
-                Your listed rate by source
-                {flagged && <span className="ml-2 rounded-full bg-bad px-2.5 py-0.5 text-xs font-bold text-white">${gap} gap</span>}
-              </h3>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {snapshot.parity.map((p) => (
-                <div key={p.source} className="rounded-lg border border-line bg-paper/60 p-3.5">
-                  <div className="text-[10px] font-semibold uppercase tracking-widest text-muted">
-                    {LABELS[p.source] ?? p.source}
-                    {p.source === 'google' && ' (info only)'}
-                  </div>
-                  {p.status === 'ok' ? (
-                    <div className="mt-1 font-serif text-2xl font-semibold">${p.price}</div>
-                  ) : (
-                    <div className="mt-1.5 text-xs font-semibold text-warn">NEEDS MANUAL CHECK</div>
-                  )}
-                </div>
-              ))}
-            </div>
-            <p className="mt-3 text-xs text-muted">Checked for tomorrow night — cheapest public rate per source.</p>
-          </div>
-        );
-      })()}
-
-      <NoteBox date={today} initial={note} />
-
-      <p className="mt-6 text-sm text-muted">
-        Last run {new Date(snapshot.runAt).toLocaleString('en-US', { timeZone: 'America/Chicago' })} CT · run {snapshot.runId}
-      </p>
-    </div>
+    </>
   );
 }

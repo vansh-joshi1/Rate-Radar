@@ -43,7 +43,7 @@ export default async function Analytics() {
         <h3 className="mb-4 text-lg font-bold tracking-tight">Recommended vs. actually charged</h3>
         <div className="relative flex h-72 items-center justify-center border border-dashed border-line bg-ink/[0.02]">
           <svg width="100%" height="200" viewBox="0 0 400 200" preserveAspectRatio="none" className="max-w-2xl">
-            <path d="M0,150 Q50,140 100,160 T200,130 T300,140 T400,100" fill="none" stroke="var(--accent-red)" strokeWidth="2" />
+            <path d="M0,150 Q50,140 100,160 T200,130 T300,140 T400,100" fill="none" stroke="var(--accent-color)" strokeWidth="2" />
             <path d="M0,160 Q50,155 100,170 T200,150 T300,155 T400,130" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeDasharray="4" />
           </svg>
           <div className="absolute bottom-2 text-xs text-muted">Solid = recommended · Dashed = actually charged</div>

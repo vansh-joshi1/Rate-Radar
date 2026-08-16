@@ -120,4 +120,11 @@ export interface HistoryRecord {
   nightScore: number;
   topDriver: string;
   recordedAt: string;
+  /**
+   * Compset median as of this run. Optional because records written before
+   * competitor history was retained don't have it — the Competitor Insights
+   * chart plots this series only where it exists rather than interpolating a
+   * line through nights nobody measured.
+   */
+  compsetMedian?: number | null;
 }

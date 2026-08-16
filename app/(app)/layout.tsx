@@ -20,9 +20,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         role: role as string,
       }
     : null;
+  // Drives the notification dot in the top bar — real collector health, not decoration.
+  const alerts = snapshot.sources.filter((s) => s.status !== 'ok').length;
   return (
     <RoleProvider role={role}>
-      <AppShell freshness={freshness} user={user}>
+      <AppShell freshness={freshness} user={user} alerts={alerts}>
         {children}
       </AppShell>
     </RoleProvider>
