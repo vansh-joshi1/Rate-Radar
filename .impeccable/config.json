@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "material symbols outlined",
+        "createdAt": "2026-08-20T03:57:58.676Z",
+        "reason": "Icon system, not a typeface: DESIGN.md Components/Navigation documents Material Symbols Outlined with its variable FILL axis as the app chrome's icon set."
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-08-20T03:57:58.780Z",
+        "reason": "user confirmed: chose the two-face Sora+Inter system in the /impeccable document interview and retired Fraunces; Inter is the committed body face, recorded in DESIGN.md's Two-Face Rule."
+      }
+    ]
+  }
+}

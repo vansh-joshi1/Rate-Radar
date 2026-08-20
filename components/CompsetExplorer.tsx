@@ -113,7 +113,7 @@ export default function CompsetExplorer({ property, yourRate, blocks, watchlist 
           <div className="text-[11px] font-semibold uppercase tracking-widest text-muted">Your rate</div>
           {yourRate ? (
             <>
-              <div className="font-serif text-3xl font-semibold text-accent">${yourRate.price}</div>
+              <div className="font-display text-3xl font-semibold tabular-nums text-accent">${yourRate.price}</div>
               <div className="text-xs text-muted">{yourRate.source === 'owner' ? 'entered by you' : 'scraped from redroof.com'}</div>
             </>
           ) : (
@@ -193,17 +193,22 @@ export default function CompsetExplorer({ property, yourRate, blocks, watchlist 
                     <tr key="median" className="bg-ink/[0.04] font-bold uppercase">
                       <td className="td">Competitor median</td>
                       <td className="td" />
-                      <td className="td font-serif text-lg">${Math.round(r.price)}</td>
+                      <td className="td text-lg font-semibold">${Math.round(r.price)}</td>
                       <td className="td text-muted">{yourRate ? delta(Math.round(r.price)) : '—'}</td>
                     </tr>
                   );
                 }
                 if (r.kind === 'you') {
                   return (
-                    <tr key="you" className="bg-accent/5 font-semibold [&>td:first-child]:border-l-4 [&>td:first-child]:border-l-accent">
-                      <td className="td">{property.name} (you{yourRate!.source === 'owner' ? ' — current rate' : ' — listed on redroof.com'})</td>
+                    <tr key="you" className="bg-accent/5 font-semibold">
+                      <td className="td">
+                        {/* "You" marker: a cobalt dot, not a side-tab border. The
+                            row tint alone is too faint to survive a glance. */}
+                        <span className="mr-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent align-middle" aria-hidden />
+                        {property.name} (you{yourRate!.source === 'owner' ? ' — current rate' : ' — listed on redroof.com'})
+                      </td>
                       <td className="td">—</td>
-                      <td className="td font-serif text-lg text-accent">${yourRate!.price}</td>
+                      <td className="td text-lg font-semibold text-accent">${yourRate!.price}</td>
                       <td className="td">—</td>
                     </tr>
                   );
@@ -217,7 +222,7 @@ export default function CompsetExplorer({ property, yourRate, blocks, watchlist 
                   >
                     <td className="td">{r.name}</td>
                     <td className="td text-muted">{r.distanceMi != null ? `${r.distanceMi} mi` : '—'}</td>
-                    <td className="td font-serif text-lg">${r.price}</td>
+                    <td className="td text-lg font-semibold">${r.price}</td>
                     <td className="td text-muted">{delta(r.price)}</td>
                   </tr>
                 );

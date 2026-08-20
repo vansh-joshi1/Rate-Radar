@@ -57,7 +57,7 @@ const Icon = ({ name, fill = false, className = '' }: { name: string; fill?: boo
 );
 
 const CARD =
-  'bg-card border border-line rounded-xl p-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-[0px_8px_24px_rgba(11,28,48,0.08)]';
+  'bg-card border border-line rounded-xl p-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-hover-lift';
 
 const FIELD =
   'bg-card border border-line rounded px-sm py-2 font-body-md text-body-md text-ink outline-none transition-colors duration-200 hover:border-muted focus:border-accent focus:ring-1 focus:ring-accent cursor-pointer';
@@ -382,7 +382,7 @@ export default function CompetitorInsights({
 
       {/* Opportunity banner */}
       {insight && (
-        <div className="flex items-start gap-md rounded-lg border border-accent bg-accent-muted p-md transition-shadow duration-300 hover:shadow-md">
+        <div className="flex items-start gap-md rounded-lg border border-accent bg-accent-muted p-md transition-shadow duration-300 hover:shadow-hover-lift">
           <Icon name="bolt" fill className="mt-xs text-accent" />
           <div>
             <h4 className="mb-xs font-headline-md text-headline-md text-accent">Rate Opportunity Detected</h4>
@@ -582,7 +582,7 @@ export default function CompetitorInsights({
           {open && (
             <ul
               id="watchlist-suggestions"
-              className="absolute left-0 right-0 top-full z-30 mt-1 max-h-72 overflow-y-auto rounded-lg border border-line bg-card shadow-md"
+              className="absolute left-0 right-0 top-full z-30 mt-1 max-h-72 overflow-y-auto rounded-lg border border-line bg-card shadow-overlay-sm"
             >
               {searching && <li className="px-3 py-2 font-body-md text-body-md text-muted">Searching nearby…</li>}
               {!searching && suggestions.length === 0 && (
@@ -615,7 +615,7 @@ export default function CompetitorInsights({
           onClick={() => query.trim() && addHotel({ name: query.trim() })}
           disabled={!canWrite || busy || !query.trim() || full}
           title={full ? `Watchlist full (${MAX_HOTELS}) — remove one to add another` : undefined}
-          className="flex shrink-0 items-center gap-xs rounded bg-accent px-lg py-2 font-label-md text-label-md text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:translate-y-0 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none"
+          className="flex shrink-0 items-center gap-xs rounded bg-accent px-lg py-2 font-label-md text-label-md text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-hover-lift active:translate-y-0 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none"
         >
           <Icon name="add" className="text-[18px]" />
           Add to Watchlist

@@ -42,7 +42,7 @@ export default function HistoryTable({
             {history.map((h) => (
               <tr key={h.date} className="hover:bg-ink/[0.03]">
                 <td className="td">{h.date}</td>
-                <td className="td font-serif">${h.recommendedStandard} / ${h.recommendedSuperior}</td>
+                <td className="td font-semibold">${h.recommendedStandard} / ${h.recommendedSuperior}</td>
                 <td className="td">{h.nightScore}</td>
                 <td className="td text-muted">{h.topDriver}</td>
                 {(['standard', 'superior'] as const).map((tier) => (
@@ -57,7 +57,7 @@ export default function HistoryTable({
                         onBlur={(e) => e.target.value && save(h.date, tier, e.target.value)}
                       />
                     ) : (
-                      <span className="font-serif">
+                      <span className="font-semibold tabular-nums">
                         {actuals[h.date]?.[tier] != null ? `$${actuals[h.date][tier]}` : '—'}
                       </span>
                     )}

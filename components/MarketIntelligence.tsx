@@ -139,11 +139,11 @@ export default function MarketIntelligence({ property, events, nights, weather, 
       </div>
 
       {/* Map */}
-      <div className="relative col-span-1 flex h-[600px] flex-col overflow-hidden rounded border border-line bg-[#0B1C30] shadow-[0_8px_30px_rgb(0,0,0,0.12)] md:col-span-8 lg:col-span-8">
+      <div className="relative col-span-1 flex h-[600px] flex-col overflow-hidden rounded border border-line bg-[#0B1C30] shadow-overlay-sm md:col-span-8 lg:col-span-8">
         <EventsMap property={property} pins={pins} />
 
         <div className="pointer-events-none absolute left-md right-md top-md z-[400] flex flex-wrap justify-between gap-sm">
-          <div className="pointer-events-auto flex gap-md rounded border border-[#2f3035] bg-[#1a1b20]/90 p-sm shadow-lg backdrop-blur-md">
+          <div className="pointer-events-auto flex gap-md rounded border border-[#2f3035] bg-[#1a1b20]/90 p-sm shadow-overlay-sm backdrop-blur-md">
             {FAMILIES.map((f) => (
               <label
                 key={f.key}
@@ -162,7 +162,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
               </label>
             ))}
           </div>
-          <div className="pointer-events-auto flex items-center gap-sm rounded border border-[#2f3035] bg-[#1a1b20]/90 p-sm shadow-lg backdrop-blur-md">
+          <div className="pointer-events-auto flex items-center gap-sm rounded border border-[#2f3035] bg-[#1a1b20]/90 p-sm shadow-overlay-sm backdrop-blur-md">
             <Icon name="my_location" className="text-accent" />
             <span className="font-label-md text-label-md text-[#f0f0f7]">{property.name}</span>
           </div>
@@ -177,7 +177,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
       {/* Right column */}
       <div className="col-span-1 flex flex-col gap-lg md:col-span-8 lg:col-span-4">
         {/* Weather & impact */}
-        <div className="rounded border border-line bg-card p-md shadow-sm transition-shadow hover:shadow-[0px_4px_12px_rgba(11,28,48,0.05)]">
+        <div className="rounded border border-line bg-card p-md transition-shadow hover:shadow-hover-lift">
           <h3 className="mb-md flex items-center gap-xs font-label-md text-label-md uppercase text-muted">
             <Icon name="partly_cloudy_day" className="text-[18px]" /> Forecast &amp; Impact
           </h3>
@@ -210,7 +210,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
         </div>
 
         {/* Upcoming events */}
-        <div className="flex h-[426px] flex-col rounded border border-line bg-card shadow-sm transition-shadow hover:shadow-[0px_4px_12px_rgba(11,28,48,0.05)]">
+        <div className="flex h-[426px] flex-col rounded border border-line bg-card transition-shadow hover:shadow-hover-lift">
           <div className="flex items-center justify-between border-b border-line bg-paper p-md">
             <h3 className="font-label-md text-label-md uppercase text-ink">Upcoming Events</h3>
             <span className="rounded bg-accent/10 px-2 py-1 font-data-mono text-[10px] uppercase text-accent">
@@ -228,7 +228,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
               visible.map((e) => (
                 <div
                   key={e.id}
-                  className="group cursor-pointer border-b border-line p-md transition-colors last:border-0 hover:bg-paper hover:shadow-sm"
+                  className="group cursor-pointer border-b border-line p-md transition-colors last:border-0 hover:bg-paper hover:shadow-hover-lift"
                   title={e.verdict}
                 >
                   <div className="mb-sm flex items-start justify-between gap-sm">
