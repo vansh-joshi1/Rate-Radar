@@ -482,10 +482,18 @@ export default function CompetitorInsights({
                     {priceIndex != null ? `${priceIndex.toFixed(1)}%` : '—'}
                   </span>
                 </div>
+                {/* Fills by scaleX, not width, so the transition is composited
+                    — and so there IS one: this used to declare
+                    `transition-colors` while the only property that changed was
+                    `width`, so the meter teleported on every Room Type / From
+                    change. The bar is 6px tall, so the right cap flattening at
+                    low fills is imperceptible; if it ever isn't, transition
+                    `width 300ms` instead — the element has no siblings, so the
+                    layout invalidation stays contained. */}
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
                   <div
-                    className="h-1.5 rounded-full bg-accent transition-colors duration-300"
-                    style={{ width: `${Math.min(100, Math.max(0, ((priceIndex ?? 0) / 200) * 100))}%` }}
+                    className="h-1.5 w-full origin-left rounded-full bg-accent transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:duration-150"
+                    style={{ transform: `scaleX(${Math.min(1, Math.max(0, (priceIndex ?? 0) / 200))})` }}
                   />
                 </div>
               </div>
