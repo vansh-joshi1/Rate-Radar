@@ -98,8 +98,11 @@ export default function AppShell({
 
   return (
     <div className="flex min-h-screen bg-paper">
+      {/* 300ms, not Tailwind's default 150ms: a drawer travelling a full 280px
+          in 150ms reads as a glitch rather than a movement. The curve is the
+          standard drawer ease — fast out of the gate, long settle. */}
       <nav
-        className={`fixed left-0 top-0 z-50 flex h-screen w-sidebar-width flex-col border-r border-line bg-card py-lg transition-transform ${
+        className={`fixed left-0 top-0 z-50 flex h-screen w-sidebar-width flex-col border-r border-line bg-card py-lg transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:duration-150 ${
           open ? '' : 'max-md:-translate-x-full'
         }`}
       >
@@ -188,13 +191,19 @@ export default function AppShell({
         </div>
       </nav>
 
-      {open && (
-        <button
-          aria-label="Close menu"
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-ink/30 md:hidden"
-        />
-      )}
+      {/* Always mounted, opacity-toggled. It used to be conditionally rendered,
+          which made its exit impossible to animate — the drawer slid away while
+          the scrim vanished in a single frame. Closed state is inert:
+          pointer-events off, out of the tab order, hidden from AT. */}
+      <button
+        aria-label="Close menu"
+        aria-hidden={!open}
+        tabIndex={open ? 0 : -1}
+        onClick={() => setOpen(false)}
+        className={`fixed inset-0 z-40 bg-ink/30 transition-opacity duration-200 motion-reduce:duration-150 md:hidden ${
+          open ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col md:ml-sidebar-width">
         <header className="sticky top-0 z-40 w-full bg-paper">
