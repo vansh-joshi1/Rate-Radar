@@ -242,8 +242,31 @@ body {
   .divider {
     @apply my-6 border-0 border-t border-line;
   }
+  /* `transition-colors` is deliberately NOT in the @apply chain: @apply inlines
+     into this same rule, so the explicit `transition` below would override it
+     anyway. Spelling it out keeps the press curve separable from the colour
+     one — a press wants a short ease-out, a hover wants a plain ease. */
   .btn {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-paper disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm font-semibold text-ink hover:bg-paper disabled:cursor-not-allowed disabled:opacity-50;
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease,
+      transform 140ms cubic-bezier(0, 0, 0.2, 1);
+  }
+  /* Press feedback. Subtle on purpose: these buttons are pressed often enough
+     that anything more than a hair of scale reads as sluggish. Disabled buttons
+     stay still — they didn't hear anything. */
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  /* Lives here rather than in the reduced-motion block above because Tailwind
+     hoists @layer components to the `@tailwind components` directive at the top
+     of this file — an override up there would be emitted first and lose. */
+  @media (prefers-reduced-motion: reduce) {
+    .btn:active:not(:disabled) {
+      transform: scale(0.99);
+    }
   }
   .btn-primary {
     @apply border-accent bg-accent text-white hover:border-accent-deep hover:bg-accent-deep;

@@ -8,3 +8,8 @@ next-env.d.ts
 .vercel
 .env*
 .claude/worktrees/
+
+# Agent skills are vendored copies, not source. skills-lock.json IS tracked —
+# it's the reproducible record; restore the trees with
+# `npx skills experimental_install`.
+.claude/skills/
