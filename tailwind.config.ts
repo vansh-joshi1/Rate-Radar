@@ -41,9 +41,17 @@ const config: Config = {
         warn: c('warn-rgb'),
         bad: c('bad-rgb'),
       },
+      // The four shadows the system owns (DESIGN.md → Elevation & Depth).
+      // Surfaces are flat at rest; a shadow means the element is responding to
+      // interaction or genuinely floating above the page. Every value is tinted
+      // with Instrument Navy rather than black — that cool key is what keeps the
+      // depth from reading as a generic admin panel.
+      boxShadow: {
+        'hover-lift': '0 4px 12px rgba(11, 28, 48, 0.05)',
+        'overlay-sm': '0 8px 24px rgba(11, 28, 48, 0.08)',
+        'overlay-lg': '0 24px 60px -20px rgba(11, 28, 48, 0.45)',
+      },
       fontFamily: {
-        // Fraunces is reserved for the big rate numbers — everything else is Inter.
-        serif: ['Fraunces', 'Georgia', 'serif'],
         display: ['Sora', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
         inter: ['Inter', 'system-ui', 'sans-serif'],
@@ -71,13 +79,25 @@ const config: Config = {
         'sidebar-width': '280px',
       },
       fontSize: {
+        // Marketing display steps — used in responsive pairs: the hero is
+        // display-lg → display-xl, section headings are display-sm → display-md.
+        'display-xl': ['56px', { lineHeight: '60px', letterSpacing: '-0.03em', fontWeight: '700' }],
+        'display-lg': ['42px', { lineHeight: '46px', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'display-md': ['38px', { lineHeight: '46px', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'display-sm': ['32px', { lineHeight: '38px', letterSpacing: '-0.02em', fontWeight: '700' }],
         'headline-xl': ['36px', { lineHeight: '44px', letterSpacing: '-0.02em', fontWeight: '700' }],
         'headline-lg': ['28px', { lineHeight: '36px', letterSpacing: '-0.01em', fontWeight: '600' }],
         'headline-lg-mobile': ['24px', { lineHeight: '32px', fontWeight: '600' }],
         'headline-md': ['20px', { lineHeight: '28px', fontWeight: '600' }],
+        'title-sm': ['18px', { lineHeight: '26px', fontWeight: '600' }],
         'body-lg': ['16px', { lineHeight: '24px', fontWeight: '400' }],
         'body-md': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+        'body-sm': ['13px', { lineHeight: '18px', fontWeight: '400' }],
         'label-md': ['12px', { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '600' }],
+        // 11px carries chips and table headers; 10px is the smallest uppercase
+        // marker. Both were already load-bearing before they had names.
+        'label-sm': ['11px', { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '600' }],
+        micro: ['10px', { lineHeight: '14px', letterSpacing: '0.08em', fontWeight: '600' }],
         'data-mono': ['14px', { lineHeight: '20px', letterSpacing: '-0.01em', fontWeight: '500' }],
       },
     },

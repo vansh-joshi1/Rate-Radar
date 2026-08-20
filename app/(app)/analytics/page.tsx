@@ -33,7 +33,7 @@ export default async function Analytics() {
         {STATS.map((s) => (
           <div key={s.label} className="card text-center">
             <div className="text-[11px] font-semibold uppercase tracking-widest text-muted">{s.label}</div>
-            <div className={`my-1.5 font-serif text-4xl font-semibold ${s.tone}`}>{s.value}</div>
+            <div className={`my-1.5 font-display text-4xl font-semibold tabular-nums ${s.tone}`}>{s.value}</div>
             <div className="text-xs text-muted">{s.note}</div>
           </div>
         ))}
@@ -66,7 +66,7 @@ export default async function Analytics() {
                   <td className="td">{e.event}</td>
                   <td className="td">{e.date}</td>
                   <td className="td">{e.applied ? <Chip tone="ok">Yes</Chip> : <Chip>No</Chip>}</td>
-                  <td className="td font-serif text-lg">${e.adr}</td>
+                  <td className="td text-lg font-semibold">${e.adr}</td>
                   <td className={`td font-semibold ${e.applied ? 'text-ok' : ''}`}>{e.uplift}</td>
                 </tr>
               ))}

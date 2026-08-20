@@ -47,7 +47,7 @@ const relative = (iso: string) => {
 };
 
 const CARD =
-  'bg-card border border-line rounded-lg p-md transition-all duration-300 hover:shadow-[0px_4px_12px_rgba(11,28,48,0.05)]';
+  'bg-card border border-line rounded-lg p-md transition-all duration-300 hover:shadow-hover-lift';
 const STAT = `${CARD} hover:scale-[1.02]`;
 
 /* The design's six-bar chart.
@@ -144,9 +144,9 @@ export default async function Overview() {
             Live demand signals and transparent rate reasoning for {fmtDate(night.date)}.
           </p>
         </div>
-        <div className="flex items-center gap-sm">
+        <div className="flex flex-wrap items-center gap-sm">
           {isDemo ? <SampleBadge /> : <Chip tone="ok">Actionable</Chip>}
-          <span className="font-label-md text-label-md uppercase text-muted">Date Range:</span>
+          <span className="whitespace-nowrap font-label-md text-label-md uppercase text-muted">Date Range:</span>
           <span className="flex items-center gap-sm rounded border border-line bg-card px-sm py-xs">
             <span className="font-data-mono text-data-mono tabular-nums text-ink">
               {fmtRange(upcoming[0].date, upcoming[upcoming.length - 1].date)}
@@ -156,8 +156,8 @@ export default async function Overview() {
       </div>
 
       {ageHours > 6 && (
-        <div className="flex items-center gap-sm rounded-lg border-l-4 border-warn bg-warn/10 p-md font-body-md text-body-md">
-          <Icon name="warning" className="shrink-0 text-warn" />
+        <div className="flex items-start gap-sm rounded-lg border border-warn/40 bg-warn/10 p-md font-body-md text-body-md">
+          <Icon name="warning" className="mt-px shrink-0 text-warn" />
           <span>
             <strong>Stale data:</strong> last run {Math.round(ageHours)}h ago — the collector may not be running.
             Check GitHub Actions.
@@ -165,8 +165,8 @@ export default async function Overview() {
         </div>
       )}
       {failed.length > 0 && (
-        <div className="flex items-center gap-sm rounded-lg border-l-4 border-warn bg-warn/10 p-md font-body-md text-body-md">
-          <Icon name="warning" className="shrink-0 text-warn" />
+        <div className="flex items-start gap-sm rounded-lg border border-warn/40 bg-warn/10 p-md font-body-md text-body-md">
+          <Icon name="warning" className="mt-px shrink-0 text-warn" />
           <span>
             <strong>Source warning:</strong>{' '}
             {failed.map((s) => `${s.source} (${s.status}${s.error ? `: ${s.error.slice(0, 90)}` : ''})`).join(' · ')}

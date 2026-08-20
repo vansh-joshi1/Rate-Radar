@@ -126,7 +126,7 @@ export default function CompsetMap({ pins, caption, focus, onPinSelect }: Props)
     <div className="relative">
       <div ref={el} className="relative z-0 h-96 w-full overflow-hidden rounded-t-xl bg-paper" />
       {caption && (
-        <div className="absolute right-3 top-3 z-10 rounded-full border border-line bg-card/85 px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur">
+        <div className="absolute right-3 top-3 z-10 rounded-full border border-line bg-card/85 px-3 py-1 text-xs font-semibold shadow-overlay-sm backdrop-blur">
           {caption}
         </div>
       )}

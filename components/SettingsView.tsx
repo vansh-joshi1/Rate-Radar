@@ -40,7 +40,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-const CARD = 'rounded-xl border border-line bg-card p-md shadow-sm md:p-xl';
+const CARD = 'rounded-xl border border-line bg-card p-md md:p-xl';
 const FIELD_RO =
   'w-full rounded-lg border border-line bg-paper px-4 py-2.5 font-body-md text-body-md text-ink';
 const LABEL = 'mb-1 block font-label-md text-label-md uppercase text-muted';
