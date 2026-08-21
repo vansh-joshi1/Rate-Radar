@@ -11,6 +11,8 @@ import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compse
 import { DEFAULT_PROPERTY_ID, propKey } from './properties';
 import { loadWatchlist, saveWatchlist, watchlistKey, watchlistCompsetConfig, type WatchlistHotel } from './watchlist';
 import { loadRatesConfig } from './rates-config';
+import { appendRunTelemetry } from './collection-telemetry';
+import type { RunTelemetry } from '../collector/telemetry';
 import type {
   CompsetEntry, CompsetInfo, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
 } from './scoring/types';
@@ -128,6 +130,13 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
       }
     }
     if (changed) await saveWatchlist(store, bundlePropertyId, list);
+  }
+
+  // Collection telemetry — how each price attempt actually went. Bounded
+  // window; absent on bundles from a pre-telemetry collector.
+  const telemetry = (ratesData as { telemetry?: RunTelemetry } | null)?.telemetry;
+  if (telemetry && Array.isArray(telemetry.attempts)) {
+    await appendRunTelemetry(store, bundlePropertyId, telemetry);
   }
   // Filter against the UI-editable watchlist when one exists (the collector
   // harvested with the same list); config/compset.json remains the fallback.
