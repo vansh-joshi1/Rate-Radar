@@ -4,6 +4,8 @@ import { demoInvoices } from '../../../lib/demo';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
 import { DEFAULT_RATES_CONFIG } from '../../../lib/rates-config';
 import { ALERT_THRESHOLDS } from '../../../lib/alerts/rules';
+import { getStore } from '../../../lib/store';
+import { loadRunTelemetry } from '../../../lib/collection-telemetry';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +18,7 @@ export const dynamic = 'force-dynamic';
 export default async function Settings() {
   const { snapshot, isDemo } = await loadSnapshot();
   const property = getProperty(DEFAULT_PROPERTY_ID)!;
+  const telemetryRuns = await loadRunTelemetry(getStore(), DEFAULT_PROPERTY_ID);
 
   return (
     <SettingsView
@@ -35,6 +38,7 @@ export default async function Settings() {
         fetchedAt: s.fetchedAt,
       }))}
       thresholds={ALERT_THRESHOLDS}
+      telemetryRuns={telemetryRuns}
       invoices={demoInvoices}
       isDemo={isDemo}
     />

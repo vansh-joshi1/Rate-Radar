@@ -4,6 +4,8 @@ import BaselineEditor from './BaselineEditor';
 import TeamManager from './TeamManager';
 import CurrentRatesCard from './CurrentRates';
 import { Chip, SampleBadge } from './ui';
+import CollectionHealth from './CollectionHealth';
+import type { RunTelemetry } from '../collector/telemetry';
 
 /*
  * Settings, built to the supplied design: a vertical pill-tab rail beside
@@ -77,6 +79,7 @@ interface Props {
   tiers: { tierId: string; label: string }[];
   sources: SourceHealth[];
   thresholds: Thresholds;
+  telemetryRuns: RunTelemetry[];
   invoices: { date: string; amount: string; status: string }[];
   isDemo: boolean;
 }
@@ -98,7 +101,7 @@ const SOURCE_LABEL: Record<string, string> = {
   rates: 'Rate checks — your site, Expedia, Booking, Google',
 };
 
-export default function SettingsView({ property, tiers, sources, thresholds, invoices, isDemo }: Props) {
+export default function SettingsView({ property, tiers, sources, thresholds, invoices, isDemo, telemetryRuns }: Props) {
   const [tab, setTab] = useState<TabId>('property');
 
   const tabBtn = (active: boolean) =>
@@ -364,6 +367,8 @@ export default function SettingsView({ property, tiers, sources, thresholds, inv
                   never connects to a PMS or channel manager, because it never writes a price anywhere.
                 </p>
               </section>
+
+              <CollectionHealth runs={telemetryRuns} />
 
               <section className={CARD}>
                 <SectionHead title="Public API (v1)" />
