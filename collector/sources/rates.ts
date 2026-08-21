@@ -3,6 +3,14 @@ import type { CompsetEntry, RateCheck, RoomRate, SourceResult } from '../../lib/
 import { matchCompset, type CompsetConfig } from '../../lib/scoring/compset';
 import compsetConfig from '../../config/compset.json';
 import { loadProperties, mapRoomToTier, type RatePropertyConfig, type RoomTierRule } from '../properties';
+import {
+  buildRunTelemetry,
+  classifyOutcome,
+  record,
+  resetTelemetry,
+  summarize,
+  type AttemptSource,
+} from '../telemetry';
 
 /**
  * Rate parity: our own listed rate on 4 public sources, checked independently.
@@ -116,26 +124,64 @@ type Checker = (browser: Browser) => Promise<RateCheck>;
 
 const ATTEMPTS = 2;
 
+/**
+ * Which browser this build uses. Flipped to 'patchright' by the transport
+ * swap — the telemetry needs it to tell baseline runs from post-swap runs.
+ */
+const BROWSER_ENGINE = 'playwright' as const;
+
+/** Which scheduling leg ran this. Set by the workflow. */
+const runLeg = (): 'self-hosted' | 'github-hosted' =>
+  process.env.RUN_LEG === 'self-hosted' ? 'self-hosted' : 'github-hosted';
+
+/**
+ * The night the parity checks are pricing. Module-level and set once per run,
+ * matching the compsetHarvest pattern below — threading it through all four
+ * checker factories would be noise in a single-run process.
+ */
+let parityDate = '';
+
 function makeChecker(
   source: RateCheck['source'],
   run: (page: Page) => Promise<{ price: number; room?: string; rooms?: RoomRate[] } | null>
 ): Checker {
   return async (browser) => {
     const fetchedAt = new Date().toISOString();
+    const startedAt = Date.now();
     let lastError = 'No price found on page — structure may have changed or source blocked the check.';
+    let sawError = false;
     for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
       let page: Page | null = null;
       try {
         page = await newPage(browser); // fresh context per attempt — blocks are often per-session
         const result = await run(page);
-        if (result) return { source, status: 'ok', fetchedAt, ...result };
+        if (result) {
+          record({
+            target: 'ours',
+            source: source as AttemptSource,
+            date: parityDate,
+            outcome: 'ok',
+            attempts: attempt,
+            durationMs: Date.now() - startedAt,
+          });
+          return { source, status: 'ok', fetchedAt, ...result };
+        }
       } catch (err) {
         lastError = String(err).slice(0, 200);
+        sawError = true;
       } finally {
         await page?.context().close().catch(() => undefined);
       }
       if (attempt < ATTEMPTS) await new Promise((r) => setTimeout(r, 2500));
     }
+    record({
+      target: 'ours',
+      source: source as AttemptSource,
+      date: parityDate,
+      outcome: classifyOutcome({ result: null, error: sawError ? lastError : null }),
+      attempts: ATTEMPTS,
+      durationMs: Date.now() - startedAt,
+    });
     return {
       source,
       status: 'needs-manual-check',
@@ -435,22 +481,46 @@ async function competitorDirectChecks(
         console.warn(`[compset-direct] could not resolve a Booking page for ${hotel.name}`);
       }
     }
-    if (!url) continue;
+    if (!url) {
+      // Distinct from a failed price fetch: this hotel had no Booking URL and
+      // no resolve budget left this run. Previously invisible.
+      record({ target: hotel.name, source: 'booking-direct', date: checkin, outcome: 'unresolved', attempts: 0, durationMs: 0 });
+      continue;
+    }
 
     let page: Page | null = null;
+    const startedAt = Date.now();
     try {
       page = await newPage(browser);
       await page.goto(bookingUrlWithDates(url, checkin), { waitUntil: 'domcontentloaded' });
       await settlePage(page, /\$\d{2,4}/, 12_000);
       const result = await extractPrice(page, BOOKING_PRICE_SELECTORS);
       const { min, max } = prop.compset.priceSanity;
-      if (result && result.price >= min && result.price <= max) {
-        entries.push({ name: hotel.name, price: result.price });
+      const inSanity = !!result && result.price >= min && result.price <= max;
+      if (inSanity) {
+        entries.push({ name: hotel.name, price: result!.price });
       } else {
         console.warn(`[compset-direct] ${hotel.name}: no usable price this run${result ? ` (got $${result.price}, outside sanity)` : ''}`);
       }
+      record({
+        target: hotel.name,
+        source: 'booking-direct',
+        date: checkin,
+        outcome: classifyOutcome({ result, error: null, sanityRejected: !!result && !inSanity }),
+        attempts: 1,
+        durationMs: Date.now() - startedAt,
+      });
     } catch (err) {
-      console.warn(`[compset-direct] ${hotel.name} failed: ${String(err).slice(0, 120)}`);
+      const message = String(err).slice(0, 200);
+      console.warn(`[compset-direct] ${hotel.name} failed: ${message.slice(0, 120)}`);
+      record({
+        target: hotel.name,
+        source: 'booking-direct',
+        date: checkin,
+        outcome: classifyOutcome({ result: null, error: message }),
+        attempts: 1,
+        durationMs: Date.now() - startedAt,
+      });
     } finally {
       await page?.context().close().catch(() => undefined);
     }
@@ -492,6 +562,7 @@ async function compsetForDate(
 
   for (const a of attempts) {
     let page: Page | null = null;
+    const startedAt = Date.now();
     try {
       page = await newPage(browser);
       await page.goto(a.url, { waitUntil: 'domcontentloaded' });
@@ -500,11 +571,27 @@ async function compsetForDate(
       }
       const body = await settlePage(page, /\$\d{2,3}/);
       const entries = harvestCompset(body, prop.compset);
+      record({
+        target: 'harvest',
+        source: a.label === 'google' ? 'google' : 'booking',
+        date: checkin,
+        outcome: entries.length > 0 ? 'ok' : 'no-price',
+        attempts: 1,
+        durationMs: Date.now() - startedAt,
+      });
       const sig = entries.map((x) => `${x.name}@${x.price}`).sort().join('|');
       const dateIgnored = rejectSig !== undefined && entries.length > 0 && sig === rejectSig;
       console.log(`[compset] ${checkin} via ${a.label}: page ${body.length} chars → ${entries.length} comps${dateIgnored ? ' (identical to tomorrow — date ignored, trying next source)' : ''}`);
       if (entries.length > 0 && !dateIgnored) return entries;
     } catch (err) {
+      record({
+        target: 'harvest',
+        source: a.label === 'google' ? 'google' : 'booking',
+        date: checkin,
+        outcome: classifyOutcome({ result: null, error: String(err).slice(0, 200) }),
+        attempts: 1,
+        durationMs: Date.now() - startedAt,
+      });
       console.warn(`[compset] ${a.label} failed for ${checkin}: ${String(err).slice(0, 140)}`);
     } finally {
       await page?.context().close().catch(() => undefined);
@@ -523,10 +610,12 @@ export async function collect(
     const { chromium } = await import('playwright');
     browser = await chromium.launch({ headless: true, args: ['--disable-blink-features=AutomationControlled'] });
     compsetHarvest = [];
-    const checks = await Promise.all(buildCheckers(prop).map((c) => c(browser!)));
+    resetTelemetry();
 
     // Compset: tomorrow always, plus approved event nights (already capped upstream).
     const tomorrowDate = tomorrow().checkin;
+    parityDate = tomorrowDate; // the night the parity checks below are pricing
+    const checks = await Promise.all(buildCheckers(prop).map((c) => c(browser!)));
     const dates = [tomorrowDate, ...eventNights.filter((dte) => dte !== tomorrowDate)];
 
     // Accuracy-first: price each watchlist hotel from its own Booking page.
@@ -569,6 +658,17 @@ export async function collect(
       compsets.push({ date, entries });
     }
 
+    const telemetry = buildRunTelemetry({
+      runAt: fetchedAt,
+      runLeg: runLeg(),
+      browser: BROWSER_ENGINE,
+      profileAgeRuns: 0,
+    });
+    const tel = summarize(telemetry.attempts);
+    console.log(
+      `[telemetry] ${tel.ok}/${tel.total} attempts returned a price; blocked ${Math.round(tel.blockedShare * 100)}% (${telemetry.browser} / ${telemetry.runLeg})`
+    );
+
     return {
       source: 'rates',
       status: 'ok',
@@ -576,6 +676,7 @@ export async function collect(
       data: {
         checks,
         compsets,
+        telemetry,
         // Ingest persists these onto the watchlist so future runs skip resolution.
         ...(Object.keys(direct.resolvedUrls).length > 0 ? { resolvedBookingUrls: direct.resolvedUrls } : {}),
       },
