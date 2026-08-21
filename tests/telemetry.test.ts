@@ -107,3 +107,28 @@ describe('summarize — the numbers the Settings panel reads', () => {
     expect(summarize([]).blockedShare).toBe(0);
   });
 });
+
+describe('regression: a blocked Booking search must not read as a name mismatch', () => {
+  // resolveBookingUrl used to call settlePage(...).catch(() => undefined),
+  // swallowing the only error settlePage throws — the bot-wall detection. The
+  // code then scanned a challenge page for hotel links, found none, and
+  // reported "no match". The first production baseline showed 5 of 6 per-hotel
+  // checks as "no URL resolved", which was unactionable as a result: a
+  // transport problem and an identity problem looked identical.
+  const botWall =
+    'Error: Blocked by a bot check on this run — usually transient from datacenter IPs; will retry next collection.';
+
+  it('classifies a bot-walled resolve as blocked, not unresolved', () => {
+    expect(classifyOutcome({ result: null, error: botWall })).toBe('blocked');
+  });
+
+  it('a resolve that genuinely matched nothing stays unresolved', () => {
+    // No error: resolveBookingUrl returned { status: 'no-match' }, so the
+    // caller records 'unresolved' directly rather than classifying an error.
+    expect(classifyOutcome({ result: null, error: null })).not.toBe('blocked');
+  });
+
+  it('a timed-out resolve is a timeout, distinct from both', () => {
+    expect(classifyOutcome({ result: null, error: 'TimeoutError: Timeout 12000ms exceeded' })).toBe('timeout');
+  });
+});

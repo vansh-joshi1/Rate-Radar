@@ -418,11 +418,28 @@ export function bookingSlugMatchesName(slug: string, hotelName: string): boolean
 }
 
 /**
+ * Why this returns a discriminated result rather than `string | null`:
+ *
+ * A bot-walled search page and a genuine name mismatch are completely
+ * different problems — one is transport, the other is identity — and they were
+ * indistinguishable, because `settlePage(...).catch(() => undefined)` swallowed
+ * the only error it throws (the bot-wall detection). The code then scanned a
+ * challenge page for hotel links, found none, and reported "no match".
+ *
+ * The first production baseline showed 5 of 6 per-hotel checks as
+ * "no URL resolved", which was unactionable precisely because of this.
+ */
+type ResolveResult =
+  | { status: 'resolved'; url: string }
+  | { status: 'failed'; error: string }
+  | { status: 'no-match' };
+
+/**
  * Find a watchlist hotel's own Booking.com property page via Booking search.
  * Scans the top results and accepts only a slug that matches the hotel's
  * name. Resolved once, persisted to the watchlist by ingest, reused after.
  */
-async function resolveBookingUrl(browser: Browser, hotelName: string, location: string): Promise<string | null> {
+async function resolveBookingUrl(browser: Browser, hotelName: string, location: string): Promise<ResolveResult> {
   let page: Page | null = null;
   try {
     page = await newPage(browser);
@@ -431,19 +448,22 @@ async function resolveBookingUrl(browser: Browser, hotelName: string, location: 
       `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(q)}&selected_currency=USD`,
       { waitUntil: 'domcontentloaded' }
     );
-    await settlePage(page, /hotel/i, 12_000).catch(() => undefined);
+    // Deliberately NOT caught: settlePage swallows its own render timeout and
+    // throws only on a bot wall, so letting it propagate is what separates
+    // "blocked" from "no match". Catching it here was the bug.
+    await settlePage(page, /hotel/i, 12_000);
     const anchors = await page.locator('a[href*="/hotel/"]').all();
     for (const a of anchors.slice(0, 10)) {
       const href = await a.getAttribute('href').catch(() => null);
       if (!href) continue;
       const url = new URL(href, 'https://www.booking.com');
       if (bookingSlugMatchesName(url.pathname, hotelName)) {
-        return `${url.origin}${url.pathname}`; // strip volatile query/session params
+        return { status: 'resolved', url: `${url.origin}${url.pathname}` }; // strip volatile query/session params
       }
     }
-    return null; // no confident match — better no price than a mislabeled one
-  } catch {
-    return null;
+    return { status: 'no-match' }; // no confident match — better no price than a mislabeled one
+  } catch (err) {
+    return { status: 'failed', error: String(err).slice(0, 200) };
   } finally {
     await page?.context().close().catch(() => undefined);
   }
@@ -471,20 +491,42 @@ async function competitorDirectChecks(
 
   for (const hotel of hotels) {
     let url = hotel.bookingUrl;
+    // Why these are tracked separately: the telemetry needs to say whether a
+    // hotel was never tried (no budget left), tried and blocked, or tried and
+    // genuinely unmatched. Those need three different fixes.
+    let resolveError: string | null = null;
+    let resolveAttempted = false;
+    let resolveMs = 0;
     if (!url && resolves < MAX_RESOLVES_PER_RUN) {
       resolves += 1;
-      url = (await resolveBookingUrl(browser, hotel.name, prop.bookingSearchLocation)) ?? undefined;
-      if (url) {
-        resolvedUrls[hotel.name] = url;
-        console.log(`[compset-direct] resolved ${hotel.name} → ${url}`);
+      resolveAttempted = true;
+      const startedResolve = Date.now();
+      const result = await resolveBookingUrl(browser, hotel.name, prop.bookingSearchLocation);
+      resolveMs = Date.now() - startedResolve;
+      if (result.status === 'resolved') {
+        url = result.url;
+        resolvedUrls[hotel.name] = result.url;
+        console.log(`[compset-direct] resolved ${hotel.name} → ${result.url}`);
+      } else if (result.status === 'failed') {
+        resolveError = result.error;
+        console.warn(`[compset-direct] resolve FAILED for ${hotel.name}: ${result.error.slice(0, 140)}`);
       } else {
-        console.warn(`[compset-direct] could not resolve a Booking page for ${hotel.name}`);
+        console.warn(`[compset-direct] no Booking result matched the name "${hotel.name}" — identity, not a block`);
       }
     }
     if (!url) {
-      // Distinct from a failed price fetch: this hotel had no Booking URL and
-      // no resolve budget left this run. Previously invisible.
-      record({ target: hotel.name, source: 'booking-direct', date: checkin, outcome: 'unresolved', attempts: 0, durationMs: 0 });
+      // A bot-walled search page used to land here looking exactly like a name
+      // mismatch. It doesn't any more: attempts=0 means never tried this run,
+      // attempts=1 with 'unresolved' means tried and genuinely unmatched, and
+      // 'blocked'/'timeout'/'error' mean the search itself failed.
+      record({
+        target: hotel.name,
+        source: 'booking-direct',
+        date: checkin,
+        outcome: resolveError ? classifyOutcome({ result: null, error: resolveError }) : 'unresolved',
+        attempts: resolveAttempted ? 1 : 0,
+        durationMs: resolveMs,
+      });
       continue;
     }
 
