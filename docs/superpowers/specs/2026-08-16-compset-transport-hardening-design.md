@@ -1,8 +1,17 @@
 # Compset Transport Hardening
 
-**Status:** approved design, not yet implemented
+**Status:** SUPERSEDED, never implemented — see
+`2026-08-22-serpapi-rate-source-design.md`
 **Date:** 2026-08-16
 **Phase:** 1 of 2 — transport only. The price-engine rebuild is Phase 2.
+
+> **Superseded 2026-08-22.** This design rests on the constraint "no third-party price
+> API." That constraint was withdrawn once it became clear the collector could no longer
+> scrape even our own site, at which point self-hosting defends nothing. SerpApi replaces
+> the transport entirely; the Patchright swap, the self-hosted runner, the persistent
+> browser profile and the blocking telemetry are all abandoned unbuilt. Kept for the
+> reasoning, not the plan — particularly the detection-layer analysis, which is why the
+> scraping approach was abandoned rather than retried.
 **Touches:** `collector/sources/rates.ts`, `.github/workflows/collect.yml`, `lib/ingest.ts`, `components/SettingsView.tsx`
 
 ## Why
