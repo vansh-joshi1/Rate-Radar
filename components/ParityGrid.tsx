@@ -55,11 +55,12 @@ export default function ParityGrid({ parity }: { parity: RateCheck[] }) {
       )}
 
       <div className="grid gap-sm sm:grid-cols-2 xl:grid-cols-4">
-        {shown.map((p) => {
+        {shown.map((p, i) => {
           const below = direct != null && p.price! < direct;
           return (
             <div
-              key={p.source}
+              // Google occasionally lists the same channel twice, so the name alone is not a key.
+              key={`${p.source}-${i}`}
               className={`rounded-lg border p-sm ${below ? 'border-bad/40 bg-bad/5' : 'border-line bg-paper/60'}`}
             >
               <div className="truncate font-label-md text-[10px] uppercase tracking-widest text-muted" title={p.source}>
@@ -80,9 +81,13 @@ export default function ParityGrid({ parity }: { parity: RateCheck[] }) {
       )}
 
       <p className="mt-sm text-xs text-muted">
-        {undercutters.length > 0
-          ? `${undercutters.length} ${undercutters.length === 1 ? 'channel is' : 'channels are'} selling below your direct rate — cheapest is ${worst.source} at $${worst.price}.`
-          : 'Nothing is selling below your direct rate.'}{' '}
+        {direct == null
+          ? // No direct rate means no comparison — saying "nothing is undercutting you"
+            // here would be asserting something this data cannot support.
+            'Your direct rate was not returned this run, so there is nothing to compare the channels against.'
+          : undercutters.length > 0
+            ? `${undercutters.length} ${undercutters.length === 1 ? 'channel is' : 'channels are'} selling below your direct rate — cheapest is ${worst.source} at $${worst.price}.`
+            : 'Nothing is selling below your direct rate.'}{' '}
         Checked for tomorrow night; cheapest public rate per channel, as Google sees it.
       </p>
     </div>
