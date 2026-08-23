@@ -1,16 +1,13 @@
 {
-  "_comment": "Per-property collection config — our own scraping pipeline, no third-party data APIs. Onboarding a hotel = one entry here (+ a row in lib/properties.ts). Values starting with 'env:' resolve from that environment variable at collect time, so listing URLs can stay in GitHub secrets. 'compset' inline overrides the default config/compset.json whitelist; null uses the default.",
+  "_comment": "Per-property collection config. Prices come from SerpApi's google_hotels engine — one location search returns every nearby hotel priced for a night, and one property_token lookup returns every channel selling us plus room-level rates. Onboarding a hotel = one entry here (+ a row in lib/properties.ts). Values starting with 'env:' resolve from that environment variable at collect time. 'serpapi.query' is the compset search: 'hotels near <street address>' gives the tightest local result set. 'serpapi.propertyToken' is our own property's stable google_hotels token — resolve it once from a search response and paste it here. 'compset' inline overrides the default config/compset.json whitelist; null uses the default.",
   "properties": [
     {
       "id": "rri-franklin",
       "name": "Red Roof Inn Franklin",
-      "rateUrls": {
-        "redroof": "env:RATE_URL_REDROOF",
-        "expedia": "env:RATE_URL_EXPEDIA",
-        "booking": "env:RATE_URL_BOOKING"
+      "serpapi": {
+        "query": "hotels near 3915 Carothers Pkwy, Franklin, TN",
+        "propertyToken": "ChkIp-bNgcS2-t4MGg0vZy8xMXd4NzBydGY3EAE"
       },
-      "googleHotelsQuery": "env:GOOGLE_HOTELS_QUERY",
-      "bookingSearchLocation": "Franklin, Tennessee",
       "compset": null,
       "roomTierMap": [
         { "match": "superior", "tierId": "superior" },

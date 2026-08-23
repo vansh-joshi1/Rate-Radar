@@ -15,6 +15,17 @@ import type {
   CompsetEntry, CompsetInfo, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
 } from './scoring/types';
 
+/**
+ * Parity is bought once a day, not once a run — see collector/budget.ts. A run
+ * that did not buy it keeps showing the last measured set rather than blanking
+ * the panel; every row carries its own `fetchedAt`, so the age stays visible.
+ * Alerts deliberately still evaluate the run's own fresh parity, so a gap fires
+ * when it is actually re-measured rather than re-fired against stale prices.
+ */
+export function carryForwardParity(fresh: RateCheck[], previous?: RateCheck[]): RateCheck[] {
+  return fresh.length > 0 ? fresh : previous ?? [];
+}
+
 export const SourceResultSchema = z.object({
   source: z.string(),
   status: z.enum(['ok', 'failed', 'awaiting-key']),
@@ -114,16 +125,17 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   const ratesData = src('rates')?.status === 'ok' ? src('rates')!.data : null;
   const { parity, compsets: rawCompsets } = parseRatesData(ratesData, addDays(chicagoToday(now), 1));
 
-  // Persist collector-resolved Booking URLs onto the watchlist so future runs
-  // price those hotels directly without re-resolving.
-  const resolvedUrls = (ratesData as { resolvedBookingUrls?: Record<string, string> } | null)?.resolvedBookingUrls;
-  if (resolvedUrls && Object.keys(resolvedUrls).length > 0) {
+  // Persist collector-resolved property tokens onto the watchlist so later runs
+  // match those hotels exactly instead of by name substring.
+  const resolvedTokens = (ratesData as { resolvedPropertyTokens?: Record<string, string> } | null)
+    ?.resolvedPropertyTokens;
+  if (resolvedTokens && Object.keys(resolvedTokens).length > 0) {
     const list = await loadWatchlist(store, bundlePropertyId);
     let changed = false;
     for (const hotel of list) {
-      const url = resolvedUrls[hotel.name];
-      if (url && !hotel.bookingUrl) {
-        hotel.bookingUrl = url;
+      const token = resolvedTokens[hotel.name];
+      if (token && hotel.propertyToken !== token) {
+        hotel.propertyToken = token;
         changed = true;
       }
     }
@@ -204,10 +216,19 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   const healthKey = `source:health:${bundlePropertyId}`;
   const sourceHealth = (await store.get<Record<string, SourceHealth>>(healthKey)) ?? {};
 
+  const searchBudget = (ratesData as { budget?: { remaining: number; renewalDate?: string } } | null)?.budget;
+
+  // Parity costs a metered search, so only the first run of the day buys it.
+  // Without this the 13:00 and 18:00 runs would overwrite the morning's parity
+  // with nothing and blank the panel for two-thirds of the day.
+  const prevSnapshot = await store.get<Snapshot>(propKey.snapshotLatest(bundlePropertyId));
+  const parityToStore = carryForwardParity(parity, prevSnapshot?.parity);
+
   const alertResult = evaluateAlerts({
     nights, parity, weatherAlerts, holidays: holidayEntries,
     prevEmailed, fingerprints, seenEventIds, now: now.toISOString(),
     sources: bundle.sources, sourceHealth,
+    ...(searchBudget ? { searchBudget } : {}),
   });
 
   // --- persist snapshot + state ---
@@ -215,7 +236,7 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   const snapshot: Snapshot = {
     runAt: bundle.runAt, runId,
     confidence: conf.value, confidenceNote: conf.note,
-    nights, parity,
+    nights, parity: parityToStore,
     compset: compsets[0], // back-compat for older readers
     compsets,
     sources: bundle.sources,

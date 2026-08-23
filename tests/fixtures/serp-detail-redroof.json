@@ -1,0 +1,346 @@
+{
+  "name": "Red Roof Inn Nashville - Franklin",
+  "property_token": "ChkIp-bNgcS2-t4MGg0vZy8xMXd4NzBydGY3EAE",
+  "featured_prices": [
+    {
+      "source": "Booking.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      },
+      "rooms": [
+        {
+          "name": "Deluxe King Room Non-Smoking ",
+          "rate_per_night": {
+            "lowest": "$81",
+            "extracted_lowest": 81
+          }
+        },
+        {
+          "name": " Deluxe Room with Two Queen Beds Non-Smoking",
+          "rate_per_night": {
+            "lowest": "$89",
+            "extracted_lowest": 89
+          }
+        }
+      ]
+    },
+    {
+      "source": "Expedia.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      },
+      "rooms": [
+        {
+          "name": "Deluxe Room, 1 King Bed, Non Smoking",
+          "rate_per_night": {
+            "lowest": "$81",
+            "extracted_lowest": 81
+          }
+        },
+        {
+          "name": "Deluxe Room, 1 Queen Bed, Accessible, Non Smoking (Roll-In Shower)",
+          "rate_per_night": {
+            "lowest": "$81",
+            "extracted_lowest": 81
+          }
+        },
+        {
+          "name": "Deluxe Room, 2 Queen Beds, Non Smoking",
+          "rate_per_night": {
+            "lowest": "$81",
+            "extracted_lowest": 81
+          }
+        },
+        {
+          "name": "Superior Room, 1 King Bed, Non Smoking",
+          "rate_per_night": {
+            "lowest": "$87",
+            "extracted_lowest": 87
+          }
+        },
+        {
+          "name": "Deluxe Room, 1 King Bed, Smoking",
+          "rate_per_night": {
+            "lowest": "$89",
+            "extracted_lowest": 89
+          }
+        },
+        {
+          "name": "Deluxe Room, 2 Queen Beds, Smoking",
+          "rate_per_night": {
+            "lowest": "$89",
+            "extracted_lowest": 89
+          }
+        },
+        {
+          "name": "Superior Room, 2 Queen Beds, Non Smoking",
+          "rate_per_night": {
+            "lowest": "$89",
+            "extracted_lowest": 89
+          }
+        }
+      ]
+    },
+    {
+      "source": "Hotels.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      },
+      "rooms": [
+        {
+          "name": "Deluxe Room, 1 King Bed, Non Smoking",
+          "rate_per_night": {
+            "lowest": "$81",
+            "extracted_lowest": 81
+          }
+        },
+        {
+          "name": "Deluxe Room, 1 Queen Bed, Accessible, Non Smoking (Roll-In Shower)",
+          "rate_per_night": {
+            "lowest": "$81",
+            "extracted_lowest": 81
+          }
+        },
+        {
+          "name": "Deluxe Room, 2 Queen Beds, Non Smoking",
+          "rate_per_night": {
+            "lowest": "$81",
+            "extracted_lowest": 81
+          }
+        },
+        {
+          "name": "Deluxe Room, 1 King Bed, Smoking",
+          "rate_per_night": {
+            "lowest": "$89",
+            "extracted_lowest": 89
+          }
+        },
+        {
+          "name": "Deluxe Room, 2 Queen Beds, Smoking",
+          "rate_per_night": {
+            "lowest": "$89",
+            "extracted_lowest": 89
+          }
+        },
+        {
+          "name": "Superior Room, 1 King Bed, Non Smoking",
+          "rate_per_night": {
+            "lowest": "$89",
+            "extracted_lowest": 89
+          }
+        },
+        {
+          "name": "Superior Room, 2 Queen Beds, Non Smoking",
+          "rate_per_night": {
+            "lowest": "$89",
+            "extracted_lowest": 89
+          }
+        }
+      ]
+    },
+    {
+      "source": "Priceline",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      },
+      "rooms": [
+        {
+          "name": " Deluxe Room with Two Queen Beds Non-Smoking",
+          "rate_per_night": {
+            "lowest": "$81",
+            "extracted_lowest": 81
+          }
+        }
+      ]
+    }
+  ],
+  "prices": [
+    {
+      "source": "Red Roof Inn Nashville - Franklin",
+      "official": true,
+      "rate_per_night": {
+        "lowest": "$80",
+        "extracted_lowest": 80
+      }
+    },
+    {
+      "source": "Super.com",
+      "rate_per_night": {
+        "lowest": "$62",
+        "extracted_lowest": 62
+      }
+    },
+    {
+      "source": "dealbase.com",
+      "rate_per_night": {
+        "lowest": "$64",
+        "extracted_lowest": 64
+      }
+    },
+    {
+      "source": "trivago DEALS",
+      "rate_per_night": {
+        "lowest": "$70",
+        "extracted_lowest": 70
+      }
+    },
+    {
+      "source": "Hotels In America",
+      "rate_per_night": {
+        "lowest": "$69",
+        "extracted_lowest": 69
+      }
+    },
+    {
+      "source": "Traveluro",
+      "rate_per_night": {
+        "lowest": "$70",
+        "extracted_lowest": 70
+      }
+    },
+    {
+      "source": "HotelTonight.com",
+      "rate_per_night": {
+        "lowest": "$73",
+        "extracted_lowest": 73
+      }
+    },
+    {
+      "source": "Expedia.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "Agoda",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "Priceline",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "Booking.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "Evendo",
+      "rate_per_night": {
+        "lowest": "$75",
+        "extracted_lowest": 75
+      }
+    },
+    {
+      "source": "Hotels.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "goseek.com",
+      "rate_per_night": {
+        "lowest": "$76",
+        "extracted_lowest": 76
+      }
+    },
+    {
+      "source": "Trip.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "Travelocity.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "Wego",
+      "rate_per_night": {
+        "lowest": "$76",
+        "extracted_lowest": 76
+      }
+    },
+    {
+      "source": "Orbitz.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "CheapTickets.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "Long Stay Discounts",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "Bluepillow.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "HomeToGo",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "eDreams",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    },
+    {
+      "source": "müv AI",
+      "rate_per_night": {
+        "lowest": "$80",
+        "extracted_lowest": 80
+      }
+    },
+    {
+      "source": "Kiwi.com",
+      "rate_per_night": {
+        "lowest": "$80",
+        "extracted_lowest": 80
+      }
+    },
+    {
+      "source": "Traveloka.com",
+      "rate_per_night": {
+        "lowest": "$81",
+        "extracted_lowest": 81
+      }
+    }
+  ]
+}

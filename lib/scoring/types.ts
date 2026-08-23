@@ -57,11 +57,19 @@ export interface RoomRate {
 }
 
 export interface RateCheck {
-  source: 'redroof' | 'google' | 'expedia' | 'booking';
+  /**
+   * Booking channel as the source names itself — 'Booking.com', 'Super.com', or
+   * our own property's name for the direct listing. Deliberately not a union:
+   * Google lists ~26 channels for us, and the one undercutting our direct rate
+   * is rarely among the four the old scraper knew about.
+   */
+  source: string;
+  /** True for our own direct listing — the rate every other channel is measured against. */
+  official?: boolean;
   status: 'ok' | 'needs-manual-check';
   price?: number;
   room?: string;
-  /** Per-room breakdown when the source page exposes it (own site only). */
+  /** Per-room breakdown, attached to the official check. Rooms as listed by OTAs. */
   rooms?: RoomRate[];
   error?: string;
   fetchedAt: string;

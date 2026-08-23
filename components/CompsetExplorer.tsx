@@ -114,7 +114,7 @@ export default function CompsetExplorer({ property, yourRate, blocks, watchlist 
           {yourRate ? (
             <>
               <div className="font-serif text-3xl font-semibold text-accent">${yourRate.price}</div>
-              <div className="text-xs text-muted">{yourRate.source === 'owner' ? 'entered by you' : 'scraped from redroof.com'}</div>
+              <div className="text-xs text-muted">{yourRate.source === 'owner' ? 'entered by you' : 'listed rate, direct channel'}</div>
             </>
           ) : (
             <div className="mt-1 text-sm text-muted">
@@ -201,7 +201,7 @@ export default function CompsetExplorer({ property, yourRate, blocks, watchlist 
                 if (r.kind === 'you') {
                   return (
                     <tr key="you" className="bg-accent/5 font-semibold [&>td:first-child]:border-l-4 [&>td:first-child]:border-l-accent">
-                      <td className="td">{property.name} (you{yourRate!.source === 'owner' ? ' — current rate' : ' — listed on redroof.com'})</td>
+                      <td className="td">{property.name} (you{yourRate!.source === 'owner' ? ' — current rate' : ' — direct rate'})</td>
                       <td className="td">—</td>
                       <td className="td font-serif text-lg text-accent">${yourRate!.price}</td>
                       <td className="td">—</td>

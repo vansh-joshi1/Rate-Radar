@@ -72,14 +72,46 @@ export interface Thresholds {
   dedupeHours: number;
 }
 
+/** Search-budget state from the last collector run — see collector/budget.ts. */
+export interface SearchBudget {
+  tier: 'full' | 'reduced' | 'minimal';
+  spent: number;
+  remaining: number;
+  usedThisMonth: number;
+  perMonth?: number;
+  renewalDate?: string;
+  skipped: { date: string; reason: string }[];
+  notFound: string[];
+  unavailable: string[];
+}
+
 interface Props {
   property: { id: string; name: string; city: string; timezone: string; lat: number; lng: number };
   tiers: { tierId: string; label: string }[];
   sources: SourceHealth[];
+  budget?: SearchBudget;
   thresholds: Thresholds;
   invoices: { date: string; amount: string; status: string }[];
   isDemo: boolean;
 }
+
+const TIER_COPY: Record<SearchBudget['tier'], { label: string; detail: string; tone: string }> = {
+  full: {
+    label: 'Full coverage',
+    detail: 'Tomorrow priced three times a day, parity once, plus every qualifying event night.',
+    tone: 'text-[#029768]',
+  },
+  reduced: {
+    label: 'Reduced — event nights paused',
+    detail: 'Tomorrow and parity still run. Event nights are not being priced until the budget recovers.',
+    tone: 'text-warn',
+  },
+  minimal: {
+    label: 'Minimal — tomorrow only',
+    detail: 'One search a day. No parity, no event nights. Pause manual runs or raise the plan.',
+    tone: 'text-bad',
+  },
+};
 
 const relative = (iso: string) => {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
@@ -98,7 +130,7 @@ const SOURCE_LABEL: Record<string, string> = {
   rates: 'Rate checks — your site, Expedia, Booking, Google',
 };
 
-export default function SettingsView({ property, tiers, sources, thresholds, invoices, isDemo }: Props) {
+export default function SettingsView({ property, tiers, sources, budget, thresholds, invoices, isDemo }: Props) {
   const [tab, setTab] = useState<TabId>('property');
 
   const tabBtn = (active: boolean) =>
@@ -364,6 +396,64 @@ export default function SettingsView({ property, tiers, sources, thresholds, inv
                   never connects to a PMS or channel manager, because it never writes a price anywhere.
                 </p>
               </section>
+
+              {budget && (
+                <section className={CARD}>
+                  <SectionHead
+                    title="Price search budget"
+                    action={
+                      <span className={`font-label-md text-label-md uppercase ${TIER_COPY[budget.tier].tone}`}>
+                        {TIER_COPY[budget.tier].label}
+                      </span>
+                    }
+                  />
+                  <p className="mb-md font-body-md text-body-md text-ink">
+                    {TIER_COPY[budget.tier].detail}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    {[
+                      { label: 'Searches left', value: String(budget.remaining) },
+                      { label: 'Used this cycle', value: budget.perMonth ? `${budget.usedThisMonth} / ${budget.perMonth}` : String(budget.usedThisMonth) },
+                      { label: 'Spent last run', value: String(budget.spent) },
+                      { label: 'Resets', value: budget.renewalDate ?? 'unknown' },
+                    ].map((stat) => (
+                      <div key={stat.label} className="rounded-lg border border-line bg-paper p-4">
+                        <div className="font-label-md text-[10px] uppercase tracking-widest text-muted">
+                          {stat.label}
+                        </div>
+                        <div className="mt-1 text-xl font-semibold tabular-nums text-ink">{stat.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {budget.skipped.length > 0 && (
+                    <p className="mt-md font-body-md text-body-md text-warn">
+                      Skipped for budget on the last run:{' '}
+                      {budget.skipped.map((s) => s.date).join(', ')}.
+                    </p>
+                  )}
+
+                  {budget.notFound.length > 0 && (
+                    <p className="mt-sm font-body-md text-body-md text-muted">
+                      Not carried by Google Hotels, so never priced: {budget.notFound.join(', ')}. Remove them
+                      from the watchlist or accept that they stay blank — no number of searches will find them.
+                    </p>
+                  )}
+
+                  {budget.unavailable.length > 0 && (
+                    <p className="mt-sm font-body-md text-body-md text-muted">
+                      Listed but sold out for that night: {budget.unavailable.join(', ')}.
+                    </p>
+                  )}
+
+                  <p className="mt-md text-xs text-muted">
+                    Prices come from SerpApi&apos;s Google Hotels engine on a metered plan, so each run draws
+                    from a monthly allowance. The collector reads the live balance before every run and
+                    narrows what it fetches rather than failing when the budget tightens.
+                  </p>
+                </section>
+              )}
 
               <section className={CARD}>
                 <SectionHead title="Public API (v1)" />

@@ -7,7 +7,7 @@ export interface HolidayEntry {
 }
 
 export interface Trigger {
-  type: 'rate-change' | 'parity-gap' | 'new-event' | 'weather' | 'holiday' | 'source-health';
+  type: 'rate-change' | 'parity-gap' | 'new-event' | 'weather' | 'holiday' | 'source-health' | 'search-budget';
   date?: string;
   /** The final one-line sentence used in the email. */
   line: string;
@@ -36,6 +36,8 @@ export interface AlertInput {
   sources?: Pick<SourceResult, 'source' | 'status'>[];
   /** Prior consecutive-failure state, keyed by source name. */
   sourceHealth?: Record<string, SourceHealth>;
+  /** Metered-search balance reported by the collector (see collector/budget.ts). */
+  searchBudget?: { remaining: number; renewalDate?: string };
 }
 
 export interface AlertResult {
@@ -54,8 +56,11 @@ const PARITY_GAP_PCT = 10;
 const NEW_EVENT_MIN_SCORE = 40;
 const HOLIDAY_LOOKAHEAD_DAYS = 14;
 const DEDUPE_HOURS = 24;
-// ~half a day at 7 runs/day — one bot-blocked run is noise, three in a row is a broken source.
+// A full day at 3 runs/day — one bad run is noise, three in a row is a broken source.
 const SOURCE_FAIL_THRESHOLD = 3;
+// Below a day's worth of searches (the full ladder spends 7), collection is about
+// to stop entirely. Silent death is the failure mode a metered API introduces.
+const SEARCH_BUDGET_FLOOR = 10;
 const SEVERE = new Set(['Severe', 'Extreme']);
 
 function fmtDate(date: string): string {
@@ -180,6 +185,19 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
       }
       newSourceHealth[name] = health;
     }
+  }
+
+  // 5b) Metered-search budget nearly gone. Unlike a failing source, this one
+  // recovers by itself on the renewal date — say so, so nobody debugs a
+  // pipeline that is merely out of allowance.
+  if (input.searchBudget && input.searchBudget.remaining < SEARCH_BUDGET_FLOOR) {
+    const { remaining, renewalDate } = input.searchBudget;
+    fire('search-budget:low', {
+      type: 'search-budget',
+      line:
+        `Only ${remaining} SerpApi searches left — competitor and parity prices stop updating when they run out` +
+        `${renewalDate ? `; the allowance resets ${renewalDate}` : ''}.`,
+    });
   }
 
   // 6) Holiday within 14 days, flagged once

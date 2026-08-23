@@ -1,4 +1,4 @@
-import SettingsView from '../../../components/SettingsView';
+import SettingsView, { type SearchBudget } from '../../../components/SettingsView';
 import { loadSnapshot } from '../../../lib/dashboard-data';
 import { demoInvoices } from '../../../lib/demo';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
@@ -34,6 +34,9 @@ export default async function Settings() {
         error: s.error,
         fetchedAt: s.fetchedAt,
       }))}
+      budget={
+        (snapshot.sources.find((s) => s.source === 'rates')?.data as { budget?: SearchBudget } | undefined)?.budget
+      }
       thresholds={ALERT_THRESHOLDS}
       invoices={demoInvoices}
       isDemo={isDemo}

@@ -69,8 +69,13 @@ that is a product regression, not a cost saving.
 
 **Keeping the redroof.com scrape for per-room tier rates.** The original reason to keep a
 browser. Unnecessary: `featured_prices[].rooms[]` carries room name and nightly rate, and
-the `official: true` flag identifies our own site's listing. `mapRoomToTier` works on it
-unchanged.
+`prices[].official` identifies our own listing. `mapRoomToTier` works on it unchanged.
+
+*Implementation correction:* the two live in different arrays. `official: true` is in
+`prices[]`; the `rooms[]` breakdown is in `featured_prices[]` and comes from OTA listings
+(Expedia, Hotels.com), not from our own booking engine — the official listing reports one
+nightly rate and no breakdown. Tier rates are therefore "as listed on OTAs," which is
+enough to separate Standard from Superior but is not our direct rate card.
 
 ## Scope
 
@@ -147,11 +152,13 @@ shrinks faster than `remaining` does — worked example: on day 20 with 55 left 
 to go, `budget = 35 < 44`, so `minimal`; by day 25 with 50 left and 6 days to go,
 `budget = 30 >= 24`, so `reduced`. Tomorrow's compset is never dropped at any tier.
 
-**On the reset date.** SerpApi resets on the account anniversary, not the 1st, so
-`daysLeftInMonth` against the calendar is an approximation. It is deliberately chosen and
-self-correcting: every run reads live `total_searches_left`, so a mid-month reset appears
-as a jump in `remaining` and raises the allowance on the very next run. The failure mode
-is a few conservative days, never an overspend.
+**On the reset date.** SerpApi resets on the account anniversary, not the 1st. This spec
+originally accepted calendar month-end as a self-correcting approximation — **implementation
+found that `/account` returns `plan_renewal_date` directly**, so days-left is computed
+exactly and the approximation survives only as the fallback for an unreachable `/account`.
+The approximation was worse than "conservative for a few days" as originally claimed: on
+the 30th with a renewal three weeks out, month-end says one day is left and the ladder
+would spend the remaining quota in four days.
 
 **Manual runs are bounded, not free.** `/api/collect-now` triggers a run that computes the
 same plan against the same live quota, so it spends the current tier's 07:00-slot ladder —
@@ -171,10 +178,10 @@ planSearches()  ──► plan                   (pure)
    │     ├─ match vs watchlist tokens ──► CompsetEntry[]
    │     └─ our own hotel is in here ───► free cross-check on our listed rate
    │
-   ├─ propertyDetails(token, tomorrow)  ─► featured_prices[]
-   │     ├─ official: true ─────────────► RateCheck "Direct (your site)"
-   │     ├─ other sources ──────────────► RateCheck per OTA
-   │     └─ rooms[] + roomTierMap ──────► RoomRate[] (standard / superior)
+   ├─ propertyDetails(token, tomorrow)
+   │     ├─ prices[].official: true ────► RateCheck "Direct (your site)"
+   │     ├─ prices[] (~25 channels) ────► RateCheck per channel
+   │     └─ featured_prices[].rooms[] ──► RoomRate[] (standard / superior)
    │
    └─ searchProperties(q, eventNight)   ─► CompsetEntry[] per date
 ```
@@ -301,9 +308,11 @@ inputs become stable captured JSON instead of live HTML.
 
 ## Risks
 
-**Coverage of small independents.** The genuine unknown: whether all ten watchlist hotels
-appear in Google Hotels. Answered by rollout step 1 for about two searches, before any
-code depends on the answer.
+**Coverage of small independents.** ~~The genuine unknown.~~ **Answered 2026-08-23: 8 of
+10.** Super 8 and Motel 6 are absent from both results pages. Page 2 was checked and is
+worse data, not more — it drifts to Antioch and Brentwood and re-lists page-1 hotels at
+different, higher rates, so one search per date stands. The two missing hotels surface as
+`not-found` in the budget panel; either drop them from the watchlist or accept the gap.
 
 **250 searches/month is tight.** A heavy manual-run month degrades coverage to
 tomorrow-only. The reserve bounds it and the panel makes it visible rather than

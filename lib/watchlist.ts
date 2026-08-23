@@ -16,8 +16,12 @@ export interface WatchlistHotel {
   lat?: number;
   lng?: number;
   address?: string;
-  /** Booking.com property page — resolved once by the collector, then priced directly every run. */
-  bookingUrl?: string;
+  /**
+   * google_hotels property_token — resolved once by the collector, then matched
+   * exactly on every later run. Replaces name-substring matching, which is why
+   * watchlist names no longer have to be kept short.
+   */
+  propertyToken?: string;
   addedAt: string;
 }
 
