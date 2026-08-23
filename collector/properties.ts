@@ -22,17 +22,21 @@ export function mapRoomToTier(room: string, rules: RoomTierRule[]): string | und
   return undefined;
 }
 
+export interface SerpApiPropertyConfig {
+  /** Location query for the compset search — 'hotels near <address>' works best. */
+  query: string;
+  /** Our own property's google_hotels property_token; stable, resolved once. */
+  propertyToken?: string;
+}
+
 export interface RatePropertyConfig {
   id: string;
   name: string;
-  rateUrls: Partial<Record<'redroof' | 'expedia' | 'booking', string>>;
-  googleHotelsQuery?: string;
-  /** City string for the Booking.com search-results compset fallback. */
-  bookingSearchLocation: string;
+  serpapi?: SerpApiPropertyConfig;
   compset: CompsetConfig;
   roomTierMap: RoomTierRule[];
-  /** Live watchlist (name + resolved Booking URL) fetched from the dashboard at run start. */
-  watchlistHotels?: { name: string; bookingUrl?: string }[];
+  /** Live watchlist (name + resolved property token) fetched from the dashboard at run start. */
+  watchlistHotels?: { name: string; propertyToken?: string }[];
 }
 
 function resolve(value: string | null | undefined): string | undefined {
@@ -43,9 +47,7 @@ function resolve(value: string | null | undefined): string | undefined {
 interface RawProperty {
   id: string;
   name: string;
-  rateUrls: Record<string, string>;
-  googleHotelsQuery?: string;
-  bookingSearchLocation: string;
+  serpapi?: { query: string; propertyToken?: string };
   compset: CompsetConfig | null;
   roomTierMap?: RoomTierRule[];
 }
@@ -53,17 +55,11 @@ interface RawProperty {
 export function loadProperties(): RatePropertyConfig[] {
   const raw = (propertiesConfig as { properties: RawProperty[] }).properties;
   return raw.map((p) => {
-    const rateUrls: RatePropertyConfig['rateUrls'] = {};
-    for (const [source, ref] of Object.entries(p.rateUrls)) {
-      const url = resolve(ref);
-      if (url) rateUrls[source as keyof RatePropertyConfig['rateUrls']] = url;
-    }
+    const query = resolve(p.serpapi?.query);
     return {
       id: p.id,
       name: p.name,
-      rateUrls,
-      googleHotelsQuery: resolve(p.googleHotelsQuery),
-      bookingSearchLocation: p.bookingSearchLocation,
+      ...(query ? { serpapi: { query, propertyToken: resolve(p.serpapi?.propertyToken) } } : {}),
       compset: p.compset ?? (defaultCompset as CompsetConfig),
       roomTierMap: p.roomTierMap ?? [],
     };

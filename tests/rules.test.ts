@@ -138,3 +138,34 @@ describe('google exclusion from parity (owner request)', () => {
     expect(r.triggers).toHaveLength(0);
   });
 });
+
+describe('search budget exhaustion', () => {
+  it('does not fire while there is comfortable budget left', () => {
+    const r = evaluateAlerts(base({ searchBudget: { remaining: 200 } }));
+    expect(r.triggers.some((t) => t.type === 'search-budget')).toBe(false);
+  });
+
+  it('fires once the remaining searches would not cover another full day', () => {
+    const r = evaluateAlerts(base({ searchBudget: { remaining: 9 } }));
+    const trigger = r.triggers.find((t) => t.type === 'search-budget');
+    expect(trigger).toBeDefined();
+    expect(trigger!.line).toMatch(/9 SerpApi searches/);
+  });
+
+  it('names the reset date when one is known, since that is when it fixes itself', () => {
+    const r = evaluateAlerts(base({ searchBudget: { remaining: 4, renewalDate: '2026-09-23' } }));
+    expect(r.triggers.find((t) => t.type === 'search-budget')!.line).toMatch(/2026-09-23/);
+  });
+
+  it('does not repeat the warning on every run of the day', () => {
+    const first = evaluateAlerts(base({ searchBudget: { remaining: 9 } }));
+    const second = evaluateAlerts(
+      base({ searchBudget: { remaining: 9 }, fingerprints: first.newFingerprints })
+    );
+    expect(second.triggers.some((t) => t.type === 'search-budget')).toBe(false);
+  });
+
+  it('stays silent when the collector reported no budget at all', () => {
+    expect(evaluateAlerts(base({})).triggers.some((t) => t.type === 'search-budget')).toBe(false);
+  });
+});

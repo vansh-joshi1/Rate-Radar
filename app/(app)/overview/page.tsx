@@ -117,7 +117,7 @@ export default async function Overview() {
   // Your rate: owner-entered is authoritative (you set your prices); the
   // scraped redroof.com value fills in when the owner hasn't entered one.
   const ownerRates = isDemo ? null : await loadCurrentRates(getStore(), DEFAULT_PROPERTY_ID);
-  const directRooms = snapshot.parity.find((p) => p.source === 'redroof' && p.status === 'ok')?.rooms ?? [];
+  const directRooms = snapshot.parity.find((p) => p.official && p.status === 'ok')?.rooms ?? [];
   const ownerStd = ownerRates?.tiers[std.tierId];
   const scraped = directRooms.filter((r) => r.tierId === std.tierId).map((r) => r.price);
   const yourRate = ownerStd ?? (scraped.length > 0 ? Math.min(...scraped) : null);

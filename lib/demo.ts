@@ -108,7 +108,7 @@ export function demoSnapshot(): Snapshot {
     nights,
     parity: [
       {
-        source: 'redroof', status: 'ok', price: 89,
+        source: 'Red Roof Inn Nashville - Franklin', official: true, status: 'ok', price: 89,
         room: 'cheapest room, public flexible rate (member rates excluded)',
         rooms: [
           { room: 'Deluxe 2 Queen Beds Non-Smoking', price: 89, memberPrice: 80, tierId: 'standard' },
@@ -118,9 +118,15 @@ export function demoSnapshot(): Snapshot {
         ],
         fetchedAt: ago(2),
       },
-      { source: 'expedia', status: 'ok', price: 101, room: 'Standard Room', fetchedAt: ago(14) },
-      { source: 'booking', status: 'ok', price: 99, room: 'Standard Room', fetchedAt: ago(22) },
-      { source: 'google', status: 'needs-manual-check', error: 'Bot-blocked page — expected behavior for some aggregators.', fetchedAt: ago(240) },
+      { source: 'Expedia.com', status: 'ok', price: 101, fetchedAt: ago(2) },
+      { source: 'Booking.com', status: 'ok', price: 99, fetchedAt: ago(2) },
+      { source: 'Hotels.com', status: 'ok', price: 101, fetchedAt: ago(2) },
+      { source: 'Priceline', status: 'ok', price: 99, fetchedAt: ago(2) },
+      { source: 'Agoda', status: 'ok', price: 101, fetchedAt: ago(2) },
+      { source: 'Trip.com', status: 'ok', price: 101, fetchedAt: ago(2) },
+      // The undercut this view exists to surface — a reseller nobody thought to check.
+      { source: 'Super.com', status: 'ok', price: 76, fetchedAt: ago(2) },
+      { source: 'Traveluro', status: 'ok', price: 84, fetchedAt: ago(2) },
     ],
     compsets: [
       {

@@ -16,17 +16,18 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
   const checks = ctx.snapshot.parity.map((p) => ({
     source: p.source,
+    official: p.official ?? false,
     status: p.status,
     price: p.price ?? null,
     currency: 'USD',
     room: p.room ?? null,
     rooms: p.rooms ?? null,
     fetchedAt: p.fetchedAt,
-    note: p.source === 'google' ? 'informational only — excluded from parity gap' : null,
+    note: null,
     error: p.error ?? null,
   }));
 
-  const priced = checks.filter((c) => c.status === 'ok' && c.price != null && c.source !== 'google');
+  const priced = checks.filter((c) => c.status === 'ok' && c.price != null);
   const gap =
     priced.length >= 2
       ? Math.max(...priced.map((c) => c.price!)) - Math.min(...priced.map((c) => c.price!))
@@ -37,7 +38,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   // lead-vs-lead against the compset — room types don't match across brands.
   const owner = await loadCurrentRates(ctx.store, ctx.property.id);
   const ownerStandard = owner?.tiers['standard'] ?? null;
-  const direct = checks.find((c) => c.source === 'redroof' && c.status === 'ok')?.price ?? null;
+  const direct = checks.find((c) => c.official && c.status === 'ok')?.price ?? null;
   const yourRate = ownerStandard ?? direct;
   const currentRate =
     yourRate != null

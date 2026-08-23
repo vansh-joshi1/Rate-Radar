@@ -1,731 +1,274 @@
-import type { Browser, Page } from 'playwright';
-import type { CompsetEntry, RateCheck, RoomRate, SourceResult } from '../../lib/scoring/types';
-import { matchCompset, type CompsetConfig } from '../../lib/scoring/compset';
-import compsetConfig from '../../config/compset.json';
+import { createSerpApiClient, type SerpApiClient, type SerpProperty, type SerpPropertyDetails } from './serpapi';
+import { planSearches, type SearchPlan } from '../budget';
 import { loadProperties, mapRoomToTier, type RatePropertyConfig, type RoomTierRule } from '../properties';
-import {
-  buildRunTelemetry,
-  classifyOutcome,
-  record,
-  resetTelemetry,
-  summarize,
-  type AttemptSource,
-} from '../telemetry';
+import type { CompsetConfig } from '../../lib/scoring/compset';
+import type { CompsetEntry, RateCheck, RoomRate, SourceResult } from '../../lib/scoring/types';
 
 /**
- * Rate parity: our own listed rate on 4 public sources, checked independently.
- * Each source is isolated — a block or structure change marks THAT source
- * "needs-manual-check", never guesses, never averages, never crashes the run.
- * Runs in GitHub Actions (full Linux runner) because Google/OTA pages are
- * JS-rendered — do not move this into a Vercel function.
+ * Competitor and parity prices, from SerpApi's google_hotels engine.
  *
- * Selector maintenance lives in the constants below.
- */
-
-const TIMEOUT = 30_000;
-const CARD_WINDOW = 500; // chars of rendered text one result card plausibly spans
-const PRICE_RE = /\$\s?(\d{2,4})(?:\.\d{2})?/;
-
-// ---- selector constants (the bits that rot — keep them here) ----
-const REDROOF_PRICE_SELECTORS = ['[class*="price"]', '[class*="rate"]', '[data-testid*="price"]'];
-const EXPEDIA_PRICE_SELECTORS = ['[data-test-id="price-summary"]', '[data-stid*="price"]', '[class*="uitk-type-500"]'];
-const BOOKING_PRICE_SELECTORS = ['[data-testid="price-and-discounted-price"]', '.prco-valign-middle-helper', '[class*="prc"]'];
-const GOOGLE_HOTELS_QUERY_DEFAULT = 'Red Roof Inn Franklin TN 3915 Carothers Parkway';
-
-function tomorrow(offsetDays = 1): { checkin: string; checkout: string } {
-  const t = new Date(Date.now() + offsetDays * 86400_000);
-  const n = new Date(t.getTime() + 86400_000);
-  const f = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
-  return { checkin: f(t), checkout: f(n) };
-}
-
-function rewriteDates(url: string): string {
-  const { checkin, checkout } = tomorrow();
-  return url
-    .replace(/checkInFormatted=[\d-]+/g, `checkInFormatted=${checkin}`)
-    .replace(/checkOutFormatted=[\d-]+/g, `checkOutFormatted=${checkout}`)
-    .replace(/chkin=[\d-]+/g, `chkin=${checkin}`)
-    .replace(/chkout=[\d-]+/g, `chkout=${checkout}`)
-    .replace(/checkin=[\d-]+/g, `checkin=${checkin}`)
-    .replace(/checkout=[\d-]+/g, `checkout=${checkout}`);
-}
-
-async function newPage(browser: Browser): Promise<Page> {
-  const ctx = await browser.newContext({
-    locale: 'en-US',
-    timezoneId: 'America/Chicago',
-    userAgent:
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
-    viewport: { width: 1366, height: 900 },
-    extraHTTPHeaders: { 'Accept-Language': 'en-US,en;q=0.9' },
-  });
-  const page = await ctx.newPage();
-  // Headless Chromium advertises itself via navigator.webdriver — the single
-  // cheapest tell for bot walls. Removing it fixes a good share of blocks.
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-  });
-  await page.route('**/*', (route) => {
-    const type = route.request().resourceType();
-    if (type === 'image' || type === 'font' || type === 'media') return route.abort();
-    return route.continue();
-  });
-  page.setDefaultTimeout(TIMEOUT);
-  return page;
-}
-
-/** Recognize bot-check interstitials so the dashboard says "blocked", not "structure changed". */
-function botWalled(body: string): boolean {
-  return /verify you are a human|are you a robot|unusual traffic|press & hold|access denied|captcha|pardon our interruption/i.test(body);
-}
-
-/** Nudge lazy-rendered prices into the DOM. */
-async function settlePage(page: Page, waitFor: RegExp, timeoutMs = 18_000): Promise<string> {
-  await page.evaluate(() => window.scrollBy(0, 900)).catch(() => undefined);
-  await page
-    .waitForFunction(
-      (src) => new RegExp(src, 'i').test(document.body.innerText),
-      waitFor.source,
-      { timeout: timeoutMs }
-    )
-    .catch(() => undefined); // fall through — extractor gets whatever rendered
-  // Prefer rendered text (no script payloads); fall back to raw textContent
-  // when nothing painted — some sites serve a JS shell whose embedded JSON
-  // still carries display-formatted prices we can scan.
-  let body = (await page.evaluate(() => document.body.innerText).catch(() => '')) ?? '';
-  if (body.length < 200) body = (await page.textContent('body').catch(() => '')) ?? '';
-  if (botWalled(body)) throw new Error('Blocked by a bot check on this run — usually transient from datacenter IPs; will retry next collection.');
-  return body;
-}
-
-async function extractPrice(page: Page, selectors: string[]): Promise<{ price: number; room?: string } | null> {
-  for (const sel of selectors) {
-    const els = await page.locator(sel).all();
-    for (const el of els.slice(0, 12)) {
-      const text = (await el.textContent().catch(() => '')) ?? '';
-      const m = text.match(PRICE_RE);
-      if (m) {
-        const price = Number(m[1]);
-        if (price >= 40 && price <= 500) return { price };
-      }
-    }
-  }
-  // last resort: whole-body scan for a plausible nightly price
-  const body = (await page.textContent('body').catch(() => '')) ?? '';
-  const m = body.match(PRICE_RE);
-  if (m) {
-    const price = Number(m[1]);
-    if (price >= 40 && price <= 500) return { price };
-  }
-  return null;
-}
-
-type Checker = (browser: Browser) => Promise<RateCheck>;
-
-const ATTEMPTS = 2;
-
-/**
- * Which browser this build uses. Flipped to 'patchright' by the transport
- * swap — the telemetry needs it to tell baseline runs from post-swap runs.
- */
-const BROWSER_ENGINE = 'playwright' as const;
-
-/** Which scheduling leg ran this. Set by the workflow. */
-const runLeg = (): 'self-hosted' | 'github-hosted' =>
-  process.env.RUN_LEG === 'self-hosted' ? 'self-hosted' : 'github-hosted';
-
-/**
- * The night the parity checks are pricing. Module-level and set once per run,
- * matching the compsetHarvest pattern below — threading it through all four
- * checker factories would be noise in a single-run process.
- */
-let parityDate = '';
-
-function makeChecker(
-  source: RateCheck['source'],
-  run: (page: Page) => Promise<{ price: number; room?: string; rooms?: RoomRate[] } | null>
-): Checker {
-  return async (browser) => {
-    const fetchedAt = new Date().toISOString();
-    const startedAt = Date.now();
-    let lastError = 'No price found on page — structure may have changed or source blocked the check.';
-    let sawError = false;
-    for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
-      let page: Page | null = null;
-      try {
-        page = await newPage(browser); // fresh context per attempt — blocks are often per-session
-        const result = await run(page);
-        if (result) {
-          record({
-            target: 'ours',
-            source: source as AttemptSource,
-            date: parityDate,
-            outcome: 'ok',
-            attempts: attempt,
-            durationMs: Date.now() - startedAt,
-          });
-          return { source, status: 'ok', fetchedAt, ...result };
-        }
-      } catch (err) {
-        lastError = String(err).slice(0, 200);
-        sawError = true;
-      } finally {
-        await page?.context().close().catch(() => undefined);
-      }
-      if (attempt < ATTEMPTS) await new Promise((r) => setTimeout(r, 2500));
-    }
-    record({
-      target: 'ours',
-      source: source as AttemptSource,
-      date: parityDate,
-      outcome: classifyOutcome({ result: null, error: sawError ? lastError : null }),
-      attempts: ATTEMPTS,
-      durationMs: Date.now() - startedAt,
-    });
-    return {
-      source,
-      status: 'needs-manual-check',
-      fetchedAt,
-      error: `${lastError} (${ATTEMPTS} attempts)`,
-    };
-  };
-}
-
-/**
- * Public (non-member) nightly prices from redroof.com rendered text. Each room
- * card lists a member-gated discount FIRST (strikethrough public price + the
- * ~10%-off member price), closed by "Sign in or Join to book this Member
- * rate.", then the public Flexible Rate (verified live 2026-07-17). Parity
- * compares public rates across sites, so member-gated prices are excluded —
- * min() over everything used to report the member rate as "our rate".
- * Prices render WITHOUT a $ sign: "75.00\nUSD/night".
- */
-export function parseRedroofPublicPrices(body: string): number[] {
-  // Longest token first: the sign-in sentence contains the word "Member" and
-  // must be consumed whole, or it would re-open the member block it closes.
-  const re = /Sign in or Join to book this Member rate\.?|\bMember\b|(\d{2,3})\.\d{2}\s*\n?\s*USD\/night/gi;
-  const prices: number[] = [];
-  let inMember = false;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(body))) {
-    if (m[1] !== undefined) {
-      const p = Number(m[1]);
-      if (!inMember && p >= 40 && p <= 500) prices.push(p);
-    } else if (/^member$/i.test(m[0])) {
-      inMember = true;
-    } else {
-      inMember = false; // "Sign in or Join…" closes the member block
-    }
-  }
-  return prices;
-}
-
-/**
- * Room-level breakdown from the same rendered text: each card is
- * "<Room name> / Sleeps N guests / [member block] / public Flexible Rate".
- * The public price is the first non-member price after the room name; the
- * member price is the lowest price inside the member block (the first one is
- * the struck-through public rate). Returns [] on unrecognized structure —
- * callers fall back to the flat public-price scan.
- */
-export function parseRedroofRooms(body: string): Omit<RoomRate, 'tierId'>[] {
-  const lines = body.split('\n').map((l) => l.trim());
-  const priceAt = (i: number): number | null => {
-    const m = lines[i].match(/^(\d{2,3})\.\d{2}(\s*USD\/night)?$/i);
-    if (!m) return null;
-    if (!m[2] && !/^USD\/night/i.test(lines[i + 1] ?? '')) return null;
-    const p = Number(m[1]);
-    return p >= 40 && p <= 500 ? p : null;
-  };
-
-  const rooms: Omit<RoomRate, 'tierId'>[] = [];
-  let current: string | null = null;
-  let inMember = false;
-  let memberPrices: number[] = [];
-  let publicCaptured = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (/^Sleeps \d+ guests?$/i.test(line)) {
-      // the nearest non-empty line above is the room name — a new card begins
-      for (let j = i - 1; j >= 0; j--) {
-        if (lines[j]) { current = lines[j]; break; }
-      }
-      inMember = false;
-      memberPrices = [];
-      publicCaptured = false;
-      continue;
-    }
-    if (/^Member\b/i.test(line)) { inMember = true; continue; }
-    if (/Sign in or Join to book this Member rate/i.test(line)) { inMember = false; continue; }
-
-    const p = priceAt(i);
-    if (p == null || !current) continue;
-    if (inMember) {
-      memberPrices.push(p);
-    } else if (!publicCaptured) {
-      rooms.push({
-        room: current,
-        price: p,
-        memberPrice: memberPrices.length > 0 ? Math.min(...memberPrices) : undefined,
-      });
-      publicCaptured = true;
-    }
-  }
-  return rooms;
-}
-
-const checkRedroof = (url: string, tierRules: RoomTierRule[] = []) => makeChecker('redroof', async (page) => {
-  // The checkout page loads rates via XHR — capture it as a last resort (it
-  // can't distinguish member pricing, so the DOM parse is preferred).
-  let apiPrice: number | null = null;
-  page.on('response', async (res) => {
-    if (!/rate|room|avail/i.test(res.url()) || apiPrice) return;
-    try {
-      const text = JSON.stringify(await res.json());
-      const m = text.match(/"(?:totalRate|rate|price|amountAfterTax)"\s*:\s*"?(\d{2,4})(?:\.\d+)?"?/i);
-      if (m) {
-        const p = Number(m[1]);
-        if (p >= 40 && p <= 500) apiPrice = p;
-      }
-    } catch { /* non-JSON response — ignore */ }
-  });
-  await page.goto(rewriteDates(url), { waitUntil: 'domcontentloaded' }).catch(() => undefined);
-  const body = await settlePage(page, /USD\/night/);
-  // Preferred: full room-level breakdown, tier-tagged via config.
-  const parsedRooms = parseRedroofRooms(body).map((r) => ({ ...r, tierId: mapRoomToTier(r.room, tierRules) }));
-  if (parsedRooms.length > 0) {
-    return {
-      price: Math.min(...parsedRooms.map((r) => r.price)),
-      room: 'cheapest room, public flexible rate (member rates excluded)',
-      rooms: parsedRooms,
-    };
-  }
-  // Structure drifted from the room-card layout — flat public-price scan.
-  const publicPrices = parseRedroofPublicPrices(body);
-  if (publicPrices.length > 0) {
-    return { price: Math.min(...publicPrices), room: 'cheapest room, public flexible rate (member rates excluded)' };
-  }
-  if (apiPrice) return { price: apiPrice, room: 'cheapest available (from rates API — may include member pricing)' };
-  return extractPrice(page, REDROOF_PRICE_SELECTORS);
-});
-
-/** Filled by checkGoogle as a side harvest — the same page carries competitor prices. */
-let compsetHarvest: CompsetEntry[] = [];
-
-/**
- * Google's "similar hotels" carousel renders as a hotel-name line followed
- * within a few lines by a "$NN ·" price line (verified live 2026-07-12).
- */
-/**
- * Name-anchored harvest: we KNOW which competitors we want (the whitelist), so
- * find each name in the page text and scan forward a few lines for its price.
- * The earlier price-anchored approach broke on the real page: Google stacks
- * rating/amenity/"View prices" lines between name and price, so the
- * looked-back "name" was junk that failed the whitelist (observed live —
- * production run harvested 0 comps).
- */
-export function harvestCompset(bodyText: string, compset: CompsetConfig = compsetConfig): CompsetEntry[] {
-  const lower = bodyText.toLowerCase();
-  const brands: string[] = compset.competitors ?? [];
-
-  // all whitelist occurrences, sorted — each card window ends where the next brand begins
-  const marks: { pos: number; brand: string }[] = [];
-  for (const brand of brands) {
-    const needle = brand.toLowerCase();
-    let pos = lower.indexOf(needle);
-    let hits = 0;
-    while (pos !== -1 && hits < 5) {
-      marks.push({ pos, brand });
-      hits += 1;
-      pos = lower.indexOf(needle, pos + needle.length);
-    }
-  }
-  marks.sort((a, b) => a.pos - b.pos);
-
-  const found = new Map<string, number>();
-  for (let i = 0; i < marks.length; i++) {
-    const { pos, brand } = marks[i];
-    if (found.has(brand)) continue;
-    const nextPos = marks.slice(i + 1).find((m) => m.brand !== brand)?.pos ?? pos + CARD_WINDOW;
-    const window = bodyText.slice(pos, Math.min(pos + CARD_WINDOW, nextPos));
-    const m = window.match(/\$\s?(\d{2,3})(?!\d)/);
-    if (m) found.set(brand, Number(m[1]));
-  }
-
-  return matchCompset([...found.entries()].map(([name, price]) => ({ name, price })), compset);
-}
-
-
-const checkGoogle = (q: string, compset: CompsetConfig) => makeChecker('google', async (page) => {
-  const { checkin, checkout } = tomorrow();
-  await page.goto(
-    `https://www.google.com/travel/search?q=${encodeURIComponent(q)}&checkin=${checkin}&checkout=${checkout}`,
-    { waitUntil: 'domcontentloaded' }
-  );
-  // consent dialog (region-dependent)
-  await page.locator('button:has-text("Accept all"), button:has-text("I agree")').first().click({ timeout: 4000 }).catch(() => undefined);
-  const body = await settlePage(page, /\$\d{2,3}/);
-  compsetHarvest = harvestCompset(body, compset);
-  return extractPrice(page, ['[data-hveid] span', 'span']);
-});
-
-const checkExpedia = (url: string) => makeChecker('expedia', async (page) => {
-  await page.goto(rewriteDates(url), { waitUntil: 'domcontentloaded' });
-  await settlePage(page, /\$\d{2,3} nightly/); // room cards render "$68 nightly" (verified live)
-  return extractPrice(page, EXPEDIA_PRICE_SELECTORS);
-});
-
-const checkBooking = (url: string) => makeChecker('booking', async (page) => {
-  await page.goto(rewriteDates(url), { waitUntil: 'domcontentloaded' });
-  await settlePage(page, /\$\d{2,3}/);
-  return extractPrice(page, BOOKING_PRICE_SELECTORS);
-});
-
-/** The checkers a property's config actually supports — unset URLs are skipped, not failed. */
-function buildCheckers(prop: RatePropertyConfig): Checker[] {
-  const checkers: Checker[] = [];
-  if (prop.rateUrls.redroof) checkers.push(checkRedroof(prop.rateUrls.redroof, prop.roomTierMap));
-  if (prop.googleHotelsQuery) checkers.push(checkGoogle(prop.googleHotelsQuery, prop.compset));
-  if (prop.rateUrls.expedia) checkers.push(checkExpedia(prop.rateUrls.expedia));
-  if (prop.rateUrls.booking) checkers.push(checkBooking(prop.rateUrls.booking));
-  return checkers;
-}
-
-/** Booking.com property URL with explicit stay dates (2 adults, USD). */
-export function bookingUrlWithDates(baseUrl: string, checkin: string): string {
-  const d = new Date(`${checkin}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + 1);
-  const checkout = d.toISOString().slice(0, 10);
-  const sep = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${sep}checkin=${checkin}&checkout=${checkout}&group_adults=2&no_rooms=1&selected_currency=USD`;
-}
-
-// Tokens too common in hotel names/slugs to prove identity on their own.
-const GENERIC_NAME_TOKENS = new Set(['the', 'and', 'inn', 'hotel', 'suites', 'resort', 'lodge']);
-
-/**
- * Does a Booking property slug plausibly belong to this hotel? Requires a
- * distinctive name token in the slug — search ranking is NOT identity
- * (observed live: searching "Baymont Franklin" returned Comfort Inn first;
- * accepting it would mislabel a competitor's price).
- */
-export function bookingSlugMatchesName(slug: string, hotelName: string): boolean {
-  const tokens = hotelName.toLowerCase().match(/[a-z0-9]+/g) ?? [];
-  const distinctive = tokens.filter((t) => t.length >= 3 && !GENERIC_NAME_TOKENS.has(t));
-  const pool = distinctive.length > 0 ? distinctive : tokens; // e.g. "Motel 6" has no long tokens
-  return pool.some((t) => slug.toLowerCase().includes(t));
-}
-
-/**
- * Why this returns a discriminated result rather than `string | null`:
+ * This replaced a Playwright scraper that could no longer reach even our own
+ * site. Two calls now cover what it attempted:
  *
- * A bot-walled search page and a genuine name mismatch are completely
- * different problems — one is transport, the other is identity — and they were
- * indistinguishable, because `settlePage(...).catch(() => undefined)` swallowed
- * the only error it throws (the bot-wall detection). The code then scanned a
- * challenge page for hotel links, found none, and reported "no match".
+ *   searchProperties(location, date)  → every nearby hotel priced for that night
+ *   propertyDetails(ourToken, date)   → every channel selling us, plus room rates
  *
- * The first production baseline showed 5 of 6 per-hotel checks as
- * "no URL resolved", which was unactionable precisely because of this.
+ * The functions below that map those responses onto `CompsetEntry` / `RateCheck`
+ * are pure and fixture-tested; the fetching is not, which is the same boundary
+ * the scraper-era tests drew. Everything downstream sees domain types only, so
+ * changing vendor means changing this file and `serpapi.ts` and nothing else.
  */
-type ResolveResult =
-  | { status: 'resolved'; url: string }
-  | { status: 'failed'; error: string }
-  | { status: 'no-match' };
 
-/**
- * Find a watchlist hotel's own Booking.com property page via Booking search.
- * Scans the top results and accepts only a slug that matches the hotel's
- * name. Resolved once, persisted to the watchlist by ingest, reused after.
- */
-async function resolveBookingUrl(browser: Browser, hotelName: string, location: string): Promise<ResolveResult> {
-  let page: Page | null = null;
-  try {
-    page = await newPage(browser);
-    const q = `${hotelName} ${location}`;
-    await page.goto(
-      `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(q)}&selected_currency=USD`,
-      { waitUntil: 'domcontentloaded' }
-    );
-    // Deliberately NOT caught: settlePage swallows its own render timeout and
-    // throws only on a bot wall, so letting it propagate is what separates
-    // "blocked" from "no match". Catching it here was the bug.
-    await settlePage(page, /hotel/i, 12_000);
-    const anchors = await page.locator('a[href*="/hotel/"]').all();
-    for (const a of anchors.slice(0, 10)) {
-      const href = await a.getAttribute('href').catch(() => null);
-      if (!href) continue;
-      const url = new URL(href, 'https://www.booking.com');
-      if (bookingSlugMatchesName(url.pathname, hotelName)) {
-        return { status: 'resolved', url: `${url.origin}${url.pathname}` }; // strip volatile query/session params
-      }
-    }
-    return { status: 'no-match' }; // no confident match — better no price than a mislabeled one
-  } catch (err) {
-    return { status: 'failed', error: String(err).slice(0, 200) };
-  } finally {
-    await page?.context().close().catch(() => undefined);
-  }
+function addDays(date: string, n: number): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }
 
-// Resolving URLs costs a search-page load each — spread across runs so one
-// run never balloons; with 7 runs/day a 10-hotel list fully resolves in a day.
-const MAX_RESOLVES_PER_RUN = 3;
-const DIRECT_CHECK_PACING_MS = 1500;
+function priceOf(rate?: { extracted_lowest?: number }): number | undefined {
+  return typeof rate?.extracted_lowest === 'number' ? rate.extracted_lowest : undefined;
+}
+
+export interface CompsetMapping {
+  entries: CompsetEntry[];
+  /** Watchlist name → property_token, for ingest to persist so later runs match exactly. */
+  resolvedTokens: Record<string, string>;
+  /** Watchlist hotels Google Hotels does not carry at all. */
+  notFound: string[];
+  /** Listed, but with no rate for this date — genuinely sold out, not a failure. */
+  unavailable: string[];
+}
 
 /**
- * The accuracy fix: price each watchlist hotel from ITS OWN Booking.com page
- * with explicit dates — no more hoping competitors appear in Google's
- * carousel or a search page. Sequential with pacing to stay polite.
+ * Match a location search against the watchlist.
+ *
+ * Iterates properties (not competitors) so the output keeps the order Google
+ * returned, which is roughly proximity. Each competitor is claimed once —
+ * a token match first, since names drift and tokens do not.
  */
-async function competitorDirectChecks(
-  browser: Browser,
-  prop: RatePropertyConfig,
-  checkin: string
-): Promise<{ entries: CompsetEntry[]; resolvedUrls: Record<string, string> }> {
-  const hotels = prop.watchlistHotels ?? [];
+export function toCompsetEntries(
+  properties: SerpProperty[],
+  compset: CompsetConfig,
+  opts: { excludeToken?: string; knownTokens?: Record<string, string> } = {}
+): CompsetMapping {
+  const { competitors, priceSanity } = compset;
+  const knownTokens = opts.knownTokens ?? {};
+
+  const claimed = new Set<string>();
   const entries: CompsetEntry[] = [];
-  const resolvedUrls: Record<string, string> = {};
-  let resolves = 0;
+  const resolvedTokens: Record<string, string> = {};
+  const unavailable: string[] = [];
 
-  for (const hotel of hotels) {
-    let url = hotel.bookingUrl;
-    // Why these are tracked separately: the telemetry needs to say whether a
-    // hotel was never tried (no budget left), tried and blocked, or tried and
-    // genuinely unmatched. Those need three different fixes.
-    let resolveError: string | null = null;
-    let resolveAttempted = false;
-    let resolveMs = 0;
-    if (!url && resolves < MAX_RESOLVES_PER_RUN) {
-      resolves += 1;
-      resolveAttempted = true;
-      const startedResolve = Date.now();
-      const result = await resolveBookingUrl(browser, hotel.name, prop.bookingSearchLocation);
-      resolveMs = Date.now() - startedResolve;
-      if (result.status === 'resolved') {
-        url = result.url;
-        resolvedUrls[hotel.name] = result.url;
-        console.log(`[compset-direct] resolved ${hotel.name} → ${result.url}`);
-      } else if (result.status === 'failed') {
-        resolveError = result.error;
-        console.warn(`[compset-direct] resolve FAILED for ${hotel.name}: ${result.error.slice(0, 140)}`);
-      } else {
-        console.warn(`[compset-direct] no Booking result matched the name "${hotel.name}" — identity, not a block`);
-      }
-    }
-    if (!url) {
-      // A bot-walled search page used to land here looking exactly like a name
-      // mismatch. It doesn't any more: attempts=0 means never tried this run,
-      // attempts=1 with 'unresolved' means tried and genuinely unmatched, and
-      // 'blocked'/'timeout'/'error' mean the search itself failed.
-      record({
-        target: hotel.name,
-        source: 'booking-direct',
-        date: checkin,
-        outcome: resolveError ? classifyOutcome({ result: null, error: resolveError }) : 'unresolved',
-        attempts: resolveAttempted ? 1 : 0,
-        durationMs: resolveMs,
-      });
+  for (const property of properties) {
+    const name = property.name;
+    if (!name) continue;
+    if (opts.excludeToken && property.property_token === opts.excludeToken) continue;
+
+    const byToken = competitors.find(
+      (c) => !claimed.has(c) && knownTokens[c] && knownTokens[c] === property.property_token
+    );
+    const lower = name.toLowerCase();
+    const competitor =
+      byToken ?? competitors.find((c) => !claimed.has(c) && lower.includes(c.toLowerCase()));
+    if (!competitor) continue;
+
+    claimed.add(competitor);
+    if (property.property_token) resolvedTokens[competitor] = property.property_token;
+
+    const price = priceOf(property.rate_per_night);
+    if (price === undefined) {
+      unavailable.push(name);
       continue;
     }
+    if (price < priceSanity.min || price > priceSanity.max) continue;
 
-    let page: Page | null = null;
-    const startedAt = Date.now();
-    try {
-      page = await newPage(browser);
-      await page.goto(bookingUrlWithDates(url, checkin), { waitUntil: 'domcontentloaded' });
-      await settlePage(page, /\$\d{2,4}/, 12_000);
-      const result = await extractPrice(page, BOOKING_PRICE_SELECTORS);
-      const { min, max } = prop.compset.priceSanity;
-      const inSanity = !!result && result.price >= min && result.price <= max;
-      if (inSanity) {
-        entries.push({ name: hotel.name, price: result!.price });
-      } else {
-        console.warn(`[compset-direct] ${hotel.name}: no usable price this run${result ? ` (got $${result.price}, outside sanity)` : ''}`);
-      }
-      record({
-        target: hotel.name,
-        source: 'booking-direct',
-        date: checkin,
-        outcome: classifyOutcome({ result, error: null, sanityRejected: !!result && !inSanity }),
-        attempts: 1,
-        durationMs: Date.now() - startedAt,
-      });
-    } catch (err) {
-      const message = String(err).slice(0, 200);
-      console.warn(`[compset-direct] ${hotel.name} failed: ${message.slice(0, 120)}`);
-      record({
-        target: hotel.name,
-        source: 'booking-direct',
-        date: checkin,
-        outcome: classifyOutcome({ result: null, error: message }),
-        attempts: 1,
-        durationMs: Date.now() - startedAt,
-      });
-    } finally {
-      await page?.context().close().catch(() => undefined);
-    }
-    await new Promise((r) => setTimeout(r, DIRECT_CHECK_PACING_MS));
+    entries.push({ name, price });
   }
 
-  console.log(`[compset-direct] ${checkin}: ${entries.length}/${hotels.length} hotels priced from their own Booking pages`);
-  return { entries, resolvedUrls };
+  return {
+    entries,
+    resolvedTokens,
+    notFound: competitors.filter((c) => !claimed.has(c)),
+    unavailable,
+  };
 }
 
 /**
- * Harvest fallback — competitor prices for one night from aggregation pages.
- * Primary: the Google Hotels page for OUR property with that night's dates —
- * its "similar hotels" carousel carries date-consistent competitor prices.
- * Fallback: Booking's city search. Used for event nights and to backfill
- * hotels the direct checks couldn't price.
+ * Every room rate the channels expose for our property, cheapest per room.
+ *
+ * Caveat worth remembering: these are rooms as listed by OTAs, not by our own
+ * booking engine — the official listing reports one nightly rate and no
+ * breakdown. Good enough to tell Standard from Superior, which is what the
+ * tier recommendation needs, but it is not our direct rate card.
  */
-async function compsetForDate(
-  browser: Browser,
-  checkin: string,
-  prop: RatePropertyConfig,
-  rejectSig?: string
-): Promise<CompsetEntry[]> {
-  const d = new Date(`${checkin}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + 1);
-  const checkout = d.toISOString().slice(0, 10);
-  const q = prop.googleHotelsQuery ?? GOOGLE_HOTELS_QUERY_DEFAULT;
+export function toRoomRates(details: SerpPropertyDetails, roomTierMap: RoomTierRule[]): RoomRate[] {
+  const cheapest = new Map<string, number>();
 
-  const attempts: { label: string; url: string }[] = [
-    {
-      label: 'google',
-      url: `https://www.google.com/travel/search?q=${encodeURIComponent(q)}&checkin=${checkin}&checkout=${checkout}`,
-    },
-    {
-      label: 'booking',
-      url: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(prop.bookingSearchLocation)}&checkin=${checkin}&checkout=${checkout}&group_adults=2&no_rooms=1&selected_currency=USD`,
-    },
-  ];
-
-  for (const a of attempts) {
-    let page: Page | null = null;
-    const startedAt = Date.now();
-    try {
-      page = await newPage(browser);
-      await page.goto(a.url, { waitUntil: 'domcontentloaded' });
-      if (a.label === 'google') {
-        await page.locator('button:has-text("Accept all"), button:has-text("I agree")').first().click({ timeout: 4000 }).catch(() => undefined);
-      }
-      const body = await settlePage(page, /\$\d{2,3}/);
-      const entries = harvestCompset(body, prop.compset);
-      record({
-        target: 'harvest',
-        source: a.label === 'google' ? 'google' : 'booking',
-        date: checkin,
-        outcome: entries.length > 0 ? 'ok' : 'no-price',
-        attempts: 1,
-        durationMs: Date.now() - startedAt,
-      });
-      const sig = entries.map((x) => `${x.name}@${x.price}`).sort().join('|');
-      const dateIgnored = rejectSig !== undefined && entries.length > 0 && sig === rejectSig;
-      console.log(`[compset] ${checkin} via ${a.label}: page ${body.length} chars → ${entries.length} comps${dateIgnored ? ' (identical to tomorrow — date ignored, trying next source)' : ''}`);
-      if (entries.length > 0 && !dateIgnored) return entries;
-    } catch (err) {
-      record({
-        target: 'harvest',
-        source: a.label === 'google' ? 'google' : 'booking',
-        date: checkin,
-        outcome: classifyOutcome({ result: null, error: String(err).slice(0, 200) }),
-        attempts: 1,
-        durationMs: Date.now() - startedAt,
-      });
-      console.warn(`[compset] ${a.label} failed for ${checkin}: ${String(err).slice(0, 140)}`);
-    } finally {
-      await page?.context().close().catch(() => undefined);
+  for (const channel of details.featured_prices ?? []) {
+    for (const room of channel.rooms ?? []) {
+      const name = room.name?.trim();
+      const price = priceOf(room.rate_per_night);
+      if (!name || price === undefined) continue;
+      const seen = cheapest.get(name);
+      if (seen === undefined || price < seen) cheapest.set(name, price);
     }
   }
-  return [];
+
+  return [...cheapest.entries()].map(([room, price]) => ({
+    room,
+    price,
+    tierId: mapRoomToTier(room, roomTierMap),
+  }));
+}
+
+/**
+ * One parity row per channel selling our property.
+ *
+ * Every channel is kept, not a hard-coded four: the parity question that
+ * matters is whether anyone is undercutting our direct rate, and the answer is
+ * usually a reseller nobody thought to scrape. Filtering is left to the UI so
+ * ingest never throws away a price it cannot get back.
+ */
+export function toParityChecks(
+  details: SerpPropertyDetails,
+  roomTierMap: RoomTierRule[],
+  fetchedAt: string
+): RateCheck[] {
+  const rooms = toRoomRates(details, roomTierMap);
+
+  return (details.prices ?? []).map((channel) => {
+    const price = priceOf(channel.rate_per_night);
+    const official = channel.official === true;
+    return {
+      source: channel.source ?? 'unknown',
+      ...(official ? { official } : {}),
+      status: price === undefined ? ('needs-manual-check' as const) : ('ok' as const),
+      ...(price !== undefined ? { price } : {}),
+      ...(official && rooms.length > 0 ? { rooms } : {}),
+      fetchedAt,
+    };
+  });
+}
+
+export interface RatesData {
+  checks: RateCheck[];
+  compsets: { date: string; entries: CompsetEntry[] }[];
+  resolvedPropertyTokens?: Record<string, string>;
+  budget: {
+    tier: SearchPlan['tier'];
+    spent: number;
+    remaining: number;
+    usedThisMonth: number;
+    perMonth?: number;
+    renewalDate?: string;
+    skipped: SearchPlan['skipped'];
+    notFound: string[];
+    unavailable: string[];
+  };
 }
 
 export async function collect(
   eventNights: string[] = [],
-  prop: RatePropertyConfig = loadProperties()[0]
+  prop: RatePropertyConfig = loadProperties()[0],
+  deps: { client?: SerpApiClient; now?: Date } = {}
 ): Promise<SourceResult> {
   const fetchedAt = new Date().toISOString();
-  let browser: Browser | null = null;
+  const now = deps.now ?? new Date();
+
+  const apiKey = process.env.SERPAPI_KEY;
+  if (!deps.client && !apiKey) {
+    return { source: 'rates', status: 'awaiting-key', fetchedAt, error: 'SERPAPI_KEY unset' };
+  }
+  if (!prop.serpapi?.query) {
+    return { source: 'rates', status: 'failed', fetchedAt, error: `No serpapi.query configured for ${prop.id}` };
+  }
+
+  const client = deps.client ?? createSerpApiClient(apiKey!);
+
   try {
-    const { chromium } = await import('playwright');
-    browser = await chromium.launch({ headless: true, args: ['--disable-blink-features=AutomationControlled'] });
-    compsetHarvest = [];
-    resetTelemetry();
+    const quota = await client.accountQuota();
 
-    // Compset: tomorrow always, plus approved event nights (already capped upstream).
-    const tomorrowDate = tomorrow().checkin;
-    parityDate = tomorrowDate; // the night the parity checks below are pricing
-    const checks = await Promise.all(buildCheckers(prop).map((c) => c(browser!)));
-    const dates = [tomorrowDate, ...eventNights.filter((dte) => dte !== tomorrowDate)];
-
-    // Accuracy-first: price each watchlist hotel from its own Booking page.
-    const direct = await competitorDirectChecks(browser, prop, tomorrowDate);
-    const directNames = new Set(direct.entries.map((e) => e.name.toLowerCase()));
-    const fullCoverage =
-      (prop.watchlistHotels?.length ?? 0) > 0 && direct.entries.length === prop.watchlistHotels!.length;
-
-    const compsets: { date: string; entries: CompsetEntry[] }[] = [];
-    const sig = (e: CompsetEntry[]) => e.map((x) => `${x.name}@${x.price}`).sort().join('|');
-    for (const date of dates) {
-      const tomorrowSig = date !== tomorrowDate ? sig(compsets.find((c) => c.date === tomorrowDate)?.entries ?? []) : undefined;
-      // Skip the harvest entirely when direct checks priced every hotel.
-      let entries =
-        date === tomorrowDate && fullCoverage
-          ? []
-          : await compsetForDate(browser, date, prop, tomorrowSig || undefined);
-      // Google's carousel harvest (same-run side product) backfills tomorrow if Booking gave nothing
-      if (entries.length === 0 && date === tomorrowDate && compsetHarvest.length > 0 && !fullCoverage) {
-        entries = compsetHarvest;
-      }
-      if (date === tomorrowDate && direct.entries.length > 0) {
-        // Direct prices win; harvest only backfills hotels the direct pass missed.
-        const backfill = entries.filter(
-          (e) =>
-            ![...directNames].some(
-              (dn) => e.name.toLowerCase().includes(dn) || dn.includes(e.name.toLowerCase())
-            )
-        );
-        entries = [...direct.entries, ...backfill];
-      }
-      // Honesty guard: identical prices to tomorrow's block means the source
-      // ignored our dates (observed live: Google serving default-date carousel
-      // for every checkin param). Show nothing rather than mislabeled data.
-      const tomorrowBlock = compsets.find((c) => c.date === tomorrowDate);
-      if (date !== tomorrowDate && tomorrowBlock && entries.length > 0 && sig(entries) === sig(tomorrowBlock.entries)) {
-        console.warn(`[compset] ${date}: prices identical to tomorrow's — source ignored the date; dropping block`);
-        entries = [];
-      }
-      compsets.push({ date, entries });
-    }
-
-    const telemetry = buildRunTelemetry({
-      runAt: fetchedAt,
-      runLeg: runLeg(),
-      browser: BROWSER_ENGINE,
-      profileAgeRuns: 0,
+    const tomorrow = addDays(now.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }), 1);
+    const dates = [tomorrow, ...eventNights.filter((d) => d !== tomorrow)];
+    const plan = planSearches({
+      remaining: quota.remaining,
+      renewalDate: quota.renewalDate,
+      now,
+      dates,
     });
-    const tel = summarize(telemetry.attempts);
+
     console.log(
-      `[telemetry] ${tel.ok}/${tel.total} attempts returned a price; blocked ${Math.round(tel.blockedShare * 100)}% (${telemetry.browser} / ${telemetry.runLeg})`
+      `[rates] budget tier=${plan.tier} remaining=${quota.remaining}/${quota.perMonth ?? '?'} ` +
+        `renews=${quota.renewalDate ?? 'unknown'} → ${plan.compsetDates.length} compset search(es)` +
+        `${plan.propertyDetails ? ' + property details' : ''}`
     );
 
-    return {
-      source: 'rates',
-      status: 'ok',
-      fetchedAt,
-      data: {
-        checks,
-        compsets,
-        telemetry,
-        // Ingest persists these onto the watchlist so future runs skip resolution.
-        ...(Object.keys(direct.resolvedUrls).length > 0 ? { resolvedBookingUrls: direct.resolvedUrls } : {}),
+    const knownTokens = Object.fromEntries(
+      (prop.watchlistHotels ?? [])
+        .filter((h) => h.propertyToken)
+        .map((h) => [h.name, h.propertyToken!])
+    );
+
+    const compsets: { date: string; entries: CompsetEntry[] }[] = [];
+    const resolvedTokens: Record<string, string> = {};
+    let notFound: string[] = [];
+    let unavailable: string[] = [];
+    let spent = 0;
+
+    for (const date of plan.compsetDates) {
+      const properties = await client.searchProperties(prop.serpapi.query, date, addDays(date, 1));
+      spent += 1;
+      const mapped = toCompsetEntries(properties, prop.compset, {
+        excludeToken: prop.serpapi.propertyToken,
+        knownTokens,
+      });
+      compsets.push({ date, entries: mapped.entries });
+      Object.assign(resolvedTokens, mapped.resolvedTokens);
+      // Coverage is a property of the search, not the date — report the first.
+      if (date === plan.compsetDates[0]) {
+        notFound = mapped.notFound;
+        unavailable = mapped.unavailable;
+      }
+      console.log(`[rates] ${date}: ${mapped.entries.length} comps priced, ${mapped.notFound.length} not carried`);
+    }
+
+    let checks: RateCheck[] = [];
+    if (plan.propertyDetails && prop.serpapi.propertyToken) {
+      const details = await client.propertyDetails(
+        prop.serpapi.propertyToken,
+        prop.serpapi.query,
+        tomorrow,
+        addDays(tomorrow, 1)
+      );
+      spent += 1;
+      checks = toParityChecks(details, prop.roomTierMap, fetchedAt);
+      const official = checks.find((c) => c.official);
+      const cheapest = checks.filter((c) => !c.official && c.price != null).sort((a, b) => a.price! - b.price!)[0];
+      console.log(
+        `[rates] parity: ${checks.length} channels, direct $${official?.price ?? '?'}` +
+          (cheapest ? `, cheapest $${cheapest.price} (${cheapest.source})` : '')
+      );
+    }
+
+    const data: RatesData = {
+      checks,
+      compsets,
+      ...(Object.keys(resolvedTokens).length > 0 ? { resolvedPropertyTokens: resolvedTokens } : {}),
+      budget: {
+        tier: plan.tier,
+        spent,
+        remaining: quota.remaining - spent,
+        usedThisMonth: quota.usedThisMonth + spent,
+        ...(quota.perMonth !== undefined ? { perMonth: quota.perMonth } : {}),
+        ...(quota.renewalDate ? { renewalDate: quota.renewalDate } : {}),
+        skipped: plan.skipped,
+        notFound,
+        unavailable,
       },
     };
+
+    return { source: 'rates', status: 'ok', fetchedAt, data };
   } catch (err) {
     return { source: 'rates', status: 'failed', fetchedAt, error: String(err).slice(0, 300) };
-  } finally {
-    await browser?.close().catch(() => undefined);
   }
 }

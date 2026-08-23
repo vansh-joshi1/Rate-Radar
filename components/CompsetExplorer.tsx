@@ -114,7 +114,7 @@ export default function CompsetExplorer({ property, yourRate, blocks, watchlist 
           {yourRate ? (
             <>
               <div className="font-display text-3xl font-semibold tabular-nums text-accent">${yourRate.price}</div>
-              <div className="text-xs text-muted">{yourRate.source === 'owner' ? 'entered by you' : 'scraped from redroof.com'}</div>
+              <div className="text-xs text-muted">{yourRate.source === 'owner' ? 'entered by you' : 'listed rate, direct channel'}</div>
             </>
           ) : (
             <div className="mt-1 text-sm text-muted">
@@ -205,7 +205,7 @@ export default function CompsetExplorer({ property, yourRate, blocks, watchlist 
                         {/* "You" marker: a cobalt dot, not a side-tab border. The
                             row tint alone is too faint to survive a glance. */}
                         <span className="mr-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent align-middle" aria-hidden />
-                        {property.name} (you{yourRate!.source === 'owner' ? ' — current rate' : ' — listed on redroof.com'})
+                        {property.name} (you{yourRate!.source === 'owner' ? ' — current rate' : ' — direct rate'})
                       </td>
                       <td className="td">—</td>
                       <td className="td text-lg font-semibold text-accent">${yourRate!.price}</td>

@@ -4,6 +4,7 @@ import { loadCurrentRates } from '../../../lib/current-rates';
 import { loadWatchlist } from '../../../lib/watchlist';
 import { chicagoToday } from '../../../lib/ingest';
 import { SampleBadge } from '../../../components/ui';
+import ParityGrid from '../../../components/ParityGrid';
 import CompetitorInsights, {
   type CompsetNight,
   type HistoryPoint,
@@ -25,7 +26,7 @@ export default async function Competitors() {
   // scraped direct rate, which redroof.com's bot wall often blocks anyway.
   const ownerRates = isDemo ? null : await loadCurrentRates(store, property.id);
   const ownerStandard = ownerRates?.tiers['standard'];
-  const scrapedDirect = snapshot.parity.find((p) => p.source === 'redroof' && p.status === 'ok' && p.price != null)?.price;
+  const scrapedDirect = snapshot.parity.find((p) => p.official && p.status === 'ok' && p.price != null)?.price;
   const yourRate =
     ownerStandard != null
       ? { price: ownerStandard, source: 'owner' as const }
@@ -87,6 +88,17 @@ export default async function Competitors() {
         compSetName={watchlist.length > 0 ? `Watchlist (${watchlist.length} hotels)` : 'Default comp set'}
         initialWatchlist={watchlist.map((h) => h.name)}
       />
+
+      {/*
+        Parity sits under the comp set because it answers the neighbouring
+        question: not "what are others charging" but "what are others charging
+        for MY rooms". It had no home on the page while prices came from four
+        scraped sources; now that every channel Google knows about is listed,
+        an undercutting reseller is a thing you can actually act on.
+      */}
+      <div className="mt-lg">
+        <ParityGrid parity={snapshot.parity} />
+      </div>
     </div>
   );
 }

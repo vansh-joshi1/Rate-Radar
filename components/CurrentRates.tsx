@@ -68,7 +68,7 @@ export default function CurrentRatesCard({ propertyId, tiers }: Props) {
       <p className="mb-4 text-sm text-muted">
         What you&apos;re charging right now — you set your prices, so this is the authoritative number for market
         comparisons. {canWrite ? 'Update it whenever you change rates.' : 'Only a manager can change it.'}{' '}
-        (The parity monitor still cross-checks booking sites when it can.)
+        (The parity monitor still cross-checks every channel selling you.)
       </p>
       <div className="flex flex-wrap items-end gap-4">
         {tiers.map((t) => (

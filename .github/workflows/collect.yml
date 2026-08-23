@@ -1,26 +1,28 @@
 name: collect
 
-# 7 runs/day Central time: 7:00, 10:00, 13:00, 15:00, 18:00, 20:00, 22:00.
+# 3 runs/day Central time: 7:00, 13:00, 18:00 — the slots collector/budget.ts
+# plans against (RUN_SLOTS_CT); keep the two in step. Down from 7/day because
+# prices now cost money: the SerpApi free plan allows 250 searches/month and
+# this ladder spends ~217 of them.
 # GitHub cron is UTC and DST-unaware, so we schedule BOTH candidate UTC hours
-# (CDT = UTC-5, CST = UTC-6) and the gate step exits unless the current
-# Central hour is actually one of the seven targets. Correct year-round,
-# no duplicate runs. Minute 7 avoids GitHub's congested top-of-hour delays.
+# (CDT = UTC-5, CST = UTC-6) and the freshness gate below dedupes. Minute 7
+# avoids GitHub's congested top-of-hour delays.
 on:
   schedule:
-    - cron: '7 12,13,15,16,18,19,20,21,23 * * *'
-    - cron: '7 0,1,2,3,4 * * *'
+    - cron: '7 12,13,18,19,23 * * *'
+    - cron: '7 0 * * *'
   workflow_dispatch: {}
 
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
       # Gate on DATA FRESHNESS, not wall-clock hour. GitHub's scheduler drifts
       # (observed 2026-07-18: fires ~1h late), which made the old exact-hour
       # gate skip EVERY run — green jobs, no data. Asking the dashboard "how
       # old is the data?" is drift-immune and self-deduping: the enumerated
-      # crons still converge to ~7 collections/day, and any failure to reach
+      # crons still converge to ~3 collections/day, and any failure to reach
       # /api/health fails OPEN (collect rather than silently starve).
       - name: Gate on data freshness
         id: gate
@@ -32,7 +34,7 @@ jobs:
           fi
           AGE=$(curl -fsS -m 20 "${{ secrets.DASHBOARD_URL }}/api/health" | jq -r '.ageHours // empty' 2>/dev/null || echo "")
           echo "data age: ${AGE:-unknown}h"
-          if [ -n "$AGE" ] && awk "BEGIN{exit !($AGE < 1.25)}"; then
+          if [ -n "$AGE" ] && awk "BEGIN{exit !($AGE < 4)}"; then
             echo "data is fresh — skipping (cron-drift dedupe)"
             echo "run=no" >> "$GITHUB_OUTPUT"
           else
@@ -54,10 +56,6 @@ jobs:
         if: steps.gate.outputs.run == 'yes'
         run: npm ci
 
-      - name: Install Playwright Chromium
-        if: steps.gate.outputs.run == 'yes'
-        run: npx playwright install --with-deps chromium
-
       - name: Collect and push to dashboard
         if: steps.gate.outputs.run == 'yes'
         env:
@@ -66,8 +64,5 @@ jobs:
           NWS_USER_AGENT: ${{ secrets.NWS_USER_AGENT }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
-          RATE_URL_REDROOF: ${{ secrets.RATE_URL_REDROOF }}
-          RATE_URL_EXPEDIA: ${{ secrets.RATE_URL_EXPEDIA }}
-          RATE_URL_BOOKING: ${{ secrets.RATE_URL_BOOKING }}
-          GOOGLE_HOTELS_QUERY: ${{ secrets.GOOGLE_HOTELS_QUERY }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
         run: npm run collect

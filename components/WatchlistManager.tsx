@@ -129,7 +129,7 @@ export default function WatchlistManager({ propertyId }: Props) {
         </span>
       </div>
       <p className="mb-4 text-sm text-muted">
-        These names are what the collector matches against booking-site results — keep them short (brand + area).
+        The collector matches these against Google Hotels results, then pins each one by its property token — so a name only has to be close enough to match once.
         Changes take effect on the next collection run.
       </p>
 

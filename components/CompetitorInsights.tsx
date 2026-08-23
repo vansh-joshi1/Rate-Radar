@@ -741,7 +741,7 @@ export default function CompetitorInsights({
         )}
 
         <p className="border-t border-line px-lg py-md text-xs text-muted">
-          {tracked} / {MAX_HOTELS} tracked · names are matched against booking-site results, so keep them short
+          {tracked} / {MAX_HOTELS} tracked · matched against Google Hotels results, then pinned by property token
           (brand + area). Additions take effect on the next collection run.
         </p>
       </div>
