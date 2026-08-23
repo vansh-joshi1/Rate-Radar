@@ -92,7 +92,7 @@ export default function AppShell({
   const navLink = (active: boolean) =>
     `nav-link flex items-center gap-md px-md py-sm ${
       active
-        ? 'text-accent font-bold bg-accent/10 border-r-4 border-accent rounded-l-lg'
+        ? 'text-accent font-bold bg-accent/10 rounded-lg'
         : 'text-muted hover:bg-paper hover:text-ink rounded-lg'
     }`;
 
@@ -143,7 +143,7 @@ export default function AppShell({
           </button>
 
           {switcherOpen && (
-            <div className="absolute left-md right-md z-50 mt-1 overflow-hidden rounded-lg border border-line bg-card shadow-lg">
+            <div className="absolute left-md right-md z-50 mt-1 overflow-hidden rounded-lg border border-line bg-card shadow-overlay-sm">
               {PROPERTIES.map((p) => (
                 <button
                   key={p.id}
@@ -200,7 +200,7 @@ export default function AppShell({
         aria-hidden={!open}
         tabIndex={open ? 0 : -1}
         onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-40 bg-ink/30 transition-opacity duration-200 motion-reduce:duration-150 md:hidden ${
+        className={`fixed inset-0 z-40 bg-ink/30 transition-opacity duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:duration-150 md:hidden ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       />
@@ -279,7 +279,7 @@ export default function AppShell({
                   to it, not a control that writes prices anywhere itself. */}
               <Link
                 href="/settings"
-                className="ml-sm rounded bg-accent px-lg py-2 font-label-md text-label-md text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:translate-y-0"
+                className="ml-sm rounded bg-accent px-lg py-2 font-label-md text-label-md text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-hover-lift active:translate-y-0"
               >
                 Update Rates
               </Link>

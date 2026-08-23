@@ -1,0 +1,299 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-19T00:00:00.000Z",
+  "title": "Design System: Rate Radar",
+  "extensions": {
+    "colorMeta": {
+      "signal-cobalt": {
+        "role": "primary",
+        "displayName": "Signal Cobalt",
+        "canonical": "rgb(8 90 192)",
+        "cssVar": "--accent-rgb",
+        "tonalRamp": [
+          "oklch(15% 0.075 259)",
+          "oklch(26% 0.125 259)",
+          "oklch(36% 0.165 259)",
+          "oklch(45% 0.180 259)",
+          "oklch(56% 0.160 259)",
+          "oklch(68% 0.120 259)",
+          "oklch(82% 0.070 259)",
+          "oklch(95% 0.022 259)"
+        ]
+      },
+      "signal-cobalt-deep": {
+        "role": "primary",
+        "displayName": "Signal Cobalt Deep",
+        "canonical": "rgb(6 72 156)",
+        "cssVar": "--accent-deep-rgb"
+      },
+      "signal-cobalt-wash": {
+        "role": "primary",
+        "displayName": "Signal Cobalt Wash",
+        "canonical": "rgb(229 238 255)",
+        "cssVar": "--accent-muted-rgb"
+      },
+      "instrument-navy": {
+        "role": "secondary",
+        "displayName": "Instrument Navy",
+        "canonical": "rgb(11 28 48)",
+        "cssVar": "--deep-rgb",
+        "tonalRamp": [
+          "oklch(15% 0.030 250)",
+          "oklch(23% 0.040 250)",
+          "oklch(34% 0.045 250)",
+          "oklch(45% 0.045 250)",
+          "oklch(57% 0.040 250)",
+          "oklch(69% 0.030 250)",
+          "oklch(82% 0.018 250)",
+          "oklch(95% 0.008 250)"
+        ]
+      },
+      "cold-daylight": {
+        "role": "neutral",
+        "displayName": "Cold Daylight",
+        "canonical": "rgb(248 249 255)",
+        "cssVar": "--paper-rgb",
+        "tonalRamp": [
+          "oklch(15% 0.010 280)",
+          "oklch(26% 0.010 280)",
+          "oklch(37% 0.010 280)",
+          "oklch(48% 0.010 280)",
+          "oklch(60% 0.009 280)",
+          "oklch(72% 0.008 280)",
+          "oklch(86% 0.007 280)",
+          "oklch(98% 0.007 280)"
+        ]
+      },
+      "surface-white": {
+        "role": "neutral",
+        "displayName": "Surface White",
+        "canonical": "rgb(255 255 255)",
+        "cssVar": "--card-rgb"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "rgb(26 27 32)",
+        "cssVar": "--ink-rgb",
+        "tonalRamp": [
+          "oklch(15% 0.005 285)",
+          "oklch(23% 0.005 285)",
+          "oklch(34% 0.006 285)",
+          "oklch(45% 0.006 285)",
+          "oklch(58% 0.006 285)",
+          "oklch(70% 0.005 285)",
+          "oklch(84% 0.004 285)",
+          "oklch(95% 0.003 285)"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "rgb(68 71 77)",
+        "cssVar": "--muted-rgb"
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgb(196 198 205)",
+        "cssVar": "--line-rgb"
+      },
+      "state-ok": {
+        "role": "tertiary",
+        "displayName": "State OK",
+        "canonical": "rgb(2 151 104)",
+        "cssVar": "--ok-rgb"
+      },
+      "state-warn": {
+        "role": "tertiary",
+        "displayName": "State Warn",
+        "canonical": "rgb(180 83 9)",
+        "cssVar": "--warn-rgb"
+      },
+      "state-bad": {
+        "role": "tertiary",
+        "displayName": "State Bad",
+        "canonical": "rgb(186 26 26)",
+        "cssVar": "--bad-rgb"
+      },
+      "heat-1": { "role": "tertiary", "displayName": "Heat 1 — Quiet", "canonical": "rgb(211 228 254)", "cssVar": "--heat-1-rgb" },
+      "heat-2": { "role": "tertiary", "displayName": "Heat 2 — Minor", "canonical": "rgb(216 226 255)", "cssVar": "--heat-2-rgb" },
+      "heat-3": { "role": "tertiary", "displayName": "Heat 3 — Meaningful", "canonical": "rgb(8 90 192)", "cssVar": "--heat-3-rgb" },
+      "heat-4": { "role": "tertiary", "displayName": "Heat 4 — Major", "canonical": "rgb(19 27 46)", "cssVar": "--heat-4-rgb" },
+      "level-low": { "role": "tertiary", "displayName": "Level Low", "canonical": "rgb(132 249 195)", "cssVar": "--level-low-rgb" },
+      "level-mid": { "role": "tertiary", "displayName": "Level Mid", "canonical": "rgb(173 198 255)", "cssVar": "--level-mid-rgb" },
+      "level-high": { "role": "tertiary", "displayName": "Level High", "canonical": "rgb(255 218 214)", "cssVar": "--level-high-rgb" }
+    },
+    "typographyMeta": {
+      "display-xl": { "displayName": "Display XL", "purpose": "The landing hero from md up. Pairs with display-lg below it." },
+      "display-lg": { "displayName": "Display LG", "purpose": "The landing hero at mobile. Pairs up to display-xl." },
+      "display-md": { "displayName": "Display MD", "purpose": "Marketing section headings from md up. Pairs with display-sm." },
+      "display-sm": { "displayName": "Display SM", "purpose": "Marketing section headings at mobile. Pairs up to display-md." },
+      "display": { "displayName": "Display", "purpose": "The largest in-app title. Rare." },
+      "headline": { "displayName": "Headline", "purpose": "Section and page headers inside the app. Drops to headline-mobile below md." },
+      "headline-mobile": { "displayName": "Headline Mobile", "purpose": "The sub-md step for app section headers." },
+      "title": { "displayName": "Title", "purpose": "Card and panel headings, and hero figures on dashboard stat cards." },
+      "title-sm": { "displayName": "Title SM", "purpose": "Sub-headings inside a card that already has a Title." },
+      "body-lg": { "displayName": "Body LG", "purpose": "Marketing prose and long-form reading." },
+      "body": { "displayName": "Body", "purpose": "The workhorse — reasoning text, descriptions, table content." },
+      "body-sm": { "displayName": "Body SM", "purpose": "Compact UI text: button labels, dense list rows, helper text." },
+      "label": { "displayName": "Label", "purpose": "Uppercase micro-label naming every reading. The most repeated typographic element in the product." },
+      "label-sm": { "displayName": "Label SM", "purpose": "Chips and table column headers." },
+      "micro": { "displayName": "Micro", "purpose": "The smallest marker in the system — log timestamps, the current-property caption. Below this, cut words instead of shrinking." },
+      "data": { "displayName": "Data", "purpose": "Dates, rate ranges, and any figure inside a table or aligned column. Always tabular figures." }
+    },
+    "shadows": [
+      { "name": "hover-lift", "value": "0 4px 12px rgba(11, 28, 48, 0.05)", "purpose": "Appears on interactive cards on hover. Cards are flat until touched." },
+      { "name": "overlay-sm", "value": "0 8px 24px rgba(11, 28, 48, 0.08)", "purpose": "Dropdowns, popovers, the property switcher, map tooltips." },
+      { "name": "overlay-lg", "value": "0 24px 60px -20px rgba(11, 28, 48, 0.45)", "purpose": "The mobile navigation drawer and full modals." },
+      { "name": "focus-ring", "value": "0 0 0 2px rgba(8, 90, 192, 0.20)", "purpose": "Keyboard and input focus, paired with a Signal Cobalt border." }
+    ],
+    "motion": [
+      { "name": "ease-state", "value": "150ms ease", "purpose": "Color, background and border transitions on every interactive element." },
+      { "name": "ease-press", "value": "140ms cubic-bezier(0, 0, 0.2, 1)", "purpose": "Button press transform to scale(0.97); softens to scale(0.99) under reduced motion." },
+      { "name": "ease-drawer", "value": "300ms cubic-bezier(0.32, 0.72, 0, 1)", "purpose": "Mobile navigation drawer. Fast out of the gate, long settle — 150ms over 280px reads as a glitch." },
+      { "name": "ease-entrance", "value": "600ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "fadeInUp entry animation. Suppressed under reduced motion with opacity reset to 1." },
+      { "name": "ease-card-hover", "value": "300ms", "purpose": "Card hover shadow and scale(1.02) on stat cards." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ],
+    "layout": [
+      { "name": "sidebar-width", "value": "280px" },
+      { "name": "grid-columns", "value": "4 / 8 (md) / 12 (lg)" },
+      { "name": "gutter", "value": "20px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The committing action. Signal Cobalt fill, fully rounded, subtle press scale.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Recompute</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; border-radius: 9999px; border: 1px solid rgb(var(--line-rgb)); background: rgb(var(--card-rgb)); padding: 8px 16px; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: rgb(var(--ink-rgb)); transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, transform 140ms cubic-bezier(0, 0, 0.2, 1); } .ds-btn:active:not(:disabled) { transform: scale(0.97); } .ds-btn:disabled { cursor: not-allowed; opacity: 0.5; } .ds-btn:focus-visible { outline: none; border-color: rgb(var(--accent-rgb)); box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.2); } .ds-btn-primary { border-color: rgb(var(--accent-rgb)); background: rgb(var(--accent-rgb)); color: #fff; } .ds-btn-primary:hover { border-color: rgb(var(--accent-deep-rgb)); background: rgb(var(--accent-deep-rgb)); } @media (prefers-reduced-motion: reduce) { .ds-btn:active:not(:disabled) { transform: scale(0.99); } }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The default button. Surface White on a hairline border; hovers to the canvas color.",
+      "html": "<button class=\"ds-btn2\">Export CSV</button>",
+      "css": ".ds-btn2 { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; border-radius: 9999px; border: 1px solid rgb(var(--line-rgb)); background: rgb(var(--card-rgb)); padding: 8px 16px; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: rgb(var(--ink-rgb)); transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, transform 140ms cubic-bezier(0, 0, 0.2, 1); } .ds-btn2:hover { background: rgb(var(--paper-rgb)); } .ds-btn2:active { transform: scale(0.97); } .ds-btn2:focus-visible { outline: none; border-color: rgb(var(--accent-rgb)); box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.2); }"
+    },
+    {
+      "name": "Demand Signal Chips",
+      "kind": "chip",
+      "refersTo": "chip-demand-major",
+      "description": "The signature status marker. Encodes the night's demand score band; 'quiet' is dashed because nothing is there, honestly.",
+      "html": "<span class=\"ds-chip ds-chip-major\">major</span> <span class=\"ds-chip ds-chip-meaningful\">meaningful</span> <span class=\"ds-chip ds-chip-minor\">minor</span> <span class=\"ds-chip ds-chip-quiet\">quiet</span>",
+      "css": ".ds-chip { display: inline-block; border-radius: 9999px; border: 1px solid currentColor; padding: 1px 10px; font-family: 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; } .ds-chip-major { border-color: rgb(var(--accent-rgb)); background: rgb(var(--accent-rgb)); color: #fff; } .ds-chip-meaningful { border-color: transparent; background: rgb(var(--accent-muted-rgb)); color: rgb(var(--accent-rgb)); } .ds-chip-minor { border-color: transparent; background: rgb(var(--ink-rgb) / 0.1); color: rgb(var(--ink-rgb)); } .ds-chip-quiet { border-style: dashed; color: rgb(var(--muted-rgb)); }"
+    },
+    {
+      "name": "Sample Data Badge",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A chip whose only job is to admit a panel is not wired to a live feed. The dashed border is the system's honesty marker.",
+      "html": "<span class=\"ds-chip-sample\" title=\"Rendered from sample data — not wired to a live feed yet\">sample data</span>",
+      "css": ".ds-chip-sample { display: inline-block; border-radius: 9999px; border: 1px dashed currentColor; padding: 1px 10px; font-family: 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: rgb(var(--muted-rgb)); }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Text input with a label above. Focus shifts the border to cobalt and adds a 20% ring — no glow, no outline.",
+      "html": "<label class=\"ds-label\" for=\"ds-rate\">Weekday baseline</label><input class=\"ds-field\" id=\"ds-rate\" type=\"text\" value=\"79\" />",
+      "css": ".ds-label { display: block; margin-bottom: 6px; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; font-weight: 600; color: rgb(var(--ink-rgb)); } .ds-field { width: 100%; border-radius: 8px; border: 1px solid rgb(var(--line-rgb)); background: rgb(var(--card-rgb)); padding: 10px 14px; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; color: rgb(var(--ink-rgb)); outline: none; transition: border-color 150ms ease, box-shadow 150ms ease; } .ds-field:focus { border-color: rgb(var(--accent-rgb)); box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.2); }"
+    },
+    {
+      "name": "Stat Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The dashboard bento unit. Flat at rest; lifts on hover with a navy-tinted shadow and a 1.02 scale.",
+      "html": "<div class=\"ds-stat\"><div class=\"ds-stat-head\"><span class=\"ds-micro\">Rate Analysis</span></div><div class=\"ds-stat-row\"><span class=\"ds-micro\">Your Rate</span><span class=\"ds-fig\">$84</span></div><div class=\"ds-stat-row\"><span class=\"ds-micro\">Suggested Rate</span><span class=\"ds-fig ds-fig-accent\">$89</span></div></div>",
+      "css": ".ds-stat { background: rgb(var(--card-rgb)); border: 1px solid rgb(var(--line-rgb)); border-radius: 8px; padding: 16px; font-family: 'Inter', system-ui, sans-serif; transition: box-shadow 300ms ease, transform 300ms ease; } .ds-stat:hover { box-shadow: 0 4px 12px rgba(11, 28, 48, 0.05); transform: scale(1.02); } .ds-stat-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; } .ds-stat-row { display: flex; align-items: baseline; justify-content: space-between; padding: 2px 0; } .ds-micro { font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: 0.05em; text-transform: uppercase; color: rgb(var(--muted-rgb)); } .ds-fig { font-family: 'Sora', 'Inter', sans-serif; font-size: 20px; font-weight: 600; line-height: 28px; font-variant-numeric: tabular-nums; color: rgb(var(--ink-rgb)); } .ds-fig-accent { color: rgb(var(--accent-rgb)); } @media (prefers-reduced-motion: reduce) { .ds-stat:hover { transform: none; } }"
+    },
+    {
+      "name": "Navigation Link",
+      "kind": "nav",
+      "refersTo": "button-secondary",
+      "description": "Rail link, active and inactive. Nudges 4px right on hover; active is cobalt on a 10% cobalt tint.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link ds-nav-active\" href=\"#\">Dashboard</a><a class=\"ds-nav-link\" href=\"#\">Competitor Insights</a><a class=\"ds-nav-link\" href=\"#\">Market Intelligence</a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; width: 240px; font-family: 'Inter', system-ui, sans-serif; } .ds-nav-link { display: flex; align-items: center; gap: 16px; padding: 8px 16px; border-radius: 8px; font-size: 14px; text-decoration: none; color: rgb(var(--muted-rgb)); transition: all 200ms ease-in-out; } .ds-nav-link:hover { transform: translateX(4px); background: rgb(var(--paper-rgb)); color: rgb(var(--ink-rgb)); } .ds-nav-active { background: rgb(var(--accent-rgb) / 0.1); color: rgb(var(--accent-rgb)); font-weight: 700; } @media (prefers-reduced-motion: reduce) { .ds-nav-link:hover { transform: none; } }"
+    },
+    {
+      "name": "Data Table",
+      "kind": "custom",
+      "refersTo": "table-cell",
+      "description": "Hairline-separated rows, no zebra striping, tabular figures, uppercase micro-label header.",
+      "html": "<table class=\"ds-table\"><thead><tr><th class=\"ds-th\">Hotel</th><th class=\"ds-th\">Tonight</th></tr></thead><tbody><tr><td class=\"ds-td\">Quality Inn Franklin</td><td class=\"ds-td\">$79</td></tr><tr><td class=\"ds-td\">La Quinta Cool Springs</td><td class=\"ds-td\">$92</td></tr><tr><td class=\"ds-td\">Comfort Inn</td><td class=\"ds-td\">$95</td></tr></tbody></table>",
+      "css": ".ds-table { width: 100%; border-collapse: collapse; font-family: 'Inter', system-ui, sans-serif; } .ds-th { border-bottom: 1px solid rgb(var(--line-rgb)); padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgb(var(--muted-rgb)); } .ds-td { border-bottom: 1px solid rgb(var(--line-rgb)); padding: 10px 12px; vertical-align: top; font-size: 14px; font-variant-numeric: tabular-nums; color: rgb(var(--ink-rgb)); }"
+    },
+    {
+      "name": "Reasoning Card",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "The signature component. Shows the scorer's working, keeps rejected lines dimmed rather than removing them, and states the confidence with its basis.",
+      "html": "<div class=\"ds-reason\"><h3 class=\"ds-reason-h\">Tonight's reasoning — Friday, August 14</h3><div class=\"ds-reason-grid\"><ul class=\"ds-reason-list\"><li>Friday baseline $94</li><li>Morgan Wallen @ Nissan Stadium (score 82, major) → +18%</li><li>Downtown absorbs most, distance dampener −6%</li><li>Compset median $96 supports the range</li><li class=\"ds-reason-dim\">Vanderbilt home game (score 11) judged too small to matter</li></ul><div><div class=\"ds-reason-gaugetop\"><span class=\"ds-micro2\">Confidence</span><span class=\"ds-conf\">78%</span></div><div class=\"ds-track\"><div class=\"ds-fill\"></div></div><p class=\"ds-note\">3 of 4 rate sources fresh, event data 2h old</p><p class=\"ds-note\">Rate Radar never changes a price anywhere — enter rates in your own system.</p></div></div></div>",
+      "css": ".ds-reason { border-radius: 8px; border: 1px solid rgb(var(--line-rgb)); background: rgb(var(--card-rgb)); padding: 16px; font-family: 'Inter', system-ui, sans-serif; } .ds-reason-h { margin: 0 0 16px; font-family: 'Sora', 'Inter', sans-serif; font-size: 20px; font-weight: 600; line-height: 28px; color: rgb(var(--ink-rgb)); } .ds-reason-grid { display: grid; align-items: start; gap: 32px; grid-template-columns: 1.5fr 1fr; } .ds-reason-list { margin: 0; padding: 0; list-style: none; } .ds-reason-list li { position: relative; padding-left: 20px; margin-bottom: 8px; font-size: 14px; line-height: 20px; color: rgb(var(--ink-rgb)); } .ds-reason-list li::before { content: '•'; position: absolute; left: 0; color: rgb(var(--accent-rgb)); } .ds-reason-dim { color: rgb(var(--muted-rgb)) !important; } .ds-reason-gaugetop { display: flex; justify-content: space-between; margin-bottom: 4px; } .ds-micro2 { font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: rgb(var(--muted-rgb)); } .ds-conf { font-size: 12px; font-weight: 600; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; color: rgb(var(--ink-rgb)); } .ds-track { height: 8px; overflow: hidden; border-radius: 9999px; background: rgb(var(--ink-rgb) / 0.1); } .ds-fill { height: 100%; width: 78%; border-radius: 9999px; background: rgb(var(--ok-rgb)); } .ds-note { margin: 4px 0 0; font-size: 12px; line-height: 16px; color: rgb(var(--muted-rgb)); } @media (max-width: 768px) { .ds-reason-grid { grid-template-columns: 1fr; } }"
+    },
+    {
+      "name": "Brand Mark",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "The radar sweep, inline SVG on a 24px viewbox, stroked in currentColor so it inherits from context.",
+      "html": "<span class=\"ds-mark\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"32\" height=\"32\" aria-hidden=\"true\"><path d=\"M19.07 4.93a10 10 0 1 0 2.5 4.07\"/><path d=\"M15.5 8.5a5 5 0 1 0 1.9 3.1\"/><path d=\"M12 12 20 4\"/><circle cx=\"12\" cy=\"12\" r=\"1.2\" fill=\"currentColor\" stroke=\"none\"/></svg><span class=\"ds-wordmark\">Rate Radar</span></span>",
+      "css": ".ds-mark { display: inline-flex; align-items: center; gap: 10px; color: rgb(var(--accent-rgb)); } .ds-wordmark { font-family: 'Sora', 'Inter', sans-serif; font-size: 20px; font-weight: 700; line-height: 28px; color: rgb(var(--ink-rgb)); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instrument Panel",
+    "overview": "Rate Radar looks like a calm operations console. Its instruments report honestly and never raise their voice: a rate is a reading, a confidence percentage is a gauge, and a stale feed is an indicator that has stopped moving — not an alarm. The product's core promise is that it recommends and a human decides, so the interface behaves like equipment a professional trusts precisely because it never oversells itself.\n\nThe world is built from three materials. A cool near-white canvas is the lit workspace. White cards separated by a single hairline are where readings are laid out. A deep navy is reserved for surfaces where the machine's own raw data lives — radar panels, map chrome, heat cells at the top of the ramp — and it is the only place the interface goes dark. One cobalt accent marks what the system concluded: the recommended rate, the active nav item, the \"major\" demand signal, the property's own pin. Everything else is ink, muted ink, and hairline. Color is a verdict, not decoration.\n\nDensity is high but never dense for its own sake. This is read by an owner at a desk, glanced at by front-desk staff mid-shift, and interrogated by a revenue manager who will not accept a number they cannot take apart — so the same screen must survive a ten-second glance and a two-minute audit. The system earns that by being ruthlessly consistent: tabular figures everywhere numbers appear, uppercase micro-labels above every reading, and rejected evidence kept on screen and dimmed rather than deleted. The most characteristic thing this design system does is show its own discarded work.",
+    "keyCharacteristics": [
+      "One cobalt accent used as a verdict marker, never as decoration",
+      "Deep navy reserved exclusively for raw-data surfaces",
+      "Flat at rest; shadow means state or z-position, never style",
+      "Tabular figures on every number, without exception",
+      "Uppercase 12px micro-labels as the universal reading label",
+      "Rejected and low-confidence information dimmed and kept, never hidden",
+      "Two typefaces only — Sora for structure, Inter for everything else"
+    ],
+    "rules": [
+      { "name": "The Verdict Rule", "body": "Signal Cobalt marks conclusions, not surfaces. If an element is not the system's answer, the active location, or the user's own property, it is not cobalt. Audit test: on any screen, cobalt should cover well under 10% of the pixels, and you should be able to say in one sentence what each cobalt element concluded.", "section": "colors" },
+      { "name": "The Navy Is Data Rule", "body": "Instrument Navy appears only where raw machine readings are displayed. It is never a decorative dark section, never a hero background, never a footer. If a navy surface does not contain data the collector produced, it is wrong.", "section": "colors" },
+      { "name": "The Warn-Not-Fail Rule", "body": "\"Needs manual check\", \"too small to matter\", and stale data are truthful states and take State Warn or Ink Muted — never State Bad. Red is reserved for something that is actually broken. A product that cries failure at its own honest limitations teaches users to distrust it.", "section": "colors" },
+      { "name": "The Tabular Rule", "body": "Every number the user might compare or scan vertically uses tabular figures. Rates, deltas, percentages, scores, counts, dates. A column of proportional digits that shifts as values change is a defect in this system, not a nuance.", "section": "typography" },
+      { "name": "The Micro-Label Rule", "body": "Every reading gets an uppercase 12px label naming what it is. A number without a label is not an instrument reading — it is a mystery. This is what makes a dense screen scannable in ten seconds.", "section": "typography" },
+      { "name": "The Two-Face Rule", "body": "Sora for structure, Inter for content. No third typeface enters the system without replacing one of these. In particular, do not reintroduce a serif for currency: money is expressed through tabular Inter and size, not through a change of voice.", "section": "typography" },
+      { "name": "The Grid-Only Rule", "body": "Dashboard content lives in the 4/8/12 grid. If a layout needs an element to escape the grid, the layout is wrong.", "section": "layout" },
+      { "name": "The Flat-At-Rest Rule", "body": "If an element has a shadow and the user is not interacting with it and it is not floating above the page, delete the shadow. Resting elevation is expressed with the hairline border alone.", "section": "elevation" },
+      { "name": "The Navy Tint Rule", "body": "No shadow in this system uses black. Every value is rgba(11, 28, 48, α). A rgba(0,0,0,…) shadow is a defect.", "section": "elevation" },
+      { "name": "The Pill-Or-Panel Rule", "body": "If it can be clicked or it reports a status, it is fully rounded. If it holds data, it is 8px. There is no in-between and no per-component improvisation.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do give every number tabular figures and an uppercase 12px label above it.",
+      "Do keep surfaces flat at rest and let the 1px Hairline border do the separating.",
+      "Do tint every shadow with Instrument Navy (rgba(11, 28, 48, α)).",
+      "Do reserve Signal Cobalt for the system's conclusions — the recommended rate, the active location, the user's own property.",
+      "Do reserve Instrument Navy for surfaces displaying raw collector data.",
+      "Do render rejected, low-confidence, and unavailable information in Ink Muted and leave it on screen.",
+      "Do use State Warn for honest limitations (\"needs manual check\", stale data) and State Bad only for actual breakage.",
+      "Do make controls and status markers fully rounded, and data surfaces 8px.",
+      "Do suppress transforms under prefers-reduced-motion while keeping content visible — entry animations reset opacity to 1 rather than leaving the page blank."
+    ],
+    "donts": [
+      "Don't put a thick colored border on one side of a card. No border-l-4 accent tabs — the most recognizable tell of a generated interface, and outside this form language entirely.",
+      "Don't use bounce or elastic easing (cubic-bezier(0.34, 1.56, 0.64, 1) and relatives). Real instruments decelerate smoothly; use exponential ease-out.",
+      "Don't reintroduce a serif, Fraunces included. Money is expressed through tabular Inter and size, not a change of voice.",
+      "Don't use black shadows, gradient text, glowing cards, or purple-to-blue washes.",
+      "Don't build toward dense BI/analyst tooling — no wall of widgets, no chart junk, no configuration surfaced as interface. This is for an operator, not an analyst.",
+      "Don't adopt consumer-fintech playfulness: no confetti, mascots, streaks, celebratory microcopy, or oversized rounded cards. Someone's revenue is on the line.",
+      "Don't let the palette drift to undifferentiated enterprise grey. The navy data surfaces and the heat ramps are what keep this from becoming an anonymous admin panel.",
+      "Don't import the external design system's borderRadius scale — it redefines full as 0.75rem and would turn every avatar, pill and chip into a squircle app-wide. Radii are set at the call site.",
+      "Don't wire dark mode to prefers-color-scheme. Night mode is opt-in via a dark class on <html>; the dashboard is specified as a light surface and must not silently repalette on someone's OS setting."
+    ]
+  }
+}

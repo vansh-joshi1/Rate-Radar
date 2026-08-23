@@ -208,7 +208,7 @@ export default function DemandCalendar({
             >
               <span className="material-symbols-outlined text-[18px]" aria-hidden>chevron_left</span>
             </button>
-            <span className="min-w-[132px] text-center font-headline-md text-[15px] text-ink">
+            <span className="min-w-[132px] text-center font-headline-md text-[14px] text-ink">
               {month.label}
             </span>
             {todayIdx >= 0 && (
@@ -296,7 +296,7 @@ export default function DemandCalendar({
                           {day}
                         </span>
                         {isToday && (
-                          <span className="mt-1 block font-label-md text-[9px] font-bold uppercase text-accent">
+                          <span className="mt-1 block font-label-md text-[10px] font-bold uppercase text-accent">
                             Today
                           </span>
                         )}
@@ -311,7 +311,7 @@ export default function DemandCalendar({
                     <div
                       key={date}
                       title={`${date} — demand score ${night.nightScore}${night.topEvent ? ` · ${night.topEvent}` : ''}`}
-                      className={`group relative flex min-h-[76px] cursor-default flex-col rounded-lg border p-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(11,28,48,0.1)] ${cellClass(tier)} ${
+                      className={`group relative flex min-h-[76px] cursor-default flex-col rounded-lg border p-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-hover-lift ${cellClass(tier)} ${
                         isToday ? 'ring-2 ring-inset ring-accent' : ''
                       }`}
                     >
@@ -323,7 +323,7 @@ export default function DemandCalendar({
                       </div>
 
                       {night.topEvent && (
-                        <span className="mt-1 line-clamp-2 font-label-md text-[9px] font-bold uppercase leading-tight">
+                        <span className="mt-1 line-clamp-2 font-label-md text-[10px] font-bold uppercase leading-tight">
                           {night.topEvent}
                         </span>
                       )}

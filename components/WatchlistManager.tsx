@@ -163,7 +163,7 @@ export default function WatchlistManager({ propertyId }: Props) {
           {open && (
             <ul
               id="hotel-suggestions"
-              className="absolute left-0 right-0 top-full z-30 mt-1 max-h-72 overflow-y-auto rounded-lg border border-line bg-card shadow-md"
+              className="absolute left-0 right-0 top-full z-30 mt-1 max-h-72 overflow-y-auto rounded-lg border border-line bg-card shadow-overlay-sm"
             >
               {searching && <li className="px-3 py-2 text-sm text-muted">Searching nearby…</li>}
               {!searching && suggestions.length === 0 && (

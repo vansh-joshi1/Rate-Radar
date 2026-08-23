@@ -37,7 +37,7 @@ export default async function Alerts() {
               <div
                 key={a.id}
                 className={`flex gap-4 border-b border-line p-4 last:border-b-0 hover:bg-ink/[0.02] ${
-                  a.unread ? 'border-l-4 border-l-accent bg-accent/[0.03]' : ''
+                  a.unread ? 'bg-accent/[0.03]' : ''
                 }`}
               >
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-paper ${COLORS[a.tone]}`}>
@@ -45,7 +45,14 @@ export default async function Alerts() {
                 </div>
                 <div>
                   <div className="mb-0.5 text-xs text-muted">{a.time}</div>
-                  <div className="font-bold">{a.title}</div>
+                  <div className="flex items-center gap-2 font-bold">
+                    {/* Unread marker: a cobalt dot rather than a side-tab border.
+                        Carries a label of its own so it isn't colour-only. */}
+                    {a.unread && (
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" role="img" aria-label="Unread" />
+                    )}
+                    {a.title}
+                  </div>
                   <div className="text-sm text-muted">{a.desc}</div>
                 </div>
               </div>

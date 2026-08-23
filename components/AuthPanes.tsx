@@ -44,10 +44,10 @@ const LABEL =
   'mb-2 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[#1a1b20]';
 
 const PRIMARY_BTN =
-  'flex w-full items-center justify-center gap-2 rounded-lg bg-[#085ac0] py-3.5 text-[13px] font-semibold tracking-wide text-white transition-all hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(11,28,48,0.18)] disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none';
+  'flex w-full items-center justify-center gap-2 rounded-lg bg-[#085ac0] py-3.5 text-[13px] font-semibold tracking-wide text-white transition-all hover:-translate-y-px hover:shadow-hover-lift disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none';
 
 const GHOST_BTN =
-  'flex w-full items-center justify-center gap-2 rounded-lg border border-[#c4c6cd] bg-white py-3.5 text-[13px] font-semibold tracking-wide text-[#1a1b20] transition-all hover:-translate-y-px hover:bg-[#f3f3fa] hover:shadow-[0_4px_12px_rgba(11,28,48,0.1)] disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none';
+  'flex w-full items-center justify-center gap-2 rounded-lg border border-[#c4c6cd] bg-white py-3.5 text-[13px] font-semibold tracking-wide text-[#1a1b20] transition-all hover:-translate-y-px hover:bg-[#f3f3fa] hover:shadow-hover-lift disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none';
 
 const ArrowIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
@@ -179,7 +179,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
 
   const tabClass = (active: boolean) =>
     `flex-1 rounded-md py-2.5 text-center text-[12px] font-semibold uppercase tracking-[0.06em] transition-all ${
-      active ? 'bg-white text-[#085ac0] shadow-sm' : 'text-[#44474d] hover:text-[#1a1b20]'
+      active ? 'bg-white text-[#085ac0]' : 'text-[#44474d] hover:text-[#1a1b20]'
     }`;
 
   return (
@@ -187,7 +187,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
       <BrandPanel />
 
       <div className="flex w-full items-center justify-center overflow-y-auto bg-[#f9f9ff] p-6 lg:w-1/2">
-        <div className="w-full max-w-md rounded-2xl border border-[#c4c6cd] bg-white p-8 shadow-[0_12px_24px_rgba(11,28,48,0.08)]">
+        <div className="w-full max-w-md rounded-2xl border border-[#c4c6cd] bg-white p-8">
           {/* mobile wordmark — the brand panel is desktop-only */}
           <Link href="/" className="mb-8 flex items-center justify-center gap-2 text-[#0b1c30] lg:hidden">
             <RadarIcon className="h-7 w-7 text-[#085ac0]" />

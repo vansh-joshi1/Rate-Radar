@@ -33,7 +33,7 @@ export default function Admin() {
                     <div className="font-semibold">{p.name}</div>
                     <div className="text-xs text-muted">{p.city}</div>
                   </td>
-                  <td className="td font-serif text-xl text-accent">${p.rec}</td>
+                  <td className="td text-xl font-semibold text-accent">${p.rec}</td>
                   <td className="td">{p.occupancy}</td>
                   <td className="td">
                     {p.parity === 'gap' ? <Chip tone="bad">Gap detected</Chip> : <Chip tone="ok">In parity</Chip>}

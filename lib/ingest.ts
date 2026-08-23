@@ -141,6 +141,7 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
     }
     if (changed) await saveWatchlist(store, bundlePropertyId, list);
   }
+
   // Filter against the UI-editable watchlist when one exists (the collector
   // harvested with the same list); config/compset.json remains the fallback.
   const uiWatchlist = await store.get<WatchlistHotel[]>(watchlistKey(bundlePropertyId));

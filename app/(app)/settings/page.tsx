@@ -4,6 +4,7 @@ import { demoInvoices } from '../../../lib/demo';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
 import { DEFAULT_RATES_CONFIG } from '../../../lib/rates-config';
 import { ALERT_THRESHOLDS } from '../../../lib/alerts/rules';
+import { getStore } from '../../../lib/store';
 
 export const dynamic = 'force-dynamic';
 

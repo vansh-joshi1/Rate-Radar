@@ -40,7 +40,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-const CARD = 'rounded-xl border border-line bg-card p-md shadow-sm md:p-xl';
+const CARD = 'rounded-xl border border-line bg-card p-md md:p-xl';
 const FIELD_RO =
   'w-full rounded-lg border border-line bg-paper px-4 py-2.5 font-body-md text-body-md text-ink';
 const LABEL = 'mb-1 block font-label-md text-label-md uppercase text-muted';
@@ -127,7 +127,7 @@ const SOURCE_LABEL: Record<string, string> = {
   nws: 'National Weather Service — alerts',
   faa: 'FAA — BNA airport status',
   calendars: 'University & convention calendars',
-  rates: 'Rate checks — your site, Expedia, Booking, Google',
+  rates: 'SerpApi — competitor prices & channel parity',
 };
 
 export default function SettingsView({ property, tiers, sources, budget, thresholds, invoices, isDemo }: Props) {

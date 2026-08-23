@@ -1,15 +1,20 @@
 import Link from 'next/link';
 import OriginIdInit from '../components/OriginIdInit';
 import { RadarIcon } from '../components/RadarMark';
+import RadarDemo from '../components/RadarDemo';
+import HowItWorks from '../components/HowItWorks';
 
 /*
- * Marketing landing — "market radar" design language: deep-navy data surfaces,
- * a single cobalt accent, mint for positive deltas, Sora for display type.
- * Deliberately fixed-light and self-contained: it hardcodes its own palette
- * rather than reading the app tokens, because the app behind login keeps the
- * motel-ledger theme (warm paper + Red Roof red) and the two should not drift
- * into each other. Icons are inline SVG on purpose — the shared root layout is
- * used by every logged-in page, so a global icon font for one page isn't worth it.
+ * Marketing landing — the "Instrument Panel" design language (DESIGN.md):
+ * Cold Daylight canvas, Instrument Navy data surfaces, one Signal Cobalt accent,
+ * Sora for display type.
+ *
+ * It hardcodes its palette as literal hex rather than reading the CSS variables,
+ * because it is deliberately fixed-light: the app tokens flip under the `dark`
+ * class and this page must not. The values are the same palette — if a token
+ * changes, change it here too. Icons are inline SVG on purpose: the shared root
+ * layout serves every logged-in page, so a global icon font for one page isn't
+ * worth the bytes.
  */
 
 // ---------------------------------------------------------------- icons
@@ -75,14 +80,6 @@ const PlayIcon = (p: IconProps) => (
   <svg {...svgProps(p)}><circle cx="12" cy="12" r="9.25" /><path d="M10 8.5v7l5.5-3.5Z" /></svg>
 );
 
-const TrendIcon = (p: IconProps) => (
-  <svg {...svgProps(p)}><path d="M3.5 16.5 9 11l3.5 3.5L20.5 6.5" /><path d="M15.5 6.5h5v5" /></svg>
-);
-
-const BoltIcon = (p: IconProps) => (
-  <svg {...svgProps(p)}><path d="M13 2.5 4.5 13.5H11l-.5 8 8.5-11H13Z" /></svg>
-);
-
 // ---------------------------------------------------------------- content
 
 const FEATURES = [
@@ -113,12 +110,6 @@ const FACTORS = [
   { Icon: CurveIcon, title: 'Day-of-week curves', body: 'Your property’s own occupancy and booking pace, so the baseline reflects how your rooms actually sell.' },
 ];
 
-const STEPS = [
-  { n: '1', title: 'Collect', body: 'Ticketmaster, college football, weather, holiday calendars and your OTA listings — gathered automatically, seven times a day.' },
-  { n: '2', title: 'Score', body: 'Every event gets a deterministic overflow-likelihood score. Uplift compounds per night with diminishing returns — no ML mystery.' },
-  { n: '3', title: 'You decide', body: 'A recommendation with its reasoning lands on your dashboard, and in your inbox when it matters. You set the price. We never touch it.' },
-];
-
 const PLANS = [
   {
     name: 'Free', price: '$0', per: '', blurb: 'For tiny motels starting out.',
@@ -143,119 +134,6 @@ const ASSURANCES = [
   '“Needs manual check” and “too small to matter” are shown, never hidden',
 ];
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-[#085ac0]">
-      {children}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------- radar panel
-
-/* The hero's signature visual: a miniature of the actual compset map, with the
-   property pulsing at center and competitor rates pinned around it. */
-function RadarPanel() {
-  const pins = [
-    { top: '22%', left: '20%', price: '$96' },
-    { top: '31%', left: '74%', price: '$112' },
-    { top: '66%', left: '28%', price: '$84' },
-    { top: '58%', left: '66%', price: '$101' },
-  ];
-
-  return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white shadow-[0_24px_60px_-20px_rgba(11,28,48,0.45)]">
-      {/* window chrome */}
-      <div className="flex h-11 items-center gap-2 border-b border-slate-200 bg-slate-50 px-4">
-        <div className="flex gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-        </div>
-        <div className="ml-auto text-[11px] font-medium text-slate-400">
-          Red Roof Inn · Franklin, TN
-        </div>
-      </div>
-
-      {/* radar surface */}
-      <div className="relative h-[340px] bg-[#131b2e]">
-        <div
-          className="absolute inset-0 opacity-25"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, #adc6ff 1px, transparent 0)',
-            backgroundSize: '24px 24px',
-          }}
-        />
-
-        {/* your property, pulsing */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="relative flex items-center justify-center">
-            <span className="absolute h-48 w-48 animate-ping rounded-full border border-[#085ac0]/40 opacity-20" />
-            <span
-              className="absolute h-32 w-32 animate-ping rounded-full border border-[#085ac0]/50 opacity-40"
-              style={{ animationDelay: '1s' }}
-            />
-            <span className="h-3.5 w-3.5 rounded-full bg-[#085ac0] shadow-[0_0_16px_rgba(8,90,192,0.9)]" />
-            <span className="absolute -top-7 whitespace-nowrap rounded bg-[#085ac0] px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white">
-              YOUR PROPERTY
-            </span>
-          </div>
-        </div>
-
-        {/* competitor rates */}
-        {pins.map((p) => (
-          <div key={p.price} className="absolute" style={{ top: p.top, left: p.left }}>
-            <span className="block h-2 w-2 rounded-full bg-[#67dca8] shadow-[0_0_10px_rgba(103,220,168,0.7)]" />
-            <span className="absolute -top-6 left-1/2 -translate-x-1/2 rounded border border-white/15 bg-white/90 px-1.5 text-[10px] font-semibold text-slate-700">
-              {p.price}
-            </span>
-          </div>
-        ))}
-
-        <div className="absolute left-4 top-4 rounded border border-[#085ac0]/40 bg-[#085ac0]/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#adc6ff] backdrop-blur">
-          Radar active
-        </div>
-
-        {/* the recommendation itself */}
-        <div className="absolute bottom-4 right-4 min-w-[150px] rounded-xl border border-white/15 bg-white/95 p-3.5 text-center shadow-xl backdrop-blur">
-          <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Tonight · Standard
-          </div>
-          <div className="font-serif text-[32px] font-semibold leading-none text-[#0b1c30]">$89</div>
-          <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] font-semibold text-emerald-600">
-            <TrendIcon className="h-3 w-3" />
-            +12% · event uplift
-          </div>
-        </div>
-
-        <div className="absolute bottom-5 left-4 text-[10px] font-medium uppercase tracking-[0.14em] text-[#adc6ff]/60">
-          4 competitors tracked
-        </div>
-      </div>
-
-      {/* reasoning strip — the honest states, on the marketing page too */}
-      <div className="space-y-2.5 px-5 py-4 text-[13px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-700">Morgan Wallen @ Nissan Stadium</span>
-          <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
-            score 82 · major
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-500">Vanderbilt home game</span>
-          <span className="shrink-0 text-[11px] text-slate-400">too small to matter — shown anyway</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-700">Expedia listing $101</span>
-          <span className="shrink-0 rounded bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
-            $12 parity gap
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------- page
 
 export default function Landing() {
@@ -274,7 +152,7 @@ export default function Landing() {
 
           <nav className="hidden items-center gap-8 md:flex">
             <Link href="#platform" className="text-[13px] font-semibold tracking-wide text-[#44474d] transition-colors hover:text-[#085ac0]">Product</Link>
-            <Link href="#factors" className="text-[13px] font-semibold tracking-wide text-[#44474d] transition-colors hover:text-[#085ac0]">How it works</Link>
+            <Link href="#how-it-works" className="text-[13px] font-semibold tracking-wide text-[#44474d] transition-colors hover:text-[#085ac0]">How it works</Link>
             <Link href="#pricing" className="text-[13px] font-semibold tracking-wide text-[#44474d] transition-colors hover:text-[#085ac0]">Pricing</Link>
           </nav>
 
@@ -284,7 +162,7 @@ export default function Landing() {
             </Link>
             <Link
               href="/signup"
-              className="rounded-lg bg-[#085ac0] px-5 py-2.5 text-[13px] font-semibold text-white shadow-sm transition-all hover:brightness-110"
+              className="rounded-lg bg-[#085ac0] px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-110"
             >
               Get access
             </Link>
@@ -302,22 +180,16 @@ export default function Landing() {
 
           <div className="mx-auto grid max-w-[1200px] items-center gap-16 lg:grid-cols-[1.05fr_1fr]">
             <div>
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-[#085ac0]/20 bg-[#e5eeff] px-3 py-1">
-                <BoltIcon className="h-3.5 w-3.5 text-[#085ac0]" />
-                <span className="text-[12px] font-semibold tracking-wide text-[#085ac0]">
-                  For independent hotels &amp; motels
-                </span>
-              </div>
-
-              <h1 className="mt-6 font-display text-[42px] font-bold leading-[1.08] tracking-tight text-[#0b1c30] md:text-[56px]">
+              <h1 className="font-display text-[42px] font-bold leading-[1.08] tracking-tight text-[#0b1c30] md:text-[56px]">
                 Stop guessing.
                 <br />
                 <span className="text-[#085ac0]">Know what tonight is worth.</span>
               </h1>
 
-              <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-[#44474d]">
-                Rate Radar does the research. It watches competitor prices, local events, weather and holidays
-                around the clock, then hands you a nightly rate with the reasoning attached.{' '}
+              <p className="mt-6 max-w-xl text-[16px] leading-relaxed text-[#44474d]">
+                Revenue management for independent hotels and motels. Rate Radar does the research — it watches
+                competitor prices, local events, weather and holidays around the clock, then hands you a nightly
+                rate with the reasoning attached.{' '}
                 <span className="font-semibold text-[#0b1c30]">
                   It never changes a price anywhere — it recommends, a human decides.
                 </span>
@@ -326,7 +198,7 @@ export default function Landing() {
               <div className="mt-9 flex flex-col gap-4 sm:flex-row">
                 <Link
                   href="/signup"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#085ac0] px-7 py-3.5 text-[14px] font-semibold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#085ac0] px-7 py-3.5 text-[14px] font-semibold text-white transition-all hover:shadow-hover-lift hover:brightness-110"
                 >
                   Get access
                   <ArrowIcon className="h-4 w-4" />
@@ -345,7 +217,7 @@ export default function Landing() {
               </p>
             </div>
 
-            <RadarPanel />
+            <RadarDemo />
           </div>
         </section>
 
@@ -353,11 +225,10 @@ export default function Landing() {
         <section id="platform" className="border-y border-[#c4c6cd]/25 bg-white px-6 py-24">
           <div className="mx-auto max-w-[1200px]">
             <div className="mx-auto mb-14 max-w-2xl text-center">
-              <Eyebrow>Platform</Eyebrow>
               <h2 className="font-display text-[32px] font-bold tracking-tight text-[#0b1c30] md:text-[38px]">
                 Rate recommendations that hold up under pressure
               </h2>
-              <p className="mt-4 text-[17px] leading-relaxed text-[#44474d]">
+              <p className="mt-4 text-[16px] leading-relaxed text-[#44474d]">
                 Demand signals in, an explainable nightly rate out. Everything the system knows — and everything
                 it doesn’t — is on the dashboard.
               </p>
@@ -369,8 +240,8 @@ export default function Landing() {
                   key={f.title}
                   className={`group rounded-2xl border p-8 transition-all duration-300 hover:-translate-y-0.5 ${
                     f.tinted
-                      ? 'border-[#085ac0]/30 bg-[#e5eeff]/40 hover:border-[#085ac0] hover:shadow-[0_8px_24px_rgba(8,90,192,0.12)]'
-                      : 'border-[#c4c6cd] bg-white hover:border-[#085ac0]/50 hover:shadow-[0_8px_24px_rgba(11,28,48,0.07)]'
+                      ? 'border-[#085ac0]/30 bg-[#e5eeff]/40 hover:border-[#085ac0] hover:shadow-hover-lift'
+                      : 'border-[#c4c6cd] bg-white hover:border-[#085ac0]/50 hover:shadow-hover-lift'
                   }`}
                 >
                   <div
@@ -392,11 +263,10 @@ export default function Landing() {
         <section id="factors" className="bg-[#f3f3fa] px-6 py-24">
           <div className="mx-auto max-w-[1200px]">
             <div className="mx-auto mb-14 max-w-2xl text-center">
-              <Eyebrow>Rate factors</Eyebrow>
               <h2 className="font-display text-[32px] font-bold tracking-tight text-[#0b1c30] md:text-[38px]">
                 What actually moves the number
               </h2>
-              <p className="mt-4 text-[17px] leading-relaxed text-[#44474d]">
+              <p className="mt-4 text-[16px] leading-relaxed text-[#44474d]">
                 Four inputs, each one traceable back to a source you can check yourself.
               </p>
             </div>
@@ -405,12 +275,12 @@ export default function Landing() {
               {FACTORS.map(({ Icon, title, body }) => (
                 <div
                   key={title}
-                  className="flex flex-col items-center rounded-2xl border border-[#c4c6cd]/50 bg-white p-7 text-center transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                  className="flex flex-col items-center rounded-2xl border border-[#c4c6cd]/50 bg-white p-7 text-center transition-all duration-300 hover:-translate-y-0.5 hover:shadow-hover-lift"
                 >
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#085ac0]/10">
                     <Icon className="h-7 w-7 text-[#085ac0]" />
                   </div>
-                  <h3 className="font-display text-[15px] font-semibold text-[#0b1c30]">{title}</h3>
+                  <h3 className="font-display text-[16px] font-semibold text-[#0b1c30]">{title}</h3>
                   <p className="mt-2 text-[13px] leading-relaxed text-[#44474d]">{body}</p>
                 </div>
               ))}
@@ -418,39 +288,17 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* how it works */}
-        <section className="bg-white px-6 py-24">
-          <div className="mx-auto max-w-[1200px]">
-            <div className="mx-auto mb-14 max-w-2xl text-center">
-              <Eyebrow>How it works</Eyebrow>
-              <h2 className="font-display text-[32px] font-bold tracking-tight text-[#0b1c30] md:text-[38px]">
-                How a night gets its rate
-              </h2>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              {STEPS.map((s) => (
-                <div key={s.n} className="rounded-2xl border border-[#c4c6cd] bg-white p-8 shadow-sm">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#085ac0] font-display text-[15px] font-bold text-white">
-                    {s.n}
-                  </div>
-                  <h3 className="mt-5 font-display text-[20px] font-semibold text-[#0b1c30]">{s.title}</h3>
-                  <p className="mt-2.5 text-[14px] leading-relaxed text-[#44474d]">{s.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* how it works — scroll scrubs the pipeline; see HowItWorks.tsx */}
+        <HowItWorks />
 
         {/* pricing */}
         <section id="pricing" className="border-t border-[#c4c6cd]/25 bg-[#f3f3fa] px-6 py-24">
           <div className="mx-auto max-w-[1000px]">
             <div className="mx-auto mb-14 max-w-2xl text-center">
-              <Eyebrow>Pricing</Eyebrow>
               <h2 className="font-display text-[32px] font-bold tracking-tight text-[#0b1c30] md:text-[38px]">
                 Simple, fair pricing
               </h2>
-              <p className="mt-4 text-[17px] leading-relaxed text-[#44474d]">
+              <p className="mt-4 text-[16px] leading-relaxed text-[#44474d]">
                 Built lean on purpose — priced for independent properties, not enterprise chains.
               </p>
             </div>
@@ -459,8 +307,8 @@ export default function Landing() {
               {PLANS.map((p) => (
                 <div
                   key={p.name}
-                  className={`relative flex flex-col rounded-2xl bg-white p-8 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${
-                    p.popular ? 'border-2 border-[#085ac0] shadow-lg' : 'border border-[#c4c6cd]'
+                  className={`relative flex flex-col rounded-2xl bg-white p-8 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-hover-lift ${
+                    p.popular ? 'border border-[#085ac0] bg-[#e5eeff]/40' : 'border border-[#c4c6cd]'
                   }`}
                 >
                   {p.popular && (
@@ -470,8 +318,8 @@ export default function Landing() {
                   )}
                   <h3 className="font-display text-[20px] font-semibold text-[#0b1c30]">{p.name}</h3>
                   <div className="mt-3">
-                    <span className="font-display text-[34px] font-bold tracking-tight text-[#0b1c30]">{p.price}</span>
-                    {p.per && <span className="text-[15px] font-medium text-[#74777d]">{p.per}</span>}
+                    <span className="font-display text-[32px] font-bold tracking-tight text-[#0b1c30]">{p.price}</span>
+                    {p.per && <span className="text-[14px] font-medium text-[#74777d]">{p.per}</span>}
                   </div>
                   <p className="mt-2 text-[13px] text-[#44474d]">{p.blurb}</p>
 
@@ -511,13 +359,13 @@ export default function Landing() {
               <h2 className="font-display text-[32px] font-bold leading-tight tracking-tight text-white md:text-[38px]">
                 Ready to outpace your comp set?
               </h2>
-              <p className="mt-5 text-[17px] leading-relaxed text-[#75859d]">
+              <p className="mt-5 text-[16px] leading-relaxed text-[#75859d]">
                 Set up in an afternoon. Free tier forever. Your prices stay yours — Rate Radar recommends, and
                 nothing else.
               </p>
               <ul className="mt-8 space-y-4">
                 {ASSURANCES.map((a) => (
-                  <li key={a} className="flex items-start gap-3 text-[15px] text-white">
+                  <li key={a} className="flex items-start gap-3 text-[14px] text-white">
                     <CheckCircleIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#67dca8]" />
                     {a}
                   </li>
@@ -525,7 +373,7 @@ export default function Landing() {
               </ul>
             </div>
 
-            <div className="rounded-2xl border border-[#c4c6cd]/30 bg-white p-8 shadow-2xl">
+            <div className="rounded-2xl border border-[#c4c6cd]/30 bg-white p-8">
               <h3 className="font-display text-[20px] font-semibold text-[#0b1c30]">See it on real data</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-[#44474d]">
                 Rate Radar accounts are invite-based — the property owner adds teammates from Settings → Team.
@@ -536,7 +384,7 @@ export default function Landing() {
               <div className="mt-7 space-y-3">
                 <Link
                   href="/signup"
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#085ac0] px-4 py-3.5 text-[14px] font-semibold text-white shadow-sm transition-all hover:brightness-110"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#085ac0] px-4 py-3.5 text-[14px] font-semibold text-white transition-all hover:brightness-110"
                 >
                   Get access
                   <ArrowIcon className="h-4 w-4" />
@@ -563,7 +411,7 @@ export default function Landing() {
         <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-6 text-[13px] text-[#44474d] md:flex-row">
           <div className="flex items-center gap-2">
             <RadarIcon className="h-6 w-6 text-[#085ac0]" />
-            <span className="font-display text-[17px] font-bold text-[#0b1c30]">Rate Radar</span>
+            <span className="font-display text-[16px] font-bold text-[#0b1c30]">Rate Radar</span>
           </div>
           <div className="flex gap-8">
             <Link href="#platform" className="transition-colors hover:text-[#085ac0]">Product</Link>
