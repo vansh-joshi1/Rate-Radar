@@ -19,11 +19,11 @@ export const maxDuration = 30;
 
 /**
  * Must exceed the longest normal gap between collections, which is the
- * overnight 18:00 → 07:00 CT stretch (13h). At the old value of 4 this fired a
+ * overnight 13:00 → 07:00 CT stretch (18h). At the old value of 4 this fired a
  * rescue dispatch every single night — and now that a run costs SerpApi
  * searches from a 250/month budget, a nightly phantom run is not just noise.
  */
-const STALE_HOURS = 14;
+const STALE_HOURS = 20;
 
 async function alertByEmail(subject: string, body: string): Promise<void> {
   const key = process.env.RESEND_API_KEY;

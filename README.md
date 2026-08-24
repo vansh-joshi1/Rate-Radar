@@ -1,13 +1,13 @@
 # Rate Radar
 
-Internal rate-recommendation and rate-parity site for the **Red Roof Inn Franklin, TN** (RRI1430, 3915 Carothers Pkwy). It recommends a nightly rate from day-of-week patterns, nearby demand events, weather, and holidays; checks our own listed rate on four public sources; and emails an alert when something actually merits attention.
+Internal rate-recommendation and rate-parity site for the **Red Roof Inn Franklin, TN** (RRI1430, 3915 Carothers Pkwy). It recommends a nightly rate from day-of-week patterns, nearby demand events, weather, and holidays; checks our own listed rate across every channel selling it; and emails an alert when something actually merits attention.
 
 **It never changes a price anywhere. It recommends — a human decides.**
 
 ## How it works
 
 ```
-GitHub Actions (3x/day CT, free)          Vercel (Hobby, free)
+GitHub Actions (2x/day CT, free)          Vercel (Hobby, free)
 ┌─────────────────────────────┐          ┌──────────────────────────────┐
 │ collector/index.ts           │  POST    │ /api/ingest                  │
 │  ├ Ticketmaster (3 venues)   │ ───────► │  ├ score events per night    │
@@ -39,7 +39,7 @@ Use accounts tied to the hotel/family business (a shared family email), not a pe
 ### 3. API keys (all free, ~5 min each)
 - **Ticketmaster**: developer.ticketmaster.com → create app → copy the **Consumer Key** (the secret is not needed).
 - **CFBD**: collegefootballdata.com → API Keys → key arrives by email.
-- **SerpApi**: serpapi.com → sign up → copy the private API key. This is where competitor and parity prices come from. The free plan allows **250 searches/month**, which is the whole reason the collector runs 3×/day instead of 7 — see "Search budget" below. Then set `serpapi.query` and `serpapi.propertyToken` for the property in `config/properties.json`: the query is `hotels near <street address>`, and the token comes from any search response's `properties[].property_token` for your own hotel.
+- **SerpApi**: serpapi.com → sign up → copy the private API key. This is where competitor and parity prices come from. The free plan allows **250 searches/month**, which is the whole reason the collector runs 2×/day over a 5-night horizon — see "Search budget" below. Then set `serpapi.query` and `serpapi.propertyToken` for the property in `config/properties.json`: the query is `hotels near <street address>`, and the token comes from any search response's `properties[].property_token` for your own hotel.
 
 ### 4. Resend (email)
 1. resend.com → **create the account with the email address that should receive alerts** (see caveat below) → API Keys → create key.
@@ -67,13 +67,13 @@ Enforcement is **server-side**, in the route handler — `requireRole()` in `lib
 
 1. GitHub → Actions → **collect** → Run workflow (manual runs bypass the hour gate).
 2. Watch the job log: the collection summary lists each source as ✓ ok / ✗ failed / awaiting-key, then the ingest summary shows nights scored, triggers, email status.
-3. Open the dashboard → tonight's recommendation + reasoning should render; the parity panel shows the four sources (some may say "needs manual check" — that's a truthful state, not a bug).
+3. Open the dashboard → tonight's recommendation + reasoning should render; the parity panel lists every channel Google sees selling you, with anything below your direct rate flagged.
 4. To test an email: temporarily lower a threshold in `lib/alerts/rules.ts` (e.g. `RATE_DELTA_USD = 0`), push, run the workflow, restore. Or wait — the first real event/holiday/rate move will send one.
 5. Local dev: `npm install && npm run dev` (uses `.data/store.json`, no Upstash needed). Collector locally: `npm run collect -- --dry-run --skip-rates`.
 
 ## Schedule
 
-3 runs/day Central: 7:00, 13:00, 18:00. GitHub cron is UTC and ignores DST, so the workflow fires at both possible UTC hours and a data-freshness gate dedupes — correct in both CST and CDT. GitHub Actions scheduling can drift by a few minutes at busy times; that's normal, and the gate is drift-immune by design.
+2 runs/day Central: 7:00 and 13:00. GitHub cron is UTC and ignores DST, so the workflow fires at both possible UTC hours and a data-freshness gate dedupes — correct in both CST and CDT. GitHub Actions scheduling can drift by a few minutes at busy times; that's normal, and the gate is drift-immune by design.
 
 Keep these hours in step with `RUN_SLOTS_CT` in `collector/budget.ts` — the collector decides what to fetch based on which slot it thinks it's in.
 
@@ -83,11 +83,14 @@ Prices are metered. The SerpApi free plan gives 250 searches/month, and the coll
 
 | Slot | What it buys | Cost |
 |---|---|---|
-| 07:00 | tomorrow's compset + our parity/room rates + up to 3 event nights | 5 |
-| 13:00 | tomorrow's compset | 1 |
-| 18:00 | tomorrow's compset | 1 |
+| 07:00 | compset for tonight + the next 4 nights, and our parity/room rates | 6 |
+| 13:00 | compset for tonight again — the one rate still worth acting on today | 1 |
 
-That's ~217/month, leaving a 20-search reserve for on-demand runs. Before every run the collector reads the live balance and renewal date from SerpApi's free `/account` endpoint and picks a tier: **full** (7/day), **reduced** (4/day — event nights paused), or **minimal** (1/day). It degrades instead of erroring, and recovers on its own as the cycle runs down. Current state is on **Settings → Integrations → Price search budget**, and an email fires if fewer than 10 searches remain.
+That's ~217/month, leaving a 20-search reserve for on-demand runs. Before every run the collector reads the live balance and renewal date from SerpApi's free `/account` endpoint and picks a tier: **full** (7/day), **reduced** (4/day — horizon cut to tonight and tomorrow), or **minimal** (1/day, tonight only). It degrades instead of erroring, and recovers on its own as the cycle runs down. Current state is on **Settings → Integrations → Price search budget**, and an email fires if fewer than 10 searches remain.
+
+**The horizon starts at tonight, not tomorrow.** The Overview's headline recommendation is for tonight, and until 2026-08-23 tonight was the only night never priced — the most-read number on the site had no competitor bound under it.
+
+**There is no separate event-night fetch any more.** It used to pick nights scoring ≥40 for their own compset search, but `applyCompsetBound` never caps a night scoring ≥40 — so those searches only ever produced an informational note and never once moved a recommended price. The rolling horizon covers the same ground for nights within 5 days, and does affect pricing.
 
 One search returns every nearby hotel priced for a night, so the compset costs the same whether you track 3 competitors or 15. **"Collect now" is throttled to once per 15 minutes** because each press spends real searches.
 
@@ -97,7 +100,7 @@ One search returns every nearby hotel priced for a night, so the compset costs t
 - **Scrapers rot.** University calendar pages change structure roughly yearly. When a source shows "parse failed / structure may have changed" on the dashboard, the selectors in `collector/sources/calendars.ts` need a 15-minute refresh. A broken scrape only skips that source — the rest of the run continues. Prices are no longer scraped at all, so they are not exposed to this.
 - **Music City Center** calendar is JavaScript-rendered; the plain fetch may consistently return nothing. If it stays empty, rely on the manual note field for known conventions.
 - **Not every hotel is in Google Hotels.** As of 2026-08-23, 8 of the 10 watchlist hotels are carried; Super 8 and Motel 6 are not, on either results page. They show under "not carried" in the budget panel rather than silently reading as $0. No number of searches will find them — either drop them from the watchlist or accept the gap.
-- **Compset** (`config/compset.json`): the competitor whitelist is editable — add/remove hotels as the market changes. Names only need to match once; the collector then pins each hotel by its stable `property_token`. Compset is a sanity bound on quiet nights only; event nights are never capped.
+- **Compset** (`config/compset.json`): the competitor whitelist is editable — add/remove hotels as the market changes. Names only need to match once; the collector then pins each hotel by its stable `property_token`. Compset is a sanity bound on quiet nights only; nights with real event demand (score ≥40) are never capped.
 - **Parity is Google's view of the market**, which can lag a channel by hours, and it covers ~25 channels including resellers. Expect to see resellers below your direct rate — that is the point of the panel, not a bug in it.
 - **Corporate events** at Nissan NA / CHS campuses aren't published anywhere — that's what the dashboard's manual note field is for.
 

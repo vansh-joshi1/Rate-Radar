@@ -335,3 +335,68 @@ deferred. The `extractPrice` whole-body scan is deleted along with the scraper. 
 remains is brand-direct coverage (Choice, IHG, Wyndham, G6, Hilton) — and that is now an
 argument for moving to StayAPI, whose brand-direct endpoints supply it, rather than a set
 of adapters to write.
+
+---
+
+## Amendment, 2026-08-23: the horizon starts tonight
+
+Shipped as designed, then a question exposed a gap the design had inherited
+without examining: **the collector only ever priced tomorrow.**
+
+The engine scores `today + 21` and the Overview's headline recommendation is
+`nights[0]` — tonight. Compset is applied per night by date lookup, so tonight,
+the most-read number on the site, was the one night with no competitor bound
+under it. `HistoryRecord.compsetMedian` read `compsetByDate.get(today)`, which
+was therefore **structurally always null**: the market-median trend line could
+never plot a point. Both predate SerpApi; the scraper priced tomorrow too.
+
+### What changed
+
+`tomorrow + up to 3 event nights` becomes a **rolling 5-night horizon starting
+today**, and the schedule drops to 2 runs/day.
+
+| Slot | Full tier | Cost |
+|---|---|---|
+| 07:00 | five nights of compset + our parity/room rates | 6 |
+| 13:00 | tonight again | 1 |
+
+Still 7/day, ~217/month. `reduced` cuts the horizon to tonight and tomorrow
+(4/day); `minimal` is tonight alone (1/day).
+
+### Event nights are retired, not sacrificed
+
+`pickCompsetDates` selected nights scoring **≥ 40**. `applyCompsetBound` never
+caps a night scoring **≥ 40**. Every event-night search ever made therefore
+produced an informational note and never once moved a recommended price. They
+were pure cost. `collector/eventNights.ts` and its test are deleted.
+
+The horizon covers those nights properly for anything within five days, and
+unlike the old fetch it does affect the recommendation. Beyond five days there
+is now no compset — which costs nothing, for the same reason.
+
+### Sold out versus not carried
+
+The first live run over the new horizon reported Quality Inn as `not-found`
+for tonight, having priced it that morning. Sold-out properties sometimes drop
+out of Google Hotels results entirely rather than listing without a rate, so
+the original split mislabelled them.
+
+A resolved `property_token` is proof Google carries the hotel. Absence despite
+a known token is now reported as `unavailable` (sold out); absence with no
+token ever resolved stays `not-found` (genuinely not carried, as with Super 8
+and Motel 6).
+
+### A full week
+
+Considered and rejected on cost, not merit. Seven nights refreshed against a
+250/month allowance leaves no room for intraday refresh or manual runs — it
+fits only by consuming the reserve, which is the shape most likely to stop
+collecting silently mid-month. A week needs SerpApi Starter ($25/month, 1,000
+searches), which would also allow 3 runs/day and leave the budget tiers
+dormant at ~37% utilisation. Revisit with revenue, alongside the StayAPI swap.
+
+### Knock-ons
+
+`RUN_SLOTS_CT` is `[7, 13]`; the collect crons match. The freshness gate moves
+1.25h → 5h (the 07:00→13:00 gap is 6h). The heartbeat's `STALE_HOURS` moves to
+20, above the 18h overnight gap.
