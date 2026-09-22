@@ -49,12 +49,17 @@ describe('parity gap trigger (>= $8 or >= 10%)', () => {
   const check = (source: string, price: number) => ({
     source: source as never, status: 'ok' as const, price, fetchedAt: NOW,
   });
+  /* `redroof` stands for the property's own listing, which the channel policy
+     recognises by its official flag rather than by name — the direct entry is
+     named after the property, so a name rule would work for one hotel. */
+  const direct = (price: number) => ({ ...check('redroof', price), official: true as const });
+
   it('$7 / 9.7% spread does not fire', () => {
-    const r = evaluateAlerts(base({ parity: [check('redroof', 72), check('expedia', 74), check('booking', 79)] }));
+    const r = evaluateAlerts(base({ parity: [direct(72), check('expedia', 74), check('booking', 79)] }));
     expect(r.triggers).toHaveLength(0);
   });
   it('$9 / 12.9% spread fires with both sources named', () => {
-    const r = evaluateAlerts(base({ parity: [check('redroof', 70), check('booking', 79)] }));
+    const r = evaluateAlerts(base({ parity: [direct(70), check('booking', 79)] }));
     const t = r.triggers.find((x) => x.type === 'parity-gap');
     expect(t).toBeDefined();
     expect(t!.line).toContain('redroof');
@@ -62,9 +67,25 @@ describe('parity gap trigger (>= $8 or >= 10%)', () => {
   });
   it('needs-manual-check sources are ignored, not treated as $0', () => {
     const r = evaluateAlerts(base({
-      parity: [check('redroof', 72), { source: 'google' as never, status: 'needs-manual-check' as const, fetchedAt: NOW }],
+      parity: [direct(72), { source: 'Booking.com' as never, status: 'needs-manual-check' as const, fetchedAt: NOW }],
     }));
     expect(r.triggers).toHaveLength(0);
+  });
+
+  /* The channel policy applies to alerting too, so an email never names a
+     channel no screen in the product shows. The cost is that the undercut
+     below — the shape that actually occurs in live data — goes unreported. */
+  it('an untracked reseller does not fire, however far it undercuts', () => {
+    const r = evaluateAlerts(base({ parity: [direct(80), check('Super.com', 62), check('dealbase.com', 64)] }));
+    expect(r.triggers).toHaveLength(0);
+  });
+  it('a tracked channel still fires alongside untracked ones', () => {
+    const r = evaluateAlerts(base({ parity: [direct(80), check('Super.com', 62), check('Expedia.com', 95)] }));
+    const t = r.triggers.find((x) => x.type === 'parity-gap');
+    expect(t).toBeDefined();
+    // $15 direct-to-Expedia, not the $33 spread that includes Super.com.
+    expect(t!.line).toContain('$15 spread');
+    expect(t!.line).not.toContain('Super.com');
   });
 });
 

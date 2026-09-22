@@ -1,5 +1,6 @@
 import type { NightRecommendation, RateCheck, SourceResult, WeatherAlert } from '../scoring/types';
 import { noonUTC, fmtDowDay } from '../date';
+import { trackedParity } from '../parity/channels';
 
 export interface HolidayEntry {
   name: string;
@@ -75,6 +76,11 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
   const newSeenEventIds = [...input.seenEventIds];
   const nowMs = new Date(input.now).getTime();
 
+  // Parity is reported against the tracked channels only, alerts included —
+  // so an email never names a channel no screen in the product shows. See
+  // lib/parity/channels.ts for what this deliberately stops catching.
+  const parity = trackedParity(input.parity);
+
   const isFresh = (fp: string): boolean => {
     const last = newFingerprints[fp];
     return last !== undefined && nowMs - new Date(last).getTime() < DEDUPE_HOURS * 3600_000;
@@ -107,10 +113,12 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
     }
   }
 
-  // 2) Parity gap across sources that actually reported a price.
-  // Google Hotels is excluded by owner request (its "official site" rate is a
-  // Google-side artifact) — shown on the dashboard as informational only.
-  const priced = input.parity.filter(
+  // 2) Parity gap across the tracked channels that reported a price — so the
+  // spread an email quotes is the spread the dashboard and API show.
+  // Google Hotels stays excluded by owner request (its "official site" rate is
+  // a Google-side artifact); that is a separate rule from the channel policy,
+  // and would still apply if Google ever arrived flagged official.
+  const priced = parity.filter(
     (p) => p.status === 'ok' && typeof p.price === 'number' && p.source !== 'google'
   );
   if (priced.length >= 2) {
@@ -156,7 +164,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
   const newSourceHealth: Record<string, SourceHealth> = {};
   const observations: { name: string; ok: boolean }[] = [
     ...(input.sources ?? []).map((s) => ({ name: s.source, ok: s.status === 'ok' })),
-    ...input.parity.map((p) => ({ name: `rate:${p.source}`, ok: p.status === 'ok' })),
+    ...parity.map((p) => ({ name: `rate:${p.source}`, ok: p.status === 'ok' })),
   ];
   for (const { name, ok } of observations) {
     const prev = input.sourceHealth?.[name] ?? { consecutiveFails: 0 };
