@@ -4,6 +4,7 @@ import BaselineEditor from './BaselineEditor';
 import TeamManager from './TeamManager';
 import CurrentRatesCard from './CurrentRates';
 import { Chip, SampleBadge } from './ui';
+import Icon from './Icon';
 
 /*
  * Settings, built to the supplied design: a vertical pill-tab rail beside
@@ -23,12 +24,6 @@ import { Chip, SampleBadge } from './ui';
  *     toggle would flip, appear saved, and change nothing about what lands in
  *     an inbox. The panel states the thresholds that actually fire instead.
  */
-
-const Icon = ({ name, fill = false, className = '' }: { name: string; fill?: boolean; className?: string }) => (
-  <span className={`material-symbols-outlined ${fill ? 'fill' : ''} ${className}`} aria-hidden>
-    {name}
-  </span>
-);
 
 const TABS = [
   { id: 'property', label: 'Property & Rates', icon: 'domain' },

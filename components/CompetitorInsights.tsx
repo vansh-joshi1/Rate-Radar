@@ -1,6 +1,8 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCanWrite } from './RoleProvider';
+import Icon from './Icon';
+import { fmtDay, fmtDow } from '../lib/date';
 
 /*
  * Competitor Insights, built to the supplied design: filter row, opportunity
@@ -50,25 +52,11 @@ interface Props {
 
 export const MAX_HOTELS = 25;
 
-const Icon = ({ name, fill = false, className = '' }: { name: string; fill?: boolean; className?: string }) => (
-  <span className={`material-symbols-outlined ${className}`} {...(fill ? { 'data-weight': 'fill' } : {})} aria-hidden>
-    {name}
-  </span>
-);
-
 const CARD =
   'bg-card border border-line rounded-xl p-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-hover-lift';
 
 const FIELD =
   'bg-card border border-line rounded px-sm py-2 font-body-md text-body-md text-ink outline-none transition-colors duration-200 hover:border-muted focus:border-accent focus:ring-1 focus:ring-accent cursor-pointer';
-
-const dayLabel = (d: string) =>
-  new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', timeZone: 'UTC',
-  });
-
-const dowLabel = (d: string) =>
-  new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
 
 /* Price level across the whole grid, so a dot means the same thing in every
    row and column. Terciles rather than fixed thresholds — what counts as a
@@ -307,15 +295,15 @@ export default function CompetitorInsights({
   const insight = useMemo(() => {
     if (!tonight) return null;
     if (median != null && yourRate != null && tonight.recommended > yourRate) {
-      return `Your listed rate is $${yourRate} against a recommendation of $${tonight.recommended} for ${dayLabel(tonight.date)}. The comp-set median is $${median} — there is $${tonight.recommended - yourRate} of headroom before you reach the recommendation.`;
+      return `Your listed rate is $${yourRate} against a recommendation of $${tonight.recommended} for ${fmtDay(tonight.date)}. The comp-set median is $${median} — there is $${tonight.recommended - yourRate} of headroom before you reach the recommendation.`;
     }
     if (median != null && tonight.recommended > median) {
-      return `The recommendation for ${dayLabel(tonight.date)} is $${tonight.recommended}, $${tonight.recommended - median} above the comp-set median of $${median}. Demand signals support holding above market.`;
+      return `The recommendation for ${fmtDay(tonight.date)} is $${tonight.recommended}, $${tonight.recommended - median} above the comp-set median of $${median}. Demand signals support holding above market.`;
     }
     if (median != null) {
-      return `The recommendation for ${dayLabel(tonight.date)} is $${tonight.recommended}, at or below the comp-set median of $${median}. Quiet night — the compset bound is doing the work.`;
+      return `The recommendation for ${fmtDay(tonight.date)} is $${tonight.recommended}, at or below the comp-set median of $${median}. Quiet night — the compset bound is doing the work.`;
     }
-    return `No competitor prices were collected for ${dayLabel(tonight.date)}, so the compset bound is skipped for this night rather than estimated.`;
+    return `No competitor prices were collected for ${fmtDay(tonight.date)}, so the compset bound is skipped for this night rather than estimated.`;
   }, [tonight, median, yourRate]);
 
   function exportCsv() {
@@ -436,8 +424,8 @@ export default function CompetitorInsights({
                 </svg>
               </div>
               <div className="ml-sm mt-sm flex justify-between font-data-mono text-data-mono text-muted">
-                <span>{dayLabel(chart.pts[0].date)}</span>
-                <span>{dayLabel(chart.pts[chart.pts.length - 1].date)}</span>
+                <span>{fmtDay(chart.pts[0].date)}</span>
+                <span>{fmtDay(chart.pts[chart.pts.length - 1].date)}</span>
               </div>
               <div className="mt-md flex justify-center gap-lg">
                 <div className="flex items-center gap-xs">
@@ -660,7 +648,7 @@ export default function CompetitorInsights({
                       key={n.date}
                       className="border-l border-line p-md text-center font-label-md text-label-md uppercase text-muted"
                     >
-                      {dayLabel(n.date)} ({dowLabel(n.date)})
+                      {fmtDay(n.date)} ({fmtDow(n.date)})
                     </th>
                   ))}
                 </tr>
