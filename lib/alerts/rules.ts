@@ -1,4 +1,5 @@
 import type { NightRecommendation, RateCheck, SourceResult, WeatherAlert } from '../scoring/types';
+import { noonUTC, fmtDowDay } from '../date';
 
 export interface HolidayEntry {
   name: string;
@@ -63,12 +64,6 @@ const SOURCE_FAIL_THRESHOLD = 3;
 const SEARCH_BUDGET_FLOOR = 10;
 const SEVERE = new Set(['Severe', 'Extreme']);
 
-function fmtDate(date: string): string {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  });
-}
-
 function bucket(value: number, size: number): number {
   return Math.round(value / size);
 }
@@ -103,7 +98,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
         fire(`rate:${n.date}:${bucket(std.recommended, RATE_DELTA_USD)}`, {
           type: 'rate-change',
           date: n.date,
-          line: `${fmtDate(n.date)}: recommended $${std.recommended} (was $${prev})${driver ? ` — ${driver.name}, ${driver.verdict.toLowerCase()}` : ''}.`,
+          line: `${fmtDowDay(n.date)}: recommended $${std.recommended} (was $${prev})${driver ? ` — ${driver.name}, ${driver.verdict.toLowerCase()}` : ''}.`,
         });
         newEmailedState[n.date] = std.recommended;
       }
@@ -138,7 +133,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
         fire(`event:${e.id}`, {
           type: 'new-event',
           date: n.date,
-          line: `New demand driver ${fmtDate(n.date)}: ${e.name} at ${e.venue} (score ${e.score})${e.verdict ? ` — ${e.verdict.toLowerCase()}` : ''}.`,
+          line: `New demand driver ${fmtDowDay(n.date)}: ${e.name} at ${e.venue} (score ${e.score})${e.verdict ? ` — ${e.verdict.toLowerCase()}` : ''}.`,
         });
       }
     }
@@ -202,12 +197,12 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
 
   // 6) Holiday within 14 days, flagged once
   for (const h of input.holidays) {
-    const days = (new Date(`${h.date}T12:00:00Z`).getTime() - nowMs) / 86400_000;
+    const days = (noonUTC(h.date).getTime() - nowMs) / 86400_000;
     if (days >= 0 && days <= HOLIDAY_LOOKAHEAD_DAYS) {
       fire(`holiday:${h.name}:${h.date}`, {
         type: 'holiday',
         date: h.date,
-        line: `${h.name} is coming up (${fmtDate(h.date)}) — expect ${h.drawProfile} travel demand.`,
+        line: `${h.name} is coming up (${fmtDowDay(h.date)}) — expect ${h.drawProfile} travel demand.`,
       });
     }
   }

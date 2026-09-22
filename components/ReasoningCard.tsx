@@ -5,6 +5,7 @@
  * The "too small to matter" lines are deliberately kept and dimmed rather than
  * filtered out: showing what the scoring considered and rejected is the point.
  */
+import { fmtWeekdayLong } from '../lib/date';
 
 export default function ReasoningCard({
   date,
@@ -17,9 +18,7 @@ export default function ReasoningCard({
   confidence: number;
   confidenceNote: string;
 }) {
-  const label = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC',
-  });
+  const label = fmtWeekdayLong(date);
 
   return (
     <div className="rounded-lg border border-line bg-card p-md">

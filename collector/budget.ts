@@ -30,6 +30,8 @@
  * schedule, so nothing is stored between runs and it tests without a store.
  */
 
+import { dateRange } from '../lib/date';
+
 export type BudgetTier = 'full' | 'reduced' | 'minimal';
 
 export interface SearchPlan {
@@ -58,12 +60,7 @@ export const HORIZON_DAYS = 5;
 
 /** Tonight plus the next HORIZON_DAYS-1 nights, as YYYY-MM-DD. */
 export function horizonDates(today: string, days = HORIZON_DAYS): string[] {
-  const base = new Date(`${today}T12:00:00Z`);
-  return Array.from({ length: days }, (_, i) => {
-    const d = new Date(base);
-    d.setUTCDate(d.getUTCDate() + i);
-    return d.toISOString().slice(0, 10);
-  });
+  return dateRange(today, days);
 }
 
 /** How many horizon dates each slot prices, per tier, and whether it buys parity. */

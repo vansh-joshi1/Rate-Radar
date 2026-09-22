@@ -1,5 +1,6 @@
 import type { RawEvent, ScoredEvent, Tier } from './types';
 import { travelDraw, venueCapacity } from './venues';
+import { dayOfWeek } from '../date';
 
 /**
  * Overflow model: how likely is this event to push demand 20 minutes out to
@@ -13,10 +14,6 @@ const K = 25000;
 const DOW = [0.7, 0.45, 0.45, 0.45, 0.7, 1.0, 1.0];
 const FILL_DEFAULT = 0.8;
 const FILL_SELLOUT = 1.0;
-
-function dayOfWeek(date: string): number {
-  return new Date(`${date}T12:00:00Z`).getUTCDay();
-}
 
 function tierOf(score: number): Tier {
   if (score < 15) return 'too-small';

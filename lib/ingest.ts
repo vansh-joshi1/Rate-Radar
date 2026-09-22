@@ -1,4 +1,4 @@
-import { todayIn } from './tz';
+import { todayIn, addDays, dateRange, dayOfWeek } from './date';
 import { z } from 'zod';
 import holidaysConfig from '../config/holidays.json';
 import type { Store } from './store';
@@ -70,22 +70,16 @@ export function parseRatesData(
 const WINDOW_NIGHTS = 22; // today + 21
 const HOLIDAY_ATTENDANCE: Record<string, number> = { major: 40000, meaningful: 15000, minor: 6000 };
 
-/** Property-local today. Delegates to lib/tz so client components can share
+/** Property-local today. Delegates to lib/date so client components can share
  *  the exact same rule without importing this module's server dependencies. */
 export function chicagoToday(now = new Date()): string {
   return todayIn('America/Chicago', now);
 }
 
-function addDays(date: string, n: number): string {
-  const d = new Date(`${date}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-
 export async function processBundle(bundle: Bundle, store: Store, now = new Date()) {
   const bundlePropertyId = bundle.propertyId ?? DEFAULT_PROPERTY_ID;
   const today = chicagoToday(now);
-  const window = Array.from({ length: WINDOW_NIGHTS }, (_, i) => addDays(today, i));
+  const window = dateRange(today, WINDOW_NIGHTS);
   const windowSet = new Set(window);
 
   // --- gather inputs from source results ---
@@ -172,7 +166,7 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
     const holidayName = events.find((e) => e.kind === 'holiday')?.name;
     const partial: Omit<NightRecommendation, 'reasoning'> = {
       date,
-      dow: new Date(`${date}T12:00:00Z`).getUTCDay(),
+      dow: dayOfWeek(date),
       nightScore: ns,
       upliftPct: upliftPct(ns, ratesCfg),
       events,
@@ -249,7 +243,7 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   await store.set(propKey.snapshotRun(bundlePropertyId, today, runId), snapshot, 30 * 86400);
   // Raw bundle kept for /api/recompute: config edits (baselines, watchlist)
   // re-run scoring on the same data without waiting for the next scrape.
-  await store.set(`prop:${bundlePropertyId}:bundle:latest`, bundle);
+  await store.set(propKey.bundleLatest(bundlePropertyId), bundle);
   if (bundlePropertyId === DEFAULT_PROPERTY_ID) {
     await store.set('snapshot:latest', snapshot);
     await store.set(`snapshot:${today}:${runId}`, snapshot, 30 * 86400);

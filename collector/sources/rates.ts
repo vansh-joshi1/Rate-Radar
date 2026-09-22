@@ -2,6 +2,7 @@ import { createSerpApiClient, type SerpApiClient, type SerpProperty, type SerpPr
 import { planSearches, horizonDates, type SearchPlan } from '../budget';
 import { loadProperties, mapRoomToTier, type RatePropertyConfig, type RoomTierRule } from '../properties';
 import type { CompsetConfig } from '../../lib/scoring/compset';
+import { addDays, todayIn } from '../../lib/date';
 import type { CompsetEntry, RateCheck, RoomRate, SourceResult } from '../../lib/scoring/types';
 
 /**
@@ -18,12 +19,6 @@ import type { CompsetEntry, RateCheck, RoomRate, SourceResult } from '../../lib/
  * the scraper-era tests drew. Everything downstream sees domain types only, so
  * changing vendor means changing this file and `serpapi.ts` and nothing else.
  */
-
-function addDays(date: string, n: number): string {
-  const d = new Date(`${date}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
 
 function priceOf(rate?: { extracted_lowest?: number }): number | undefined {
   return typeof rate?.extracted_lowest === 'number' ? rate.extracted_lowest : undefined;
@@ -193,7 +188,7 @@ export async function collect(
   try {
     const quota = await client.accountQuota();
 
-    const today = now.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    const today = todayIn('America/Chicago', now);
     const dates = horizonDates(today);
     const plan = planSearches({
       remaining: quota.remaining,
