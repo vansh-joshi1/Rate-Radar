@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { DEFAULT_PROPERTY_ID, getProperty, type Property } from '../../../lib/properties';
+import { type Property } from '../../../lib/properties';
+import { propertyFromRequest } from '../../../lib/api/property-request';
 import { haversineMiles } from '../../../lib/geo';
 
 export const dynamic = 'force-dynamic';
@@ -84,11 +85,10 @@ async function nominatimSearch(q: string, property: Property): Promise<Suggestio
 }
 
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const q = (url.searchParams.get('q') ?? '').trim();
-  const propertyId = url.searchParams.get('propertyId') ?? DEFAULT_PROPERTY_ID;
-  const property = getProperty(propertyId);
-  if (!property) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
+  const q = (new URL(req.url).searchParams.get('q') ?? '').trim();
+  const target = propertyFromRequest(req);
+  if (!target.ok) return target.response;
+  const { property } = target;
   if (q.length < 3) return NextResponse.json({ results: [] });
 
   let results: Suggestion[] = [];
