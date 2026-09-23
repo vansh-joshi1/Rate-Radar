@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 14 App Router, NextAuth v5 (JWT sessions, Resend magic links), Upstash Redis via REST / local `FileStore`, vitest, TypeScript, Tailwind.
 
-**Spec:** `docs/superpowers/specs/2026-08-15-accounts-and-onboarding-design.md`
+**Spec:** `docs/design/specs/2026-08-15-accounts-and-onboarding-design.md`
 
 ---
 

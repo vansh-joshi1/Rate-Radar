@@ -1,17 +1,18 @@
 {
+  "_comment": "Synthetic SerpApi google_hotels search response. Shape is copied verbatim from a real 2026-08-23 capture; every name, token and coordinate is invented (the Kestrel Bay world in lib/demo.ts). Prices and ordering are preserved exactly, because the parser tests assert on them — see tests/serp-mapping.test.ts. Real captured market data was removed from this repo on purpose: it was one file holding a working hotel's rate structure and its competitors' prices.",
   "search_parameters": {
-    "q": "hotels near 3915 Carothers Pkwy, Franklin, TN",
+    "q": "hotels near 88 Harbor Pine Way, Kestrel Bay, OR",
     "check_in_date": "2026-08-23",
     "check_out_date": "2026-08-24"
   },
   "properties": [
     {
       "type": "hotel",
-      "name": "Best Western Franklin Inn",
-      "property_token": "ChgInJ6Du_q_zMvjARoLL2cvMXZubmszemsQAQ",
+      "name": "Saltgrass Motel Kestrel Bay",
+      "property_token": "ChgIm5xDu_q_zMvjARoLL2cvMXZ1bmszemsQAQ",
       "gps_coordinates": {
-        "latitude": 35.9138829,
-        "longitude": -86.82775360000001
+        "latitude": 44.6138829,
+        "longitude": -124.0277536
       },
       "rate_per_night": {
         "lowest": "$65",
@@ -24,11 +25,11 @@
     },
     {
       "type": "hotel",
-      "name": "Comfort Inn Franklin Highway 96",
-      "property_token": "ChcIs7yajvP1g7xWGgsvZy8xdGhrOWd5bhAB",
+      "name": "Rivermark Lodge Harbor Road",
+      "property_token": "ChcIs3yajvP1g7xWGgsvZy8xdGhrOWd5bhAB",
       "gps_coordinates": {
-        "latitude": 35.9106959,
-        "longitude": -86.822498
+        "latitude": 44.6106959,
+        "longitude": -124.022498
       },
       "rate_per_night": {
         "lowest": "$66",
@@ -41,11 +42,11 @@
     },
     {
       "type": "hotel",
-      "name": "La Quinta Inn & Suites by Wyndham Nashville Franklin",
-      "property_token": "ChcIv_7F-KHf0_95GgsvZy8xdGRxdjg0cxAB",
+      "name": "Tidewater Inn & Suites by Harborline Kestrel Bay",
+      "property_token": "ChcIv7fF-KHf0_95GgsvZy8xdGRxdjg0cxAB",
       "gps_coordinates": {
-        "latitude": 35.9113932,
-        "longitude": -86.8235143
+        "latitude": 44.6113932,
+        "longitude": -124.0235143
       },
       "rate_per_night": {
         "lowest": "$66",
@@ -58,11 +59,11 @@
     },
     {
       "type": "hotel",
-      "name": "Baymont by Wyndham Franklin/Cool Springs",
-      "property_token": "ChkIpK7Iobf0u9M7Gg0vZy8xMWY1bHk3dzNuEAE",
+      "name": "Gull Point Motor Inn Kestrel Bay",
+      "property_token": "ChkIpK3Iobf0u9M7Gg0vZy8xMWY1bHk3dzNuEAE",
       "gps_coordinates": {
-        "latitude": 35.9115591,
-        "longitude": -86.8223189
+        "latitude": 44.6115591,
+        "longitude": -124.0223189
       },
       "rate_per_night": {
         "lowest": "$70",
@@ -75,11 +76,11 @@
     },
     {
       "type": "hotel",
-      "name": "Clarion Pointe Franklin - Nashville Area",
-      "property_token": "ChoI4tKhh62l0cDmARoNL2cvMTFocDE1Ml9ocBAB",
+      "name": "Cormorant Court Kestrel Bay Area",
+      "property_token": "ChoI4tGhh62l0cDmARoNL2cvMTFocDE1Ml9ocBAB",
       "gps_coordinates": {
-        "latitude": 35.9096845,
-        "longitude": -86.81670489999999
+        "latitude": 44.6096845,
+        "longitude": -124.0167049
       },
       "rate_per_night": {
         "lowest": "$62",
@@ -92,11 +93,11 @@
     },
     {
       "type": "hotel",
-      "name": "Red Roof Inn Nashville - Franklin",
+      "name": "Harbor Pine Inn Kestrel Bay",
       "property_token": "ChkIp-bNgcS2-t4MGg0vZy8xMXd4NzBydGY3EAE",
       "gps_coordinates": {
-        "latitude": 35.9113713,
-        "longitude": -86.82183189999999
+        "latitude": 44.6113713,
+        "longitude": -124.0218319
       },
       "rate_per_night": {
         "lowest": "$62",
@@ -109,11 +110,11 @@
     },
     {
       "type": "hotel",
-      "name": "Sleep Inn Franklin - Cool Springs",
-      "property_token": "ChgI4v-Nw4rs6nIaDS9nLzExbHo1cnd3amsQAQ",
+      "name": "Foghorn Inn Kestrel Bay",
+      "property_token": "ChgI4v6Nw4rs6nIaDS9nLzExbHo1cnd3amsQAQ",
       "gps_coordinates": {
-        "latitude": 35.9101005,
-        "longitude": -86.82309330000001
+        "latitude": 44.6101005,
+        "longitude": -124.0230933
       },
       "rate_per_night": {
         "lowest": "$59",
@@ -126,11 +127,11 @@
     },
     {
       "type": "hotel",
-      "name": "Candlewood Suites Nashville - Franklin by IHG",
+      "name": "Lantern Bay Suites Kestrel Bay by Harborline",
       "property_token": "ChkI_LfV8cTB7stCGg0vZy8xMWd5OGJwMXF5EAE",
       "gps_coordinates": {
-        "latitude": 35.9156033,
-        "longitude": -86.8272523
+        "latitude": 44.6156033,
+        "longitude": -124.0272523
       },
       "rate_per_night": {
         "lowest": "$100",
@@ -143,11 +144,11 @@
     },
     {
       "type": "hotel",
-      "name": "Quality Inn Franklin - Cool Springs Area",
+      "name": "Pinecrest Inn Kestrel Bay Area",
       "property_token": "ChcI-ZWwhNaolphdGgsvZy8xdG1rOTZ5eBAB",
       "gps_coordinates": {
-        "latitude": 35.915929999999996,
-        "longitude": -86.82700799999999
+        "latitude": 44.6159299,
+        "longitude": -124.0270079
       },
       "rate_per_night": {
         "lowest": "$65",
@@ -160,11 +161,11 @@
     },
     {
       "type": "hotel",
-      "name": "Holiday Inn Franklin - Cool Springs by IHG",
-      "property_token": "ChoIucKIydS2vIzVARoNL2cvMTFiN3h2c25iZBAB",
+      "name": "The Anchorage Hotel Kestrel Bay by Harborline",
+      "property_token": "ChoIucGIydS2vIzVARoNL2cvMTFiN3h2c25iZBAB",
       "gps_coordinates": {
-        "latitude": 35.9611435,
-        "longitude": -86.80014609999999
+        "latitude": 44.6611435,
+        "longitude": -124.0001461
       },
       "rate_per_night": {
         "lowest": "$88",
@@ -177,11 +178,11 @@
     },
     {
       "type": "hotel",
-      "name": "Hilton Franklin Cool Springs",
-      "property_token": "ChoIgL3I5Inmw6uNARoNL2cvMTFnMDNmNTE2dhAB",
+      "name": "Wavecrest Grand Kestrel Bay",
+      "property_token": "ChoIgL2I5Inmw6uNARoNL2cvMTFnMDNmNTE2dhAB",
       "gps_coordinates": {
-        "latitude": 35.9480125,
-        "longitude": -86.81026729999999
+        "latitude": 44.6480125,
+        "longitude": -124.0102673
       },
       "rate_per_night": {
         "lowest": "$146",
@@ -194,11 +195,11 @@
     },
     {
       "type": "hotel",
-      "name": "Drury Plaza Hotel Nashville Franklin",
+      "name": "Mariner Plaza Hotel Kestrel Bay",
       "property_token": "ChkItebi0fvRtteZARoML2cvMTFoMGNxNXJfEAE",
       "gps_coordinates": {
-        "latitude": 35.933454,
-        "longitude": -86.82091229999999
+        "latitude": 44.633454,
+        "longitude": -124.0209123
       },
       "rate_per_night": {
         "lowest": "$136",
@@ -211,11 +212,11 @@
     },
     {
       "type": "hotel",
-      "name": "Comfort Inn & Suites Nashville Franklin Cool Springs",
+      "name": "Rivermark Lodge & Suites Kestrel Bay",
       "property_token": "ChkI97SS_8_b5rUrGg0vZy8xMWg1bWRrdHE5EAE",
       "gps_coordinates": {
-        "latitude": 35.9530636,
-        "longitude": -86.8157106
+        "latitude": 44.6530636,
+        "longitude": -124.0157106
       },
       "rate_per_night": {
         "lowest": "$93",
@@ -228,11 +229,11 @@
     },
     {
       "type": "hotel",
-      "name": "Holiday Inn Express & Suites Franklin - Berry Farms by IHG",
+      "name": "The Anchorage Express & Suites Kestrel Bay - Mill Creek by Harborline",
       "property_token": "ChoIod20tJr3k96ZARoNL2cvMTFmOXgyOWgxMxAB",
       "gps_coordinates": {
-        "latitude": 35.862125899999995,
-        "longitude": -86.8364726
+        "latitude": 44.5621259,
+        "longitude": -124.0364726
       },
       "rate_per_night": {
         "lowest": "$114",
@@ -245,11 +246,11 @@
     },
     {
       "type": "hotel",
-      "name": "Embassy Suites by Hilton Franklin Cool Springs",
+      "name": "Harborview Suites by Wavecrest Kestrel Bay",
       "property_token": "ChgIgvbokNHg7bVYGgwvZy8xMTl2OWNodHoQAQ",
       "gps_coordinates": {
-        "latitude": 35.944659099999996,
-        "longitude": -86.8131212
+        "latitude": 44.6446591,
+        "longitude": -124.0131212
       },
       "rate_per_night": {
         "lowest": "$138",
@@ -262,11 +263,11 @@
     },
     {
       "type": "hotel",
-      "name": "Holiday Inn Express Brentwood South - Franklin",
+      "name": "The Anchorage Express Alder Flats South - Kestrel Bay",
       "property_token": "ChkIyJSq-vGSp8auARoML2cvMTJobXp3Ml8wEAE",
       "gps_coordinates": {
-        "latitude": 35.961619,
-        "longitude": -86.80753229999999
+        "latitude": 44.661619,
+        "longitude": -124.0075323
       },
       "rate_per_night": {
         "lowest": "$86",
@@ -279,11 +280,11 @@
     },
     {
       "type": "hotel",
-      "name": "Tru by Hilton Franklin Cool Springs Nashville",
+      "name": "Nyx by Wavecrest Kestrel Bay Harbor",
       "property_token": "ChoI5JXzgpP5uYvMARoNL2cvMTFoazE5MmJucxAB",
       "gps_coordinates": {
-        "latitude": 35.9227127,
-        "longitude": -86.8126611
+        "latitude": 44.6227127,
+        "longitude": -124.0126611
       },
       "rate_per_night": {
         "lowest": "$140",
@@ -296,11 +297,11 @@
     },
     {
       "type": "hotel",
-      "name": "Hilton Garden Inn Nashville/Franklin Cool Springs",
+      "name": "Wavecrest Garden Inn Kestrel Bay/Alder Flats",
       "property_token": "ChgI2bajmL2I4_SIARoLL2cvMXRoN25teGwQAQ",
       "gps_coordinates": {
-        "latitude": 35.959430399999995,
-        "longitude": -86.8002506
+        "latitude": 44.6594304,
+        "longitude": -124.0002506
       },
       "rate_per_night": {
         "lowest": "$127",
