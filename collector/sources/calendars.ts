@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { noonUTC, toIsoDate } from '../../lib/date';
 import type { RawEvent, SourceResult } from '../../lib/scoring/types';
 
 /**
@@ -184,10 +185,10 @@ export function parseMcc(html: string, url: string): SubResult {
     // nights: multi-day events occupy start..end-1; single-day events just that night
     const nights: string[] = [];
     if (end && end > start) {
-      const d = new Date(`${start}T12:00:00Z`);
-      const stop = new Date(`${end}T12:00:00Z`);
+      const d = noonUTC(start);
+      const stop = noonUTC(end);
       while (d < stop) {
-        nights.push(d.toISOString().slice(0, 10));
+        nights.push(toIsoDate(d));
         d.setUTCDate(d.getUTCDate() + 1);
       }
     } else {

@@ -104,6 +104,24 @@ describe('toCompsetEntries', () => {
     expect(entries).toEqual([]);
     expect(unavailable).toEqual(['Quality Inn Franklin - Cool Springs Area']);
   });
+
+  it('treats a hotel we have priced before but cannot see tonight as sold out, not missing', () => {
+    // Sold-out properties sometimes vanish from results entirely rather than
+    // appearing without a rate. A token we resolved on an earlier run is proof
+    // Google does carry the hotel, so absence means no inventory — not no listing.
+    const withoutQualityInn = PROPERTIES.filter((p) => !/Quality Inn/.test(p.name ?? ''));
+    const knownToken = PROPERTIES.find((p) => /Quality Inn/.test(p.name!))!.property_token!;
+
+    const { notFound, unavailable } = toCompsetEntries(withoutQualityInn, COMPSET, {
+      excludeToken: OURS.property_token,
+      knownTokens: { 'Quality Inn': knownToken },
+    });
+
+    expect(unavailable).toContain('Quality Inn');
+    expect(notFound).not.toContain('Quality Inn');
+    // Super 8 and Motel 6 have never resolved a token — genuinely not carried.
+    expect(notFound).toEqual(['Super 8', 'Motel 6']);
+  });
 });
 
 describe('toParityChecks', () => {

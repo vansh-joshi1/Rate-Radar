@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getStore } from '../../../lib/store';
 import { processBundle, type Bundle } from '../../../lib/ingest';
-import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
+import { propKey } from '../../../lib/properties';
+import { propertyFromRequest } from '../../../lib/api/property-request';
 import { requireRole } from '../../../lib/auth/guard';
 
 export const dynamic = 'force-dynamic';
@@ -19,11 +20,11 @@ export async function POST(req: NextRequest) {
   const gate = await requireRole('manager');
   if (!gate.ok) return gate.response;
 
-  const propertyId = new URL(req.url).searchParams.get('propertyId') ?? DEFAULT_PROPERTY_ID;
-  if (!getProperty(propertyId)) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
+  const target = propertyFromRequest(req);
+  if (!target.ok) return target.response;
 
   const store = getStore();
-  const bundle = await store.get<Bundle>(`prop:${propertyId}:bundle:latest`);
+  const bundle = await store.get<Bundle>(propKey.bundleLatest(target.propertyId));
   if (!bundle) {
     return NextResponse.json(
       { error: 'no collected bundle yet — changes apply on the next collection run' },

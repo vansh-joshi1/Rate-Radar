@@ -39,4 +39,6 @@ export function getProperty(id: string): Property | undefined {
 export const propKey = {
   snapshotLatest: (id: string) => `prop:${id}:snapshot:latest`,
   snapshotRun: (id: string, date: string, runId: string) => `prop:${id}:snapshot:${date}:${runId}`,
+  /** Raw collected bundle, replayed by /api/recompute when config changes. */
+  bundleLatest: (id: string) => `prop:${id}:bundle:latest`,
 };

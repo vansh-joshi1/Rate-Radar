@@ -1,16 +1,16 @@
 name: collect
 
-# 3 runs/day Central time: 7:00, 13:00, 18:00 — the slots collector/budget.ts
-# plans against (RUN_SLOTS_CT); keep the two in step. Down from 7/day because
-# prices now cost money: the SerpApi free plan allows 250 searches/month and
-# this ladder spends ~217 of them.
+# 2 runs/day Central time: 7:00 and 13:00 — the slots collector/budget.ts plans
+# against (RUN_SLOTS_CT); keep the two in step. Prices cost money now: the
+# SerpApi free plan allows 250 searches/month, and the ladder spends ~217 on a
+# 5-night horizon (07:00 prices all five nights plus parity, 13:00 re-prices
+# tonight, the one rate still worth acting on mid-day).
 # GitHub cron is UTC and DST-unaware, so we schedule BOTH candidate UTC hours
 # (CDT = UTC-5, CST = UTC-6) and the freshness gate below dedupes. Minute 7
 # avoids GitHub's congested top-of-hour delays.
 on:
   schedule:
-    - cron: '7 12,13,18,19,23 * * *'
-    - cron: '7 0 * * *'
+    - cron: '7 12,13,18,19 * * *'
   workflow_dispatch: {}
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
       # (observed 2026-07-18: fires ~1h late), which made the old exact-hour
       # gate skip EVERY run — green jobs, no data. Asking the dashboard "how
       # old is the data?" is drift-immune and self-deduping: the enumerated
-      # crons still converge to ~3 collections/day, and any failure to reach
+      # crons still converge to ~2 collections/day, and any failure to reach
       # /api/health fails OPEN (collect rather than silently starve).
       - name: Gate on data freshness
         id: gate
@@ -34,7 +34,7 @@ jobs:
           fi
           AGE=$(curl -fsS -m 20 "${{ secrets.DASHBOARD_URL }}/api/health" | jq -r '.ageHours // empty' 2>/dev/null || echo "")
           echo "data age: ${AGE:-unknown}h"
-          if [ -n "$AGE" ] && awk "BEGIN{exit !($AGE < 4)}"; then
+          if [ -n "$AGE" ] && awk "BEGIN{exit !($AGE < 5)}"; then
             echo "data is fresh — skipping (cron-drift dedupe)"
             echo "run=no" >> "$GITHUB_OUTPUT"
           else

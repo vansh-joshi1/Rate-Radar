@@ -1,5 +1,5 @@
 {
-  "_comment": "Nearby competitor hotels matched (case-insensitive substring) against Google Hotels AND Booking.com results. Keep entries SHORT (brand + city core): the two sites phrase names differently ('...by IHG' vs '...an IHG Hotel'), so a long exact name only matches one of them. Edit freely.",
+  "_comment": "Seed list for a property's competitor watchlist, matched case-insensitively as a substring against Google Hotels result names. Only applied on FIRST read — once a watchlist exists in the store it is edited in the UI (Competitors → watchlist), and changes here will not reach it. Names only have to match once: the collector then pins each hotel by its stable google_hotels property_token, so drift in how Google phrases a name stops mattering. Keep them short anyway, so the first match lands.",
   "competitors": [
     "Comfort Inn Franklin",
     "Clarion Pointe",
@@ -8,6 +8,8 @@
     "Quality Inn",
     "Baymont",
     "La Quinta",
+    "Best Western",
+    "Sleep Inn",
     "Super 8",
     "Motel 6",
     "Tru by Hilton"

@@ -1,4 +1,5 @@
 import type { SourceResult, TierRecommendation } from './types';
+import { dayOfWeek } from '../date';
 import { DEFAULT_RATES_CONFIG, type RatesConfig } from '../rates-config';
 
 const UPLIFT_START_SCORE = 40;
@@ -17,10 +18,6 @@ export function upliftPct(score: number, cfg: RatesConfig = DEFAULT_RATES_CONFIG
       (UPLIFT_MIN_PCT + ((score - UPLIFT_START_SCORE) / (100 - UPLIFT_START_SCORE)) * (cap - UPLIFT_MIN_PCT)) * 10
     ) / 10
   );
-}
-
-function dayOfWeek(date: string): number {
-  return new Date(`${date}T12:00:00Z`).getUTCDay();
 }
 
 /** Three day classes per owner guidance: Mon-Thu weekday, Sunday its own middle tier, Fri-Sat weekend. */

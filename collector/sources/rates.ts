@@ -1,7 +1,8 @@
 import { createSerpApiClient, type SerpApiClient, type SerpProperty, type SerpPropertyDetails } from './serpapi';
-import { planSearches, type SearchPlan } from '../budget';
+import { planSearches, horizonDates, type SearchPlan } from '../budget';
 import { loadProperties, mapRoomToTier, type RatePropertyConfig, type RoomTierRule } from '../properties';
 import type { CompsetConfig } from '../../lib/scoring/compset';
+import { addDays, todayIn } from '../../lib/date';
 import type { CompsetEntry, RateCheck, RoomRate, SourceResult } from '../../lib/scoring/types';
 
 /**
@@ -18,12 +19,6 @@ import type { CompsetEntry, RateCheck, RoomRate, SourceResult } from '../../lib/
  * the scraper-era tests drew. Everything downstream sees domain types only, so
  * changing vendor means changing this file and `serpapi.ts` and nothing else.
  */
-
-function addDays(date: string, n: number): string {
-  const d = new Date(`${date}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
 
 function priceOf(rate?: { extracted_lowest?: number }): number | undefined {
   return typeof rate?.extracted_lowest === 'number' ? rate.extracted_lowest : undefined;
@@ -85,11 +80,17 @@ export function toCompsetEntries(
     entries.push({ name, price });
   }
 
+  // A competitor we never resolved a token for is genuinely absent from Google
+  // Hotels. One we HAVE priced before but cannot see now is sold out — some
+  // properties drop out of results entirely rather than listing without a rate.
+  const missing = competitors.filter((c) => !claimed.has(c));
+  const seenBefore = (c: string) => Boolean(knownTokens[c]);
+
   return {
     entries,
     resolvedTokens,
-    notFound: competitors.filter((c) => !claimed.has(c)),
-    unavailable,
+    notFound: missing.filter((c) => !seenBefore(c)),
+    unavailable: [...unavailable, ...missing.filter(seenBefore)],
   };
 }
 
@@ -168,7 +169,6 @@ export interface RatesData {
 }
 
 export async function collect(
-  eventNights: string[] = [],
   prop: RatePropertyConfig = loadProperties()[0],
   deps: { client?: SerpApiClient; now?: Date } = {}
 ): Promise<SourceResult> {
@@ -188,8 +188,8 @@ export async function collect(
   try {
     const quota = await client.accountQuota();
 
-    const tomorrow = addDays(now.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }), 1);
-    const dates = [tomorrow, ...eventNights.filter((d) => d !== tomorrow)];
+    const today = todayIn('America/Chicago', now);
+    const dates = horizonDates(today);
     const plan = planSearches({
       remaining: quota.remaining,
       renewalDate: quota.renewalDate,
@@ -234,11 +234,12 @@ export async function collect(
 
     let checks: RateCheck[] = [];
     if (plan.propertyDetails && prop.serpapi.propertyToken) {
+      // Parity is measured for tonight — the rate a guest booking right now sees.
       const details = await client.propertyDetails(
         prop.serpapi.propertyToken,
         prop.serpapi.query,
-        tomorrow,
-        addDays(tomorrow, 1)
+        today,
+        addDays(today, 1)
       );
       spent += 1;
       checks = toParityChecks(details, prop.roomTierMap, fetchedAt);

@@ -1,24 +1,31 @@
 import type { RateCheck } from '../lib/scoring/types';
+import { trackedParity } from '../lib/parity/channels';
 
 /*
- * Your own listed rate across every channel Google Hotels knows is selling you.
+ * Your own listed rate on the channels this property reports parity against —
+ * the direct site, Booking.com and Expedia.com (see lib/parity/channels.ts).
  * Lives on the Competitors page — the dashboard shows the recommendation, this
- * shows where your price is actually visible to guests.
+ * shows where your price is visible to guests.
  *
- * Built around one question: is anyone selling your rooms for less than you
- * are? That is what a parity problem looks like from a guest's side, and it is
- * usually a reseller nobody thought to check — the old four-source scraper
- * could not have seen it. Channels are sorted cheapest-first for that reason,
- * and anything under the direct rate is called out rather than buried.
+ * Built around one question: is either OTA selling your rooms for less than you
+ * are? Channels are sorted cheapest-first for that reason, and anything under
+ * the direct rate is called out rather than buried.
+ *
+ * Note what this can no longer answer. Google lists ~26 channels and the one
+ * undercutting a direct rate is usually a reseller nobody thought to check; by
+ * reporting three, this panel can say nothing about the other twenty-three.
+ * The copy below is careful to claim only what the three channels support —
+ * "neither is below your direct rate", never "nothing is".
  */
 
 const VISIBLE = 8;
 
 export default function ParityGrid({ parity }: { parity: RateCheck[] }) {
-  if (parity.length === 0) return null;
+  const tracked = trackedParity(parity);
+  if (tracked.length === 0) return null;
 
-  const official = parity.find((p) => p.official);
-  const others = parity
+  const official = tracked.find((p) => p.official);
+  const others = tracked
     .filter((p) => !p.official && p.status === 'ok' && p.price != null)
     .sort((a, b) => a.price! - b.price!);
 
@@ -85,10 +92,17 @@ export default function ParityGrid({ parity }: { parity: RateCheck[] }) {
           ? // No direct rate means no comparison — saying "nothing is undercutting you"
             // here would be asserting something this data cannot support.
             'Your direct rate was not returned this run, so there is nothing to compare the channels against.'
-          : undercutters.length > 0
-            ? `${undercutters.length} ${undercutters.length === 1 ? 'channel is' : 'channels are'} selling below your direct rate — cheapest is ${worst.source} at $${worst.price}.`
-            : 'Nothing is selling below your direct rate.'}{' '}
-        Checked for tomorrow night; cheapest public rate per channel, as Google sees it.
+          : others.length === 0
+            ? // Neither OTA priced this run — that is not the same as being in parity.
+              'Neither Booking.com nor Expedia returned a price this run, so there is nothing to compare your direct rate against.'
+            : undercutters.length > 0
+              ? `${undercutters.length} of these ${undercutters.length === 1 ? 'channels is' : 'channels are'} selling below your direct rate — cheapest is ${worst.source} at $${worst.price}.`
+              : // Scoped deliberately. Only two OTAs are checked, so "nothing is
+                // selling below your direct rate" would be a claim about the
+                // twenty-three channels this panel never looked at.
+                `${others.length === 1 ? `${others[0].source} is not` : 'Neither Booking.com nor Expedia is'} selling below your direct rate.`}{' '}
+        Checked for tomorrow night; cheapest public rate per channel, as Google sees it. Booking.com and
+        Expedia.com only — other resellers are collected but not reported here.
       </p>
     </div>
   );

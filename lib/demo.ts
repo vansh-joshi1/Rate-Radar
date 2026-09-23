@@ -124,7 +124,10 @@ export function demoSnapshot(): Snapshot {
       { source: 'Priceline', status: 'ok', price: 99, fetchedAt: ago(2) },
       { source: 'Agoda', status: 'ok', price: 101, fetchedAt: ago(2) },
       { source: 'Trip.com', status: 'ok', price: 101, fetchedAt: ago(2) },
-      // The undercut this view exists to surface — a reseller nobody thought to check.
+      // A reseller undercutting direct by $13. Kept in the sample because the
+      // collector really does return rows like this — but it is NOT reported
+      // anywhere now: the channel policy (lib/parity/channels.ts) narrows
+      // parity to direct + Booking + Expedia, so the demo reads as in-parity.
       { source: 'Super.com', status: 'ok', price: 76, fetchedAt: ago(2) },
       { source: 'Traveluro', status: 'ok', price: 84, fetchedAt: ago(2) },
     ],
