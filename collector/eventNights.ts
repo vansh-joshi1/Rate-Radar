@@ -10,8 +10,8 @@ function addDays(date: string, n: number): string {
 /**
  * Pick the upcoming nights worth a compset fetch: nights in (tomorrow, today+21]
  * whose compound score reaches the "affects the rate" line (>= 40). Tomorrow is
- * excluded because it always gets fetched anyway. Capped to keep the Playwright
- * stage cheap; nearest nights first (the most actionable ones).
+ * excluded because it always gets fetched anyway. Capped to keep the price-search
+ * stage within the SerpApi budget; nearest nights first (the most actionable ones).
  */
 export function pickCompsetDates(events: RawEvent[], today: string, max = 3): string[] {
   const tomorrow = addDays(today, 1);

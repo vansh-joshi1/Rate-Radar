@@ -23,7 +23,7 @@ Permissions are three server-enforced roles: `viewer` (read dashboard, compset, 
 
 Tell a hotel operator what to charge tonight, and show them why.
 
-It recommends a nightly rate per room tier from day-of-week patterns, nearby demand events, weather, and holidays; checks the property's own listed rate across four public sources for parity; and emails an alert only when something actually merits attention.
+It recommends a nightly rate per room tier from day-of-week patterns, nearby demand events, weather, and holidays; checks the property's own listed rate across the ~25 booking channels Google Hotels reports for parity; and emails an alert only when something actually merits attention.
 
 **It never changes a price anywhere. It recommends — a human decides.** This is the load-bearing product fact, not a disclaimer. It governs voice, control placement, and every default across the product.
 
@@ -37,12 +37,12 @@ Three things a neighboring product could not truthfully copy:
 - **Rejected signals are shown with their verdict, never silently dropped.** An event judged too small to matter appears in the UI saying exactly that. The product argues its case including the parts that didn't move the number.
 - **Recommendation-only, by design and permanently.** Competitors in revenue management sell automation. This sells a defensible opinion and leaves the operator holding the decision.
 
-Its data comes from its own scraping pipeline rather than a third-party rate-data API — which is both a cost position and a fragility the product is honest about.
+Competitor and parity prices come from a third-party rate-data API (SerpApi's Google Hotels engine). An earlier design rejected that in favour of self-hosted scraping; the scrapers could no longer reach even our own site, so the constraint was withdrawn deliberately and the dependency accepted with a named exit. Event, weather and calendar data is still collected first-hand. Prices are therefore metered, and the product is honest about spending against a quota rather than against a bot wall.
 
 ## Operating Context
 
-- **Collection runs 7×/day Central** (7:00, 10:00, 13:00, 15:00, 18:00, 20:00, 22:00) via GitHub Actions, POSTing a bundle to `/api/ingest`.
-- **Sources:** Ticketmaster (3 venues), College Football Data (Vanderbilt), NWS alerts (2 counties), FAA (BNA airport status), university and Music City Center calendars, and Playwright rate checks against the property's own site, Google Hotels, Expedia and Booking.com.
+- **Collection runs 3×/day Central** (7:00, 13:00, 18:00) via GitHub Actions, POSTing a bundle to `/api/ingest`. Down from 7×/day: prices are now metered, and the schedule is sized to the search budget (`RUN_SLOTS_CT` in `collector/budget.ts`).
+- **Sources:** Ticketmaster (3 venues), College Football Data (Vanderbilt), NWS alerts (2 counties), FAA (BNA airport status), university and Music City Center calendars, and SerpApi's Google Hotels engine for competitor and parity prices.
 - **Alerts** go out by email (Resend) only when rules fire against the last-emailed state — not on every run.
 - **A manual note field exists for what no feed knows** — corporate events at nearby campuses (Nissan NA, CHS) are published nowhere. Human-entered context is a designed part of the pipeline, not a fallback.
 - **Onboarding is sales-assisted and permanently so.** A new hotel is configured by a person: an entry in `config/properties.json`, a row in `lib/properties.ts`, listing URLs into secrets, and a deploy. `/signup` is a request-access surface, not account creation; uninvited emails get an honest explanation rather than an account. Existing users arrive by invite and magic link.
@@ -50,7 +50,7 @@ Its data comes from its own scraping pipeline rather than a third-party rate-dat
 
 ## Capabilities and Constraints
 
-**Confirmed capabilities:** nightly rate recommendation per room tier with range, uplift vs. baseline, and confidence; transparent per-night reasoning; 21-night forward rate calendar with demand-signal tiers (quiet / minor / meaningful / major); rate parity monitoring across four sources; compset tracking against an editable competitor whitelist; recorded actuals and acceptance history; manual notes; email alert center; team management with roles; a public read API (`/api/v1/*`) authenticated by API key.
+**Confirmed capabilities:** nightly rate recommendation per room tier with range, uplift vs. baseline, and confidence; transparent per-night reasoning; 21-night forward rate calendar with demand-signal tiers (quiet / minor / meaningful / major); rate parity monitoring across the channels Google Hotels lists for the property (~25, resellers included); compset tracking against an editable competitor whitelist; recorded actuals and acceptance history; manual notes; email alert center; team management with roles; a public read API (`/api/v1/*`) authenticated by API key.
 
 **Hard constraints future work must preserve:**
 
@@ -85,7 +85,7 @@ Its data comes from its own scraping pipeline rather than a third-party rate-dat
 
 **Known placeholders currently rendering in the codebase, which future work must not harden into claims:**
 
-- Pricing tiers Free / Pro $29 per month / Portfolio $79 per month — invented in `docs/manus-frontend-prompt.md` for an external design brief. Not a commercial decision. **Accepted risk, decided 2026-08-19:** the section ships as-is on the landing page, with tier cards and CTAs, on the grounds that every page is `noindex` and access is invite-only, so no stranger reaches it. Do not treat those numbers as product truth, do not propagate them to any other surface, and revisit this before the marketing page is ever made public or indexable.
+- Pricing tiers Free / Pro $29 per month / Portfolio $79 per month — invented for an external design brief, not a commercial decision. **Accepted risk, decided 2026-08-19,** on the grounds that every page is `noindex` and access is invite-only, so no stranger reaches the tier cards or their CTAs. ⚠️ **That premise expired on 2026-09-22:** the public `/demo` route admits anyone with the link, with no account, and the README now leads with it. The pages are still `noindex`, but "no stranger reaches it" is no longer true. Do not treat these numbers as product truth or propagate them anywhere else, and settle them — remove the section, or make them real — before the repo is shown to anyone.
 - "Acceptance rate 71%", "+$1,420 estimated impact", "$4.20 avg. parity gap" — hardcoded in `app/(app)/analytics/page.tsx`.
 - "Sunrise Suites — Cookeville, TN" — a demo second property hardcoded in `components/shell/AppShell.tsx`. Not a customer.
 - Anything sourced from `lib/demo.ts`.

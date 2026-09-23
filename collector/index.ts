@@ -15,12 +15,12 @@ import type { RawEvent, SourceResult } from '../lib/scoring/types';
  * endpoint where all scoring/diffing/alerting happens.
  *
  * Market sources (events/weather/airport) run once and are shared across
- * properties; the Playwright rate checks run per property, sequentially —
- * which also naturally staggers requests to the same booking sites.
+ * properties; the SerpApi price searches run per property, sequentially —
+ * which also keeps the per-run spend against the search budget predictable.
  *
  * Flags:
  *   --dry-run     print the bundles instead of POSTing
- *   --skip-rates  skip the Playwright rate checks (fast local testing)
+ *   --skip-rates  skip the SerpApi price searches (fast local testing, spends nothing)
  */
 
 /**
