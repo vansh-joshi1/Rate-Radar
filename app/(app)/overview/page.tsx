@@ -1,7 +1,7 @@
 import { loadSnapshot } from '../../../lib/dashboard-data';
 import { loadCurrentRates } from '../../../lib/current-rates';
-import { DEFAULT_PROPERTY_ID } from '../../../lib/properties';
-import { getStore } from '../../../lib/store';
+
+import { requestPropertyId, requestStore } from '../../../lib/demo/context';
 import { Chip, SampleBadge } from '../../../components/ui';
 
 export const dynamic = 'force-dynamic';
@@ -116,7 +116,10 @@ export default async function Overview() {
 
   // Your rate: owner-entered is authoritative (you set your prices); the
   // scraped redroof.com value fills in when the owner hasn't entered one.
-  const ownerRates = isDemo ? null : await loadCurrentRates(getStore(), DEFAULT_PROPERTY_ID);
+  // Read unconditionally: outside a demo this is the owner's real entry, and
+  // inside one it is whatever the visitor typed into their own sandbox. Both
+  // are absent until somebody sets a rate, and the null path already handles that.
+  const ownerRates = await loadCurrentRates(requestStore(), requestPropertyId());
   const directRooms = snapshot.parity.find((p) => p.official && p.status === 'ok')?.rooms ?? [];
   const ownerStd = ownerRates?.tiers[std.tierId];
   const scraped = directRooms.filter((r) => r.tierId === std.tierId).map((r) => r.price);

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getStore } from '../../../lib/store';
-import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
+import { requestPropertyId, requestStore } from '../../../lib/demo/context';
+import { getProperty } from '../../../lib/properties';
 import { loadRatesConfig, saveRatesConfig, validateRatesConfig, type RatesConfig } from '../../../lib/rates-config';
 import { requireRole } from '../../../lib/auth/guard';
 
@@ -13,13 +13,13 @@ export const dynamic = 'force-dynamic';
  */
 
 function propertyIdFrom(req: NextRequest): string {
-  return new URL(req.url).searchParams.get('propertyId') ?? DEFAULT_PROPERTY_ID;
+  return new URL(req.url).searchParams.get('propertyId') ?? requestPropertyId();
 }
 
 export async function GET(req: NextRequest) {
   const propertyId = propertyIdFrom(req);
   if (!getProperty(propertyId)) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
-  const config = await loadRatesConfig(getStore(), propertyId);
+  const config = await loadRatesConfig(requestStore(), propertyId);
   return NextResponse.json({ propertyId, config });
 }
 
@@ -36,6 +36,6 @@ export async function PUT(req: NextRequest) {
   const problem = validateRatesConfig(body.config);
   if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
-  await saveRatesConfig(getStore(), propertyId, body.config);
+  await saveRatesConfig(requestStore(), propertyId, body.config);
   return NextResponse.json({ ok: true, config: body.config });
 }

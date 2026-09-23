@@ -52,7 +52,7 @@ export default function Admin() {
       </div>
 
       <p className="mt-4 text-xs text-muted">
-        Portfolio view — one row per property. Only Red Roof Inn Franklin is live today; the rest illustrate the
+        Portfolio view — one row per property. One property is live today; the rest illustrate the
         multi-property model.
       </p>
     </div>

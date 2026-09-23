@@ -1,10 +1,9 @@
 import SettingsView, { type SearchBudget } from '../../../components/SettingsView';
 import { loadSnapshot } from '../../../lib/dashboard-data';
 import { demoInvoices } from '../../../lib/demo';
-import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
+import { requestProperty } from '../../../lib/demo/context';
 import { DEFAULT_RATES_CONFIG } from '../../../lib/rates-config';
 import { ALERT_THRESHOLDS } from '../../../lib/alerts/rules';
-import { getStore } from '../../../lib/store';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +15,7 @@ export const dynamic = 'force-dynamic';
  */
 export default async function Settings() {
   const { snapshot, isDemo } = await loadSnapshot();
-  const property = getProperty(DEFAULT_PROPERTY_ID)!;
+  const property = requestProperty();
 
   return (
     <SettingsView

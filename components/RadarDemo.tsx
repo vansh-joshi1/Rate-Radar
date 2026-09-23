@@ -24,11 +24,13 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 type Competitor = { x: number; y: number; price: number; name: string };
 
 /** Positions are fractions of the surface, so the geometry survives a resize. */
+/* Invented hotels, matching the demo world in lib/demo.ts. Printing a made-up
+   nightly rate next to a real hotel's name is a claim about that business. */
 const COMPETITORS: Competitor[] = [
-  { x: 0.2, y: 0.22, price: 96, name: 'Comfort Inn' },
-  { x: 0.74, y: 0.31, price: 112, name: 'Hampton Inn' },
-  { x: 0.28, y: 0.66, price: 84, name: 'Quality Inn' },
-  { x: 0.66, y: 0.58, price: 101, name: 'La Quinta' },
+  { x: 0.2, y: 0.22, price: 96, name: 'Rivermark Lodge' },
+  { x: 0.74, y: 0.31, price: 112, name: 'The Anchorage Hotel' },
+  { x: 0.28, y: 0.66, price: 84, name: 'Gull Point Motor Inn' },
+  { x: 0.66, y: 0.58, price: 101, name: 'Tidewater Inn & Suites' },
 ];
 
 const BASELINE = 79;
@@ -339,7 +341,7 @@ export default function RadarDemo() {
           <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
           <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
         </div>
-        <div className="ml-auto text-[11px] font-medium text-slate-400">Red Roof Inn · Franklin, TN</div>
+        <div className="ml-auto text-[11px] font-medium text-slate-400">Harbor Pine Inn · Kestrel Bay, OR</div>
       </div>
 
       {/* radar surface */}
@@ -461,17 +463,17 @@ export default function RadarDemo() {
       {/* reasoning strip — the honest states, on the marketing page too */}
       <div className="space-y-2.5 px-5 py-4 text-[13px]">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-700">Morgan Wallen @ Nissan Stadium</span>
+          <span className="text-slate-700">Neon Compass @ Harborview Amphitheater</span>
           <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
             score 82 · major
           </span>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-500">Vanderbilt home game</span>
+          <span className="text-slate-500">Cascadia State home game</span>
           <span className="shrink-0 text-[11px] text-slate-400">too small to matter — shown anyway</span>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-700">Expedia listing $101</span>
+          <span className="text-slate-700">Roamly listing $101</span>
           <span className="shrink-0 rounded bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
             $12 parity gap
           </span>

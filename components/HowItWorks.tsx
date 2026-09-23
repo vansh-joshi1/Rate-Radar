@@ -36,10 +36,10 @@ type Signal = { label: string; note: string; delta: string; kind: 'base' | 'majo
 
 const SIGNALS: Signal[] = [
   { label: 'Friday baseline', note: 'day-of-week curve', delta: '$94', kind: 'base' },
-  { label: 'Morgan Wallen @ Nissan Stadium', note: 'score 82 · major', delta: '+18%', kind: 'major' },
+  { label: 'Neon Compass @ Harborview Amphitheater', note: 'score 82 · major', delta: '+18%', kind: 'major' },
   { label: 'Downtown absorbs most of the draw', note: 'distance dampener', delta: '−6%', kind: 'plain' },
   { label: 'Compset median $96', note: 'quiet-night bound', delta: 'in range', kind: 'plain' },
-  { label: 'Vanderbilt home game', note: 'score 11', delta: 'too small to matter', kind: 'rejected' },
+  { label: 'Cascadia State home game', note: 'score 11', delta: 'too small to matter', kind: 'rejected' },
 ];
 
 const STAGES = [

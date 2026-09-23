@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getStore } from '../../../lib/store';
+import { demoSid, requestPropertyId, requestStore } from '../../../lib/demo/context';
+import { recomputeDemoSandbox } from '../../../lib/demo/recompute';
 import { processBundle, type Bundle } from '../../../lib/ingest';
 import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
 import { requireRole } from '../../../lib/auth/guard';
@@ -19,8 +21,17 @@ export async function POST(req: NextRequest) {
   const gate = await requireRole('manager');
   if (!gate.ok) return gate.response;
 
-  const propertyId = new URL(req.url).searchParams.get('propertyId') ?? DEFAULT_PROPERTY_ID;
+  const propertyId = new URL(req.url).searchParams.get('propertyId') ?? requestPropertyId();
   if (!getProperty(propertyId)) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
+
+  // A sandbox has no collected bundle — nothing was ever collected for an
+  // invented hotel — so it rescores the demo world instead, through the same
+  // `recommendNight` that prices the real property. Baseline edits therefore
+  // move the numbers in the demo exactly as they do in production.
+  if (demoSid()) {
+    const snapshot = await recomputeDemoSandbox(requestStore(), propertyId);
+    return NextResponse.json({ ok: true, demo: true, recomputedFrom: snapshot.runAt, summary: { nights: snapshot.nights.length } });
+  }
 
   const store = getStore();
   const bundle = await store.get<Bundle>(`prop:${propertyId}:bundle:latest`);

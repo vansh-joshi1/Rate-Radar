@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { DEFAULT_PROPERTY_ID, getProperty, type Property } from '../../../lib/properties';
+import { getProperty, type Property } from '../../../lib/properties';
 import { haversineMiles } from '../../../lib/geo';
+import { demoSid, requestPropertyId } from '../../../lib/demo/context';
+import { DEMO_NEARBY_HOTELS } from '../../../lib/demo';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,10 +88,30 @@ async function nominatimSearch(q: string, property: Property): Promise<Suggestio
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const q = (url.searchParams.get('q') ?? '').trim();
-  const propertyId = url.searchParams.get('propertyId') ?? DEFAULT_PROPERTY_ID;
+  const propertyId = url.searchParams.get('propertyId') ?? requestPropertyId();
   const property = getProperty(propertyId);
   if (!property) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
   if (q.length < 3) return NextResponse.json({ results: [] });
+
+  // In a demo, search the invented directory rather than the live geocoders.
+  // A real lookup around the demo's coordinates would answer with real hotels,
+  // which would then be shown carrying invented prices — and it would point
+  // public demo traffic at two free community services for no good reason.
+  if (demoSid()) {
+    const needle = q.toLowerCase();
+    const results: Suggestion[] = DEMO_NEARBY_HOTELS.filter((h) => h.name.toLowerCase().includes(needle))
+      .map((h) => ({
+        name: h.name,
+        address: h.address,
+        lat: h.lat,
+        lng: h.lng,
+        distanceMi: haversineMiles(property.lat, property.lng, h.lat, h.lng),
+        isLodging: true,
+      }))
+      .sort((a, b) => a.distanceMi - b.distanceMi)
+      .slice(0, 6);
+    return NextResponse.json({ results });
+  }
 
   let results: Suggestion[] = [];
   try {

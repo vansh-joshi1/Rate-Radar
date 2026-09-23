@@ -1,4 +1,4 @@
-import { getStore } from '../../../lib/store';
+import { requestStore } from '../../../lib/demo/context';
 import { demoEventPerformance } from '../../../lib/demo';
 import type { HistoryRecord } from '../../../lib/scoring/types';
 import HistoryTable from '../../../components/HistoryTable';
@@ -13,7 +13,7 @@ const STATS = [
 ];
 
 export default async function Analytics() {
-  const store = getStore();
+  const store = requestStore();
   const actuals = (await store.get<Record<string, Record<string, number>>>('actuals')) ?? {};
   const historyDates = (await store.get<string[]>('history:dates')) ?? [];
   const history: HistoryRecord[] = [];

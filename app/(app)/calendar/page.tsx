@@ -2,7 +2,7 @@ import { loadSnapshot } from '../../../lib/dashboard-data';
 import { SampleBadge } from '../../../components/ui';
 import ReasoningCard from '../../../components/ReasoningCard';
 import MarketIntelligence, { type MIEvent, type MINight } from '../../../components/MarketIntelligence';
-import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
+import { requestProperty } from '../../../lib/demo/context';
 import { milesBetween, venueCoords } from '../../../lib/scoring/venues';
 import { chicagoToday } from '../../../lib/ingest';
 
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Calendar() {
   const { snapshot, isDemo } = await loadSnapshot();
-  const property = getProperty(DEFAULT_PROPERTY_ID)!;
+  const property = requestProperty();
 
   // Every scored event in the window, deduped by id — an event spanning
   // several nights appears once, dated to its first night.

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireRole } from '../../../lib/auth/guard';
 import { getStore } from '../../../lib/store';
+import { demoRefusal, demoSid } from '../../../lib/demo/context';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,14 @@ const THROTTLE_SECONDS = 15 * 60;
 export async function POST() {
   const gate = await requireRole('manager');
   if (!gate.ok) return gate.response;
+
+  // A real run dispatches CI and spends SerpApi searches out of a 250/month
+  // budget. That is somebody's actual money, and the demo is open to anyone.
+  if (demoSid()) {
+    return demoRefusal(
+      'Collection runs are disabled in the demo — a real run spends metered price searches. The sample data is already loaded.'
+    );
+  }
 
   const attempts = await getStore().incr('collect-now:throttle', THROTTLE_SECONDS);
   if (attempts > 1) {
