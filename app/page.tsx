@@ -204,7 +204,7 @@ export default function Landing() {
                   <ArrowIcon className="h-4 w-4" />
                 </Link>
                 <Link
-                  href="/login"
+                  href="/demo"
                   className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#c4c6cd] bg-white px-7 py-3.5 text-[14px] font-semibold text-[#0b1c30] transition-colors hover:bg-[#e5eeff]"
                 >
                   <PlayIcon className="h-4 w-4" />
@@ -377,8 +377,9 @@ export default function Landing() {
               <h3 className="font-display text-[20px] font-semibold text-[#0b1c30]">See it on real data</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-[#44474d]">
                 Rate Radar accounts are invite-based — the property owner adds teammates from Settings → Team.
-                Already invited? Sign in and you’re straight into the dashboard. Curious first? The live demo runs
-                on sample data shaped exactly like the real thing.
+                Already invited? Sign in and you’re straight into the dashboard. Curious first? The demo needs no
+                sign-in: it opens a sandbox of a fictional property, with every control live and your edits kept
+                to your own copy.
               </p>
 
               <div className="mt-7 space-y-3">
@@ -390,7 +391,7 @@ export default function Landing() {
                   <ArrowIcon className="h-4 w-4" />
                 </Link>
                 <Link
-                  href="/login"
+                  href="/demo"
                   className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#c4c6cd] px-4 py-3.5 text-[14px] font-semibold text-[#0b1c30] transition-colors hover:bg-[#e5eeff]"
                 >
                   <PlayIcon className="h-4 w-4" />

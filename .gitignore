@@ -9,7 +9,15 @@ next-env.d.ts
 .env*
 .claude/worktrees/
 
-# Agent skills are vendored copies, not source. skills-lock.json IS tracked —
-# it's the reproducible record; restore the trees with
+# Agent tooling: editor/assistant configuration, not project source. Kept out of
+# the repo so the published tree is the product and nothing else. All of it is
+# local-only and regenerable — the skills trees restore with
 # `npx skills experimental_install`.
-.claude/skills/
+.claude/
+.agents/
+.impeccable/
+skills-lock.json
+
+# Derived knowledge graph (graphify): ~2.4MB of generated JSON/HTML rebuilt from
+# the source tree on demand. The graph is an analysis artifact, not source.
+graphify-out/

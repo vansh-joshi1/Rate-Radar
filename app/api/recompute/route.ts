@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getStore } from '../../../lib/store';
+import { demoSid, requestStore } from '../../../lib/demo/context';
+import { recomputeDemoSandbox } from '../../../lib/demo/recompute';
 import { processBundle, type Bundle } from '../../../lib/ingest';
 import { propKey } from '../../../lib/properties';
 import { propertyFromRequest } from '../../../lib/api/property-request';
@@ -22,6 +24,20 @@ export async function POST(req: NextRequest) {
 
   const target = propertyFromRequest(req);
   if (!target.ok) return target.response;
+
+  // A sandbox has no collected bundle — nothing was ever collected for an
+  // invented hotel — so it rescores the demo world instead, through the same
+  // `recommendNight` that prices the real property. Baseline edits therefore
+  // move the numbers in the demo exactly as they do in production.
+  if (demoSid()) {
+    const snapshot = await recomputeDemoSandbox(requestStore(), target.propertyId);
+    return NextResponse.json({
+      ok: true,
+      demo: true,
+      recomputedFrom: snapshot.runAt,
+      summary: { nights: snapshot.nights.length },
+    });
+  }
 
   const store = getStore();
   const bundle = await store.get<Bundle>(propKey.bundleLatest(target.propertyId));

@@ -27,7 +27,14 @@ const TOP_NAV = [
   { href: '/alerts', label: 'System Health' },
 ];
 
-const PROPERTIES = [
+export interface ShellProperty {
+  id: string;
+  label: string;
+  sub: string;
+}
+
+/** The real deployment's switcher. A demo passes its own invented list instead. */
+const DEFAULT_PROPERTIES: ShellProperty[] = [
   { id: 'rri-franklin', label: 'Red Roof Inn', sub: 'Franklin, TN' },
   { id: 'sunrise-cookeville', label: 'Sunrise Suites', sub: 'Cookeville, TN (demo)' },
 ];
@@ -58,20 +65,27 @@ export default function AppShell({
   freshness,
   user,
   alerts = 0,
+  properties = DEFAULT_PROPERTIES,
+  isDemo = false,
 }: {
   children: ReactNode;
   freshness?: string;
   user?: ShellUser | null;
   /** Unhealthy collector sources — drives the notification dot. */
   alerts?: number;
+  /** Switcher entries. A demo sandbox supplies invented ones so the real
+   *  property is never named on a page a stranger can open. */
+  properties?: ShellProperty[];
+  /** Swaps session-only chrome (sign out) for sandbox equivalents. */
+  isDemo?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [propertyId, setPropertyId] = useState(PROPERTIES[0].id);
+  const [propertyId, setPropertyId] = useState(properties[0].id);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const property = PROPERTIES.find((p) => p.id === propertyId) ?? PROPERTIES[0];
+  const property = properties.find((p) => p.id === propertyId) ?? properties[0];
 
   function jump(e: React.FormEvent) {
     e.preventDefault();
@@ -139,7 +153,7 @@ export default function AppShell({
 
           {switcherOpen && (
             <div className="absolute left-md right-md z-50 mt-1 overflow-hidden rounded-lg border border-line bg-card shadow-overlay-sm">
-              {PROPERTIES.map((p) => (
+              {properties.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => {
@@ -179,10 +193,20 @@ export default function AppShell({
             <Icon name="settings" />
             <span className="font-label-md text-label-md uppercase">Settings</span>
           </Link>
-          <button onClick={() => signOut({ callbackUrl: '/login' })} className={`${navLink(false)} w-full`}>
-            <Icon name="logout" />
-            <span className="font-label-md text-label-md uppercase">Sign out</span>
-          </button>
+          {/* A demo visitor has no session to sign out of — `signOut()` would
+              leave the demo cookie in place and bounce them to a login screen
+              they never used. The way out of a sandbox is to leave the sandbox. */}
+          {isDemo ? (
+            <a href="/demo/exit" className={`${navLink(false)} w-full`}>
+              <Icon name="logout" />
+              <span className="font-label-md text-label-md uppercase">Exit demo</span>
+            </a>
+          ) : (
+            <button onClick={() => signOut({ callbackUrl: '/login' })} className={`${navLink(false)} w-full`}>
+              <Icon name="logout" />
+              <span className="font-label-md text-label-md uppercase">Sign out</span>
+            </button>
+          )}
         </div>
       </nav>
 

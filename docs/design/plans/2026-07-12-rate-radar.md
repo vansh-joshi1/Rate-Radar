@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 14 App Router (TypeScript), Upstash Redis REST, Playwright + cheerio in the Action, Resend, Vitest, zod, tsx.
 
-**Spec:** `docs/superpowers/specs/2026-07-12-rate-radar-design.md` — thresholds, scoring constants, and tiers defined there are normative.
+**Spec:** `docs/design/specs/2026-07-12-rate-radar-design.md` — thresholds, scoring constants, and tiers defined there are normative.
 
 ---
 

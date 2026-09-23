@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getStore } from '../../../lib/store';
+import { requestStore } from '../../../lib/demo/context';
 import { loadCurrentRates, saveCurrentRates, validateCurrentRates } from '../../../lib/current-rates';
 import { propertyFromRequest } from '../../../lib/api/property-request';
 import { requireRole } from '../../../lib/auth/guard';
@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const target = propertyFromRequest(req);
   if (!target.ok) return target.response;
-  const rates = await loadCurrentRates(getStore(), target.propertyId);
+  const rates = await loadCurrentRates(requestStore(), target.propertyId);
   return NextResponse.json({ propertyId: target.propertyId, rates });
 }
 
@@ -33,6 +33,6 @@ export async function PUT(req: NextRequest) {
   if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
   const rates = { tiers: body.tiers, updatedAt: new Date().toISOString() };
-  await saveCurrentRates(getStore(), target.propertyId, rates);
+  await saveCurrentRates(requestStore(), target.propertyId, rates);
   return NextResponse.json({ ok: true, rates });
 }

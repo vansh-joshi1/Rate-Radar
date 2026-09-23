@@ -3,27 +3,33 @@ import { toCompsetEntries, toParityChecks, toRoomRates } from '../collector/sour
 import type { SerpProperty, SerpPropertyDetails } from '../collector/sources/serpapi';
 import type { RoomTierRule } from '../collector/properties';
 import type { CompsetConfig } from '../lib/scoring/compset';
-import search from './fixtures/serp-search-franklin.json';
-import detail from './fixtures/serp-detail-redroof.json';
+import search from './fixtures/serp-search-kestrel.json';
+import detail from './fixtures/serp-detail-harborpine.json';
 
-/** Captured live 2026-08-23 for check-in 2026-08-23 — see the SerpApi design doc. */
+/**
+ * Fixtures are synthetic: real SerpApi response shape, invented market (the
+ * Kestrel Bay world in lib/demo.ts). Prices, ordering, channel count and the
+ * awkward edges — a reseller under our direct rate, one room listed at two
+ * prices on two channels, SerpApi's stray whitespace — are all preserved, so
+ * these assertions test exactly what they tested against the live capture.
+ */
 const PROPERTIES = search.properties as SerpProperty[];
 const DETAIL = detail as SerpPropertyDetails;
 
-const OURS = PROPERTIES.find((p) => /red roof/i.test(p.name ?? ''))!;
+const OURS = PROPERTIES.find((p) => /harbor pine/i.test(p.name ?? ''))!;
 
 const COMPSET: CompsetConfig = {
   competitors: [
-    'Comfort Inn Franklin',
-    'Clarion Pointe',
-    'Holiday Inn Franklin',
-    'Candlewood Suites',
-    'Quality Inn',
-    'Baymont',
-    'La Quinta',
-    'Super 8',
-    'Motel 6',
-    'Tru by Hilton',
+    'Rivermark Lodge Harbor',
+    'Cormorant Court',
+    'The Anchorage Hotel',
+    'Lantern Bay Suites',
+    'Pinecrest Inn',
+    'Gull Point',
+    'Tidewater Inn',
+    'Beacon Rest',
+    'Dockside Motel',
+    'Nyx by Wavecrest',
   ],
   priceSanity: { min: 40, max: 250 },
 };
@@ -38,24 +44,24 @@ describe('toCompsetEntries', () => {
     const { entries } = toCompsetEntries(PROPERTIES, COMPSET, { excludeToken: OURS.property_token });
 
     expect(entries).toEqual([
-      { name: 'Comfort Inn Franklin Highway 96', price: 66 },
-      { name: 'La Quinta Inn & Suites by Wyndham Nashville Franklin', price: 66 },
-      { name: 'Baymont by Wyndham Franklin/Cool Springs', price: 70 },
-      { name: 'Clarion Pointe Franklin - Nashville Area', price: 62 },
-      { name: 'Candlewood Suites Nashville - Franklin by IHG', price: 100 },
-      { name: 'Quality Inn Franklin - Cool Springs Area', price: 65 },
-      { name: 'Holiday Inn Franklin - Cool Springs by IHG', price: 88 },
-      { name: 'Tru by Hilton Franklin Cool Springs Nashville', price: 140 },
+      { name: 'Rivermark Lodge Harbor Road', price: 66 },
+      { name: 'Tidewater Inn & Suites by Harborline Kestrel Bay', price: 66 },
+      { name: 'Gull Point Motor Inn Kestrel Bay', price: 70 },
+      { name: 'Cormorant Court Kestrel Bay Area', price: 62 },
+      { name: 'Lantern Bay Suites Kestrel Bay by Harborline', price: 100 },
+      { name: 'Pinecrest Inn Kestrel Bay Area', price: 65 },
+      { name: 'The Anchorage Hotel Kestrel Bay by Harborline', price: 88 },
+      { name: 'Nyx by Wavecrest Kestrel Bay Harbor', price: 140 },
     ]);
   });
 
   it('names the watchlist hotels that are absent, so a gap is not silent', () => {
     const { notFound } = toCompsetEntries(PROPERTIES, COMPSET, { excludeToken: OURS.property_token });
-    expect(notFound).toEqual(['Super 8', 'Motel 6']);
+    expect(notFound).toEqual(['Beacon Rest', 'Dockside Motel']);
   });
 
   it('never counts our own property as a competitor', () => {
-    const { entries } = toCompsetEntries(PROPERTIES, { ...COMPSET, competitors: ['Red Roof'] }, {
+    const { entries } = toCompsetEntries(PROPERTIES, { ...COMPSET, competitors: ['Harbor Pine'] }, {
       excludeToken: OURS.property_token,
     });
     expect(entries).toEqual([]);
@@ -64,29 +70,29 @@ describe('toCompsetEntries', () => {
   it('returns the resolved tokens so later runs can match exactly', () => {
     const { resolvedTokens } = toCompsetEntries(PROPERTIES, COMPSET, { excludeToken: OURS.property_token });
 
-    expect(resolvedTokens['Clarion Pointe']).toBe(
-      PROPERTIES.find((p) => p.name === 'Clarion Pointe Franklin - Nashville Area')!.property_token
+    expect(resolvedTokens['Cormorant Court']).toBe(
+      PROPERTIES.find((p) => p.name === 'Cormorant Court Kestrel Bay Area')!.property_token
     );
-    expect(resolvedTokens['Super 8']).toBeUndefined();
+    expect(resolvedTokens['Beacon Rest']).toBeUndefined();
   });
 
   it('matches on a known token even when the listed name has drifted', () => {
     // Renamed past all recognition — only the token can still find it.
     const renamed = PROPERTIES.map((p) =>
-      p.name === 'Clarion Pointe Franklin - Nashville Area' ? { ...p, name: 'Cool Springs Lodge' } : p
+      p.name === 'Cormorant Court Kestrel Bay Area' ? { ...p, name: 'Mill Creek Lodge' } : p
     );
-    const token = PROPERTIES.find((p) => /Clarion/.test(p.name!))!.property_token!;
+    const token = PROPERTIES.find((p) => /Cormorant/.test(p.name!))!.property_token!;
 
-    const byName = toCompsetEntries(renamed, { ...COMPSET, competitors: ['Clarion Pointe'] }, {
+    const byName = toCompsetEntries(renamed, { ...COMPSET, competitors: ['Cormorant Court'] }, {
       excludeToken: OURS.property_token,
     });
     expect(byName.entries).toEqual([]);
 
-    const byToken = toCompsetEntries(renamed, { ...COMPSET, competitors: ['Clarion Pointe'] }, {
+    const byToken = toCompsetEntries(renamed, { ...COMPSET, competitors: ['Cormorant Court'] }, {
       excludeToken: OURS.property_token,
-      knownTokens: { 'Clarion Pointe': token },
+      knownTokens: { 'Cormorant Court': token },
     });
-    expect(byToken.entries).toEqual([{ name: 'Cool Springs Lodge', price: 62 }]);
+    expect(byToken.entries).toEqual([{ name: 'Mill Creek Lodge', price: 62 }]);
   });
 
   it('drops prices outside the sanity bounds', () => {
@@ -94,33 +100,33 @@ describe('toCompsetEntries', () => {
       excludeToken: OURS.property_token,
     });
     expect(entries.map((e) => e.price).every((p) => p <= 90)).toBe(true);
-    expect(entries.some((e) => e.name.startsWith('Tru by Hilton'))).toBe(false);
+    expect(entries.some((e) => e.name.startsWith('Nyx by Wavecrest'))).toBe(false);
   });
 
   it('reports a property with no rate as unavailable rather than missing', () => {
-    const soldOut = [{ name: 'Quality Inn Franklin - Cool Springs Area', property_token: 'tok' }];
+    const soldOut = [{ name: 'Pinecrest Inn Kestrel Bay Area', property_token: 'tok' }];
     const { entries, unavailable } = toCompsetEntries(soldOut, COMPSET, {});
 
     expect(entries).toEqual([]);
-    expect(unavailable).toEqual(['Quality Inn Franklin - Cool Springs Area']);
+    expect(unavailable).toEqual(['Pinecrest Inn Kestrel Bay Area']);
   });
 
   it('treats a hotel we have priced before but cannot see tonight as sold out, not missing', () => {
     // Sold-out properties sometimes vanish from results entirely rather than
     // appearing without a rate. A token we resolved on an earlier run is proof
     // Google does carry the hotel, so absence means no inventory — not no listing.
-    const withoutQualityInn = PROPERTIES.filter((p) => !/Quality Inn/.test(p.name ?? ''));
-    const knownToken = PROPERTIES.find((p) => /Quality Inn/.test(p.name!))!.property_token!;
+    const withoutPinecrest = PROPERTIES.filter((p) => !/Pinecrest Inn/.test(p.name ?? ''));
+    const knownToken = PROPERTIES.find((p) => /Pinecrest Inn/.test(p.name!))!.property_token!;
 
-    const { notFound, unavailable } = toCompsetEntries(withoutQualityInn, COMPSET, {
+    const { notFound, unavailable } = toCompsetEntries(withoutPinecrest, COMPSET, {
       excludeToken: OURS.property_token,
-      knownTokens: { 'Quality Inn': knownToken },
+      knownTokens: { 'Pinecrest Inn': knownToken },
     });
 
-    expect(unavailable).toContain('Quality Inn');
-    expect(notFound).not.toContain('Quality Inn');
-    // Super 8 and Motel 6 have never resolved a token — genuinely not carried.
-    expect(notFound).toEqual(['Super 8', 'Motel 6']);
+    expect(unavailable).toContain('Pinecrest Inn');
+    expect(notFound).not.toContain('Pinecrest Inn');
+    // Beacon Rest and Dockside Motel have never resolved a token — genuinely not carried.
+    expect(notFound).toEqual(['Beacon Rest', 'Dockside Motel']);
   });
 });
 
@@ -130,7 +136,7 @@ describe('toParityChecks', () => {
   it('marks our own listing as the official channel', () => {
     const official = checks.filter((c) => c.official);
     expect(official).toHaveLength(1);
-    expect(official[0].source).toBe('Red Roof Inn Nashville - Franklin');
+    expect(official[0].source).toBe('Harbor Pine Inn');
     expect(official[0].price).toBe(80);
   });
 

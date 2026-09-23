@@ -1,8 +1,38 @@
 # Rate Radar
 
-Internal rate-recommendation and rate-parity site for the **Red Roof Inn Franklin, TN** (RRI1430, 3915 Carothers Pkwy). It recommends a nightly rate from day-of-week patterns, nearby demand events, weather, and holidays; checks our own listed rate across every channel selling it; and emails an alert when something actually merits attention.
+**Revenue management for independent hotels.** It watches competitor prices, local
+events, weather and holidays, then recommends a nightly rate — with the arithmetic
+attached, including the signals it decided *not* to act on.
 
-**It never changes a price anywhere. It recommends — a human decides.**
+### ▶ [Try the live demo](https://rate-radar-six.vercel.app/demo) — no sign-up, every control live
+
+The demo opens a private sandbox of an invented hotel in an invented town. Edit the
+baselines, add competitors, record rates: the numbers really recompute, through the
+same engine that prices the real property. Your changes stay in your own sandbox and
+clear themselves after a day.
+
+---
+
+## What this actually is
+
+A working system, not a portfolio exercise. It runs twice a day for a real
+hotel — the [Red Roof Inn Franklin, TN](https://rate-radar-six.vercel.app) — pulling
+from six public data sources and emailing the owner when something merits attention.
+The architecture is multi-tenant (property registry, scoped storage keys, per-property
+API keys) because a second hotel was always the point, but exactly one property is
+live today.
+
+> **It never changes a price anywhere. It recommends — a human decides.**
+>
+> This is the load-bearing product fact, not a disclaimer. Competitors in revenue
+> management sell automation; this sells a defensible opinion and leaves the operator
+> holding the decision.
+
+<!-- Screenshots: drop PNGs in docs/screenshots/ and uncomment.
+| Dashboard | Reasoning |
+|---|---|
+| ![Executive overview](docs/screenshots/overview.png) | ![Rate reasoning](docs/screenshots/calendar.png) |
+-->
 
 ## How it works
 
@@ -15,95 +45,90 @@ GitHub Actions (2x/day CT, free)          Vercel (Hobby, free)
 │  ├ NWS alerts (2 counties)   │          │  ├ diff vs last-emailed      │
 │  ├ FAA (BNA status)          │          │  ├ store snapshot            │
 │  ├ Univ/MCC calendars        │          │  └ alert rules → Resend email│
-│  └ SerpApi (Google Hotels)   │          │ Dashboard (password-gated)   │
+│  └ SerpApi (Google Hotels)   │          │ Dashboard (session-gated)    │
 │    compset + parity, metered │          │ Upstash Redis (Marketplace)  │
 └─────────────────────────────┘          └──────────────────────────────┘
 ```
 
-Scoring is deterministic and transparent: every event gets an overflow-likelihood score (draw size vs. what downtown Nashville absorbs × travel-draw × day-of-week, compounded with diminishing returns for same-night events). Events judged too small to matter are **shown with that verdict**, never silently dropped. Details: `docs/superpowers/specs/2026-07-12-rate-radar-design.md`.
+The collector is deliberately dumb: it fetches, tags each source ✓ ok / ✗ failed /
+awaiting-key, and POSTs one bundle. All scoring, diffing and alerting happens in one
+place on ingest, so there is a single brain to reason about and a stored raw bundle to
+recompute from when the owner edits a baseline.
 
-## Setup (once, ~45 minutes)
+**Scoring is deterministic and inspectable.** Every event gets an overflow-likelihood
+score — draw size vs. what downtown Nashville absorbs, × travel-draw, × day-of-week,
+compounded with diminishing returns for same-night events. No model, no black box.
+Events judged too small to matter are **shown with that verdict** rather than silently
+dropped, because a recommendation you can only see the winners of isn't auditable.
+Full derivation: [`docs/design/specs/2026-07-12-rate-radar-design.md`](docs/design/specs/2026-07-12-rate-radar-design.md).
 
-Use accounts tied to the hotel/family business (a shared family email), not a personal throwaway — this needs to keep running long-term.
+## Worth a look, if you're reviewing this
 
-### 1. GitHub
-1. Create a GitHub account/org for the business, create a **private** repo `rate-radar`, push this code.
-2. Repo → Settings → Secrets and variables → Actions → add the secrets listed in `.env.example` under "collector vars": `TICKETMASTER_API_KEY`, `CFBD_API_KEY`, `NWS_USER_AGENT`, `DASHBOARD_URL`, `INGEST_SECRET`, `SERPAPI_KEY`.
+- **[`tests/role-guard.test.ts`](tests/role-guard.test.ts)** — a test that reads the route tree and fails the build if a new mutating endpoint ships without a role check. Routes authenticated by something other than a session are listed by name with the reason. The gap can't quietly reopen.
+- **[`collector/budget.ts`](collector/budget.ts)** — prices are metered (250 SerpApi searches/month). Before each run the collector reads its live balance and picks a tier: full, reduced, or minimal. It degrades instead of erroring and recovers on its own.
+- **[`.github/workflows/collect.yml`](.github/workflows/collect.yml)** — GitHub's cron is UTC and DST-unaware, and its scheduler drifts. The workflow fires at both candidate UTC hours and gates on *data freshness* rather than wall-clock hour, so it's correct in CST and CDT and immune to drift. It fails open: if the health check is unreachable, it collects rather than silently starving.
+- **[`lib/demo/context.ts`](lib/demo/context.ts)** — the public demo is a key-namespaced sandbox in the same Redis, so demo visitors exercise the real route handlers and the real role guard while reaching none of the live property's keys. Endpoints with effects outside the store (metered searches, email) refuse demo callers at their own door.
+- **[`lib/scoring/reason.ts`](lib/scoring/reason.ts)** — the reasoning strings the UI shows are generated from the same values that produced the number, so the explanation can't drift from the arithmetic.
 
-### 2. Vercel
-1. vercel.com → sign up with the same business account → Add New Project → import the GitHub repo. Framework auto-detects as Next.js; no build config needed.
-2. **Storage:** Project → Storage → Create Database → **Upstash (Redis)** from the Marketplace (this replaced the old "Vercel KV" — same thing, same free tier). Link it to the project; it auto-injects `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
-3. **Env vars:** Project → Settings → Environment Variables → add `SITE_PASSWORD`, `SESSION_SECRET`, `INGEST_SECRET` (same value as the GitHub secret), `RESEND_API_KEY`, `ALERT_EMAIL_TO`, `DASHBOARD_URL`.
-4. Deploy. Note the production URL — that's `DASHBOARD_URL` (set it in both Vercel and GitHub secrets).
+## Roles
 
-### 3. API keys (all free, ~5 min each)
-- **Ticketmaster**: developer.ticketmaster.com → create app → copy the **Consumer Key** (the secret is not needed).
-- **CFBD**: collegefootballdata.com → API Keys → key arrives by email.
-- **SerpApi**: serpapi.com → sign up → copy the private API key. This is where competitor and parity prices come from. The free plan allows **250 searches/month**, which is the whole reason the collector runs 2×/day over a 5-night horizon — see "Search budget" below. Then set `serpapi.query` and `serpapi.propertyToken` for the property in `config/properties.json`: the query is `hotels near <street address>`, and the token comes from any search response's `properties[].property_token` for your own hotel.
-
-### 4. Resend (email)
-1. resend.com → **create the account with the email address that should receive alerts** (see caveat below) → API Keys → create key.
-2. ⚠️ **Free-tier caveat:** without a verified domain, Resend only delivers to the account owner's own address, from `onboarding@resend.dev`. That's fine for this use — just create the account with the target address. If you later buy/control a domain: Resend → Domains → verify via DNS, then change `from` in `lib/alerts/email.ts` and set `ALERT_EMAIL_TO` to any list of addresses (e.g. the Yahoo address).
-
-### 5. Site password
-`SITE_PASSWORD` is whatever you choose; share it with the family. `SESSION_SECRET` and `INGEST_SECRET`: generate each with `openssl rand -hex 32`. The site also sets `robots.txt` disallow + `noindex` headers on every page — it won't appear in search engines.
-
-## Who can do what
-
-Three roles, assigned per teammate in **Settings → Team** (the owner is whoever `OWNER_EMAIL` names, always):
+Three roles, assigned per teammate in **Settings → Team**:
 
 | | viewer | manager | owner |
 |---|---|---|---|
-| Read the dashboard, compset, history, API docs | ✓ | ✓ | ✓ |
-| Baseline rates, current rates, watchlist, notes, recorded actuals | | ✓ | ✓ |
+| Read dashboard, compset, history, API docs | ✓ | ✓ | ✓ |
+| Baseline rates, current rates, watchlist, notes, actuals | | ✓ | ✓ |
 | Recompute, on-demand collection run | | ✓ | ✓ |
 | Invite/remove teammates | | | ✓ |
 
-Enforcement is **server-side**, in the route handler — `requireRole()` in `lib/auth/guard.ts`, one two-line prelude per mutating endpoint. Being signed in is not permission to write; a viewer's `POST` gets a 403 with the role it would need. The UI hides those controls too, but that's only courtesy — the check that matters is the one on the server.
+Enforcement is **server-side**, in the route handler — `requireRole()` in
+[`lib/auth/guard.ts`](lib/auth/guard.ts), one two-line prelude per mutating endpoint.
+Being signed in is not permission to write; a viewer's `POST` gets a 403 naming the
+role it would need. The UI hides those controls too, but that's courtesy — the check
+that matters is the one on the server.
 
-`tests/role-guard.test.ts` fails the build if a new mutating route ships without a role check, so the gap can't quietly reopen. Routes authenticated by something other than a session (`/api/ingest` via `INGEST_SECRET`, `/api/v1/*` via API key, the cron heartbeat) are listed there by name with the reason. The collector reads `/api/watchlist` with `INGEST_SECRET`; that secret opens `GET` only.
+## Run it locally
 
-## Verifying the pipeline end to end
+```bash
+npm install && npm run dev
+```
 
-1. GitHub → Actions → **collect** → Run workflow (manual runs bypass the hour gate).
-2. Watch the job log: the collection summary lists each source as ✓ ok / ✗ failed / awaiting-key, then the ingest summary shows nights scored, triggers, email status.
-3. Open the dashboard → tonight's recommendation + reasoning should render; the parity panel lists every channel Google sees selling you, with anything below your direct rate flagged.
-4. To test an email: temporarily lower a threshold in `lib/alerts/rules.ts` (e.g. `RATE_DELTA_USD = 0`), push, run the workflow, restore. Or wait — the first real event/holiday/rate move will send one.
-5. Local dev: `npm install && npm run dev` (uses `.data/store.json`, no Upstash needed). Collector locally: `npm run collect -- --dry-run --skip-rates`.
+No Upstash needed — the store falls back to a local JSON file (`.data/store.json`),
+and every page renders sample data when the store is empty. Visit `/demo` for the
+seeded sandbox.
 
-## Schedule
+```bash
+npm test
+```
 
-2 runs/day Central: 7:00 and 13:00. GitHub cron is UTC and ignores DST, so the workflow fires at both possible UTC hours and a data-freshness gate dedupes — correct in both CST and CDT. GitHub Actions scheduling can drift by a few minutes at busy times; that's normal, and the gate is drift-immune by design.
+168 tests across 19 files: scoring, alert rules, parsers against captured HTML
+fixtures, auth and role guards, store behaviour, and demo isolation.
 
-Keep these hours in step with `RUN_SLOTS_CT` in `collector/budget.ts` — the collector decides what to fetch based on which slot it thinks it's in.
+```bash
+npm run collect -- --dry-run --skip-rates
+```
 
-## Search budget
+Runs the collector without POSTing and without spending any metered searches.
 
-Prices are metered. The SerpApi free plan gives 250 searches/month, and the collector spends them down a fixed ladder rather than fetching everything every run:
+## Stack
 
-| Slot | What it buys | Cost |
-|---|---|---|
-| 07:00 | compset for tonight + the next 4 nights, and our parity/room rates | 6 |
-| 13:00 | compset for tonight again — the one rate still worth acting on today | 1 |
-
-That's ~217/month, leaving a 20-search reserve for on-demand runs. Before every run the collector reads the live balance and renewal date from SerpApi's free `/account` endpoint and picks a tier: **full** (7/day), **reduced** (4/day — horizon cut to tonight and tomorrow), or **minimal** (1/day, tonight only). It degrades instead of erroring, and recovers on its own as the cycle runs down. Current state is on **Settings → Integrations → Price search budget**, and an email fires if fewer than 10 searches remain.
-
-**The horizon starts at tonight, not tomorrow.** The Overview's headline recommendation is for tonight, and until 2026-08-23 tonight was the only night never priced — the most-read number on the site had no competitor bound under it.
-
-**There is no separate event-night fetch any more.** It used to pick nights scoring ≥40 for their own compset search, but `applyCompsetBound` never caps a night scoring ≥40 — so those searches only ever produced an informational note and never once moved a recommended price. The rolling horizon covers the same ground for nights within 5 days, and does affect pricing.
-
-One search returns every nearby hotel priced for a night, so the compset costs the same whether you track 3 competitors or 15. **"Collect now" is throttled to once per 15 minutes** because each press spends real searches.
-
-## Maintenance (the honest list)
-
-- **Holiday table** (`config/holidays.json`): extend once a year (~10 min). CMA Fest dates are estimates until announced — correct them when Nashville publishes dates.
-- **Scrapers rot.** University calendar pages change structure roughly yearly. When a source shows "parse failed / structure may have changed" on the dashboard, the selectors in `collector/sources/calendars.ts` need a 15-minute refresh. A broken scrape only skips that source — the rest of the run continues. Prices are no longer scraped at all, so they are not exposed to this.
-- **Music City Center** calendar is JavaScript-rendered; the plain fetch may consistently return nothing. If it stays empty, rely on the manual note field for known conventions.
-- **Not every hotel is in Google Hotels.** As of 2026-08-23, 8 of the 10 watchlist hotels are carried; Super 8 and Motel 6 are not, on either results page. They show under "not carried" in the budget panel rather than silently reading as $0. No number of searches will find them — either drop them from the watchlist or accept the gap.
-- **Compset** (`config/compset.json`): the competitor whitelist is editable — add/remove hotels as the market changes. Names only need to match once; the collector then pins each hotel by its stable `property_token`. Compset is a sanity bound on quiet nights only; nights with real event demand (score ≥40) are never capped.
-- **Parity is Google's view of the market**, which can lag a channel by hours, and it covers ~25 channels including resellers. Expect to see resellers below your direct rate — that is the point of the panel, not a bug in it.
-- **Corporate events** at Nissan NA / CHS campuses aren't published anywhere — that's what the dashboard's manual note field is for.
+Next.js 14 (App Router) · TypeScript · Tailwind · NextAuth v5 (magic link + shared
+password) · Upstash Redis · Vitest · GitHub Actions · Vercel. ~13,400 lines of
+TypeScript, 18 API routes.
 
 ## Repo layout
 
-`app/` dashboard + API routes · `lib/` scoring, alerts, ingest, store, auth · `collector/` GitHub Actions data collection · `config/` baseline rates + holidays (user-editable) · `tests/` vitest unit + fixture parser tests · `docs/superpowers/` design spec + implementation plan.
+| | |
+|---|---|
+| `app/` | dashboard pages + API routes (incl. versioned `/api/v1`) |
+| `lib/` | scoring, alerts, ingest, store, auth, demo sandbox |
+| `collector/` | GitHub Actions data collection + search budget |
+| `config/` | baseline rates, holidays, compset whitelist (user-editable) |
+| `tests/` | vitest unit + fixture parser tests |
+| `docs/design/` | design specs and implementation plans, including superseded ones |
+
+## Docs
+
+- **[docs/SETUP.md](docs/SETUP.md)** — standing up a live deployment: accounts, secrets, API keys, schedule, search budget, and the honest maintenance list.
+- **[PRODUCT.md](PRODUCT.md)** — what the product is for, who it's for, and the constraints future work must preserve.
+- **[DESIGN.md](DESIGN.md)** — the "Instrument Panel" design system: tokens, type scale, and the rules the UI is held to.

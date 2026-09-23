@@ -1,5 +1,5 @@
 import { loadSnapshot } from '../../../lib/dashboard-data';
-import { getStore } from '../../../lib/store';
+import { requestProperty, requestStore } from '../../../lib/demo/context';
 import { loadCurrentRates } from '../../../lib/current-rates';
 import { loadWatchlist } from '../../../lib/watchlist';
 import { chicagoToday } from '../../../lib/ingest';
@@ -9,7 +9,6 @@ import CompetitorInsights, {
   type CompsetNight,
   type HistoryPoint,
 } from '../../../components/CompetitorInsights';
-import { DEFAULT_PROPERTY_ID, getProperty } from '../../../lib/properties';
 import { DEFAULT_RATES_CONFIG } from '../../../lib/rates-config';
 import type { HistoryRecord } from '../../../lib/scoring/types';
 
@@ -17,14 +16,14 @@ export const dynamic = 'force-dynamic';
 
 export default async function Competitors() {
   const { snapshot, isDemo } = await loadSnapshot();
-  const store = getStore();
-  const property = getProperty(DEFAULT_PROPERTY_ID)!;
+  const store = requestStore();
+  const property = requestProperty();
 
   const compsets = (snapshot.compsets ?? (snapshot.compset ? [snapshot.compset] : [])).filter(Boolean);
 
   // Your rate: owner-entered (authoritative — you set your prices) beats the
   // scraped direct rate, which redroof.com's bot wall often blocks anyway.
-  const ownerRates = isDemo ? null : await loadCurrentRates(store, property.id);
+  const ownerRates = await loadCurrentRates(store, property.id);
   const ownerStandard = ownerRates?.tiers['standard'];
   const scrapedDirect = snapshot.parity.find((p) => p.official && p.status === 'ok' && p.price != null)?.price;
   const yourRate =

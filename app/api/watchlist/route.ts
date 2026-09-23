@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { auth } from '../../../auth';
-import { getStore } from '../../../lib/store';
+import { demoSid, requestStore } from '../../../lib/demo/context';
+import { DEMO_NEARBY_HOTELS } from '../../../lib/demo';
 import { propertyFromRequest, propertyIdFromRequest } from '../../../lib/api/property-request';
 import { hasHotel, loadWatchlist, normalizeName, saveWatchlist, type WatchlistHotel } from '../../../lib/watchlist';
 import { requireRole, type RoleGate } from '../../../lib/auth/guard';
@@ -28,9 +29,10 @@ function isCollector(req: NextRequest): boolean {
   return Boolean(process.env.INGEST_SECRET) && bearer === `Bearer ${process.env.INGEST_SECRET}`;
 }
 
-/** Read: the collector's secret, or any signed-in member. */
+/** Read: the collector's secret, a demo sandbox, or any signed-in member. */
 async function authorizedRead(req: NextRequest): Promise<boolean> {
   if (isCollector(req)) return true;
+  if (demoSid()) return true;
   return Boolean((await auth())?.user);
 }
 
@@ -40,6 +42,12 @@ async function authorizedWrite(): Promise<RoleGate> {
 }
 
 async function geocode(name: string, city: string): Promise<Pick<WatchlistHotel, 'lat' | 'lng' | 'address'>> {
+  // Invented hotels are not on the map. Answer from the demo directory instead
+  // of asking Nominatim about a place that does not exist.
+  if (demoSid()) {
+    const hit = DEMO_NEARBY_HOTELS.find((h) => h.name.toLowerCase() === name.trim().toLowerCase());
+    return hit ? { lat: hit.lat, lng: hit.lng, address: hit.address } : {};
+  }
   try {
     const q = `${name}, ${city}`;
     const res = await fetch(
@@ -63,7 +71,7 @@ export async function GET(req: NextRequest) {
   if (!(await authorizedRead(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   // Unvalidated on purpose — see propertyIdFromRequest.
   const propertyId = propertyIdFromRequest(req);
-  const hotels = await loadWatchlist(getStore(), propertyId);
+  const hotels = await loadWatchlist(requestStore(), propertyId);
   return NextResponse.json({ propertyId, hotels });
 }
 
@@ -86,7 +94,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'name must be 3–80 characters' }, { status: 400 });
   }
 
-  const store = getStore();
+  const store = requestStore();
   const hotels = await loadWatchlist(store, propertyId);
   if (hasHotel(hotels, clean)) return NextResponse.json({ error: 'already on the watchlist' }, { status: 409 });
   if (hotels.length >= 25) return NextResponse.json({ error: 'watchlist is capped at 25 hotels' }, { status: 400 });
@@ -111,7 +119,7 @@ export async function PATCH(req: NextRequest) {
   const { propertyId, property } = target;
 
   const { name } = (await req.json().catch(() => ({}))) as { name?: string };
-  const store = getStore();
+  const store = requestStore();
   const hotels = await loadWatchlist(store, propertyId);
   const idx = hotels.findIndex((h) => h.name.toLowerCase() === (name ?? '').toLowerCase());
   if (idx === -1) return NextResponse.json({ error: 'not on the watchlist' }, { status: 404 });
@@ -130,7 +138,7 @@ export async function DELETE(req: NextRequest) {
   // Unvalidated, as GET is — removal from an unknown id is a no-op 404 below.
   const propertyId = propertyIdFromRequest(req);
   const { name } = (await req.json().catch(() => ({}))) as { name?: string };
-  const store = getStore();
+  const store = requestStore();
   const hotels = await loadWatchlist(store, propertyId);
   const remaining = hotels.filter((h) => h.name.toLowerCase() !== (name ?? '').toLowerCase());
   if (remaining.length === hotels.length) return NextResponse.json({ error: 'not on the watchlist' }, { status: 404 });

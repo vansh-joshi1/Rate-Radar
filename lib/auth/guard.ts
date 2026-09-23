@@ -29,6 +29,14 @@ export type RoleGate = { ok: true; role: Role } | { ok: false; response: NextRes
  * files without hoisting NextAuth's whole graph into every one of them.
  */
 export async function requireRole(required: Role): Promise<RoleGate> {
+  // A demo visitor is an owner OF THEIR OWN SANDBOX. Granting the top role here
+  // is safe only because it is paired with `requestStore()`: every write this
+  // unlocks lands under the sandbox's key prefix. Routes that reach outside the
+  // store — spending metered API searches, sending mail — are not covered by
+  // that, and each one refuses demo callers explicitly at its own door.
+  const { demoSid } = await import('../demo/context');
+  if (demoSid()) return { ok: true, role: 'owner' };
+
   const { auth } = await import('../../auth');
   const session = await auth();
   if (!session?.user) {

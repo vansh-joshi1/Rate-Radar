@@ -1,5 +1,6 @@
 {
-  "name": "Red Roof Inn Nashville - Franklin",
+  "_comment": "Synthetic SerpApi google_hotels property-details response. Shape copied verbatim from a real 2026-08-23 capture. The PROPERTY is invented (Harbor Pine Inn, the demo world in lib/demo.ts) so no working hotel's rate structure is published here; the CHANNEL names are real, because they are the integrations the product actually reports against — lib/parity/channels.ts tracks 'booking' and 'expedia' by exact name, so a fixture of invented channels would test the policy against nothing. Prices, channel count (26), the sub-direct undercut, the duplicate-room-across-channels case and the stray whitespace SerpApi leaves on some room names are all preserved, because tests/serp-mapping.test.ts and tests/parity-channels.test.ts assert on each of them. Room-type names are generic hotel descriptions and identify nobody.",
+  "name": "Harbor Pine Inn",
   "property_token": "ChkIp-bNgcS2-t4MGg0vZy8xMXd4NzBydGY3EAE",
   "featured_prices": [
     {
@@ -160,7 +161,7 @@
   ],
   "prices": [
     {
-      "source": "Red Roof Inn Nashville - Franklin",
+      "source": "Harbor Pine Inn",
       "official": true,
       "rate_per_night": {
         "lowest": "$80",

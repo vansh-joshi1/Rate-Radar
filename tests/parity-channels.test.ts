@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { isTrackedChannel, trackedParity, CHANNEL_POLICY } from '../lib/parity/channels';
 import type { RateCheck } from '../lib/scoring/types';
 import { toParityChecks } from '../collector/sources/rates';
-import detail from './fixtures/serp-detail-redroof.json';
+import detail from './fixtures/serp-detail-harborpine.json';
 
 const check = (source: string, extra: Partial<RateCheck> = {}): RateCheck => ({
   source,
@@ -16,7 +16,7 @@ describe('isTrackedChannel', () => {
   it('keeps the direct listing on the official flag, whatever it is named', () => {
     // The official entry carries the property's own name, which differs per
     // property — matching it by name would work for exactly one hotel.
-    expect(isTrackedChannel(check('Red Roof Inn Nashville - Franklin', { official: true }))).toBe(true);
+    expect(isTrackedChannel(check('Harbor Pine Inn', { official: true }))).toBe(true);
     expect(isTrackedChannel(check('Some Other Inn & Suites', { official: true }))).toBe(true);
   });
 
@@ -63,7 +63,7 @@ describe('isTrackedChannel', () => {
 describe('trackedParity', () => {
   it('reduces a full 26-channel run to the three that count, in order', () => {
     const parity = [
-      check('Red Roof Inn Nashville - Franklin', { official: true, price: 80 }),
+      check('Harbor Pine Inn', { official: true, price: 80 }),
       check('Super.com', { price: 62 }),
       check('dealbase.com', { price: 64 }),
       check('Expedia.com', { price: 81 }),
@@ -72,7 +72,7 @@ describe('trackedParity', () => {
       check('Hotels.com', { price: 81 }),
     ];
     expect(trackedParity(parity).map((p) => p.source)).toEqual([
-      'Red Roof Inn Nashville - Franklin',
+      'Harbor Pine Inn',
       'Expedia.com',
       'Booking.com',
     ]);
@@ -94,7 +94,7 @@ describe('against the real SerpApi response', () => {
 
     const tracked = trackedParity(checks);
     expect(tracked.map((p) => p.source)).toEqual([
-      'Red Roof Inn Nashville - Franklin',
+      'Harbor Pine Inn',
       'Expedia.com',
       'Booking.com',
     ]);

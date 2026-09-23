@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { type Property } from '../../../lib/properties';
 import { propertyFromRequest } from '../../../lib/api/property-request';
 import { haversineMiles } from '../../../lib/geo';
+import { demoSid } from '../../../lib/demo/context';
+import { DEMO_NEARBY_HOTELS } from '../../../lib/demo';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,6 +92,26 @@ export async function GET(req: NextRequest) {
   if (!target.ok) return target.response;
   const { property } = target;
   if (q.length < 3) return NextResponse.json({ results: [] });
+
+  // In a demo, search the invented directory rather than the live geocoders.
+  // A real lookup around the demo's coordinates would answer with real hotels,
+  // which would then be shown carrying invented prices — and it would point
+  // public demo traffic at two free community services for no good reason.
+  if (demoSid()) {
+    const needle = q.toLowerCase();
+    const hits: Suggestion[] = DEMO_NEARBY_HOTELS.filter((h) => h.name.toLowerCase().includes(needle))
+      .map((h) => ({
+        name: h.name,
+        address: h.address,
+        lat: h.lat,
+        lng: h.lng,
+        distanceMi: haversineMiles(property.lat, property.lng, h.lat, h.lng),
+        isLodging: true,
+      }))
+      .sort((a, b) => a.distanceMi - b.distanceMi)
+      .slice(0, 6);
+    return NextResponse.json({ results: hits });
+  }
 
   let results: Suggestion[] = [];
   try {

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getStore } from '../../../lib/store';
+import { requestStore } from '../../../lib/demo/context';
 import { loadRatesConfig, saveRatesConfig, validateRatesConfig, type RatesConfig } from '../../../lib/rates-config';
 import { propertyFromRequest } from '../../../lib/api/property-request';
 import { requireRole } from '../../../lib/auth/guard';
@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const target = propertyFromRequest(req);
   if (!target.ok) return target.response;
-  const config = await loadRatesConfig(getStore(), target.propertyId);
+  const config = await loadRatesConfig(requestStore(), target.propertyId);
   return NextResponse.json({ propertyId: target.propertyId, config });
 }
 
@@ -32,6 +32,6 @@ export async function PUT(req: NextRequest) {
   const problem = validateRatesConfig(body.config);
   if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
-  await saveRatesConfig(getStore(), target.propertyId, body.config);
+  await saveRatesConfig(requestStore(), target.propertyId, body.config);
   return NextResponse.json({ ok: true, config: body.config });
 }

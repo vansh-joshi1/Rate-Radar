@@ -11,6 +11,8 @@ export interface Store {
   /** Atomic counter with TTL set on first increment — used for rate limiting. */
   incr(key: string, ttlSeconds: number): Promise<number>;
   del(key: string): Promise<void>;
+  /** Put a time limit on an existing key, whatever its type. */
+  expire(key: string, ttlSeconds: number): Promise<void>;
 }
 
 /** Upstash Redis via REST (Vercel Marketplace injects KV_REST_API_URL / KV_REST_API_TOKEN). */
@@ -62,6 +64,9 @@ class UpstashStore implements Store {
   }
   async del(key: string): Promise<void> {
     await this.cmd(['DEL', key]);
+  }
+  async expire(key: string, ttlSeconds: number): Promise<void> {
+    await this.cmd(['EXPIRE', key, ttlSeconds]);
   }
 }
 
@@ -126,6 +131,8 @@ export class FileStore implements Store {
     delete d.kv[key];
     this.write(d);
   }
+  /** No-op: the local file is a disposable dev artifact, so nothing sweeps it. */
+  async expire(): Promise<void> {}
 }
 
 let cached: Store | null = null;
@@ -139,4 +146,70 @@ export function getStore(): Store {
       ? new UpstashStore(url, token)
       : new FileStore(process.env.FILE_STORE_PATH ?? '.data/store.json');
   return cached;
+}
+
+/**
+ * Key-namespaced view of another store — the demo's isolation primitive.
+ *
+ * Every demo visitor gets their own prefix (`demo:{sid}:`), so a demo session
+ * reads and writes through the SAME route handlers, the same role guard and
+ * the same Store interface as a real operator, while touching none of the
+ * production keys. Nothing here filters or sanitizes: isolation is structural,
+ * a key that cannot be spelled cannot be reached.
+ *
+ * `incr` deliberately namespaces too, so a demo visitor hammering a throttled
+ * endpoint burns their own counter and not the real one.
+ */
+export class PrefixedStore implements Store {
+  /**
+   * @param ttlSeconds when set, every key this view writes is given (or has
+   *   refreshed) this expiry. A demo sandbox is thereby self-sweeping: no cron,
+   *   no cleanup job, and an abandoned session costs nothing after a day.
+   */
+  constructor(private inner: Store, private prefix: string, private ttlSeconds?: number) {}
+
+  private k(key: string): string {
+    return `${this.prefix}${key}`;
+  }
+
+  /** Refresh the sandbox expiry after a write. Best-effort: never fail a write over it. */
+  private async touch(key: string): Promise<void> {
+    if (!this.ttlSeconds) return;
+    await this.inner.expire(key, this.ttlSeconds).catch(() => {});
+  }
+
+  get<T>(key: string): Promise<T | null> {
+    return this.inner.get<T>(this.k(key));
+  }
+  async set(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
+    await this.inner.set(this.k(key), value, ttlSeconds ?? this.ttlSeconds);
+  }
+  hget<T>(key: string, field: string): Promise<T | null> {
+    return this.inner.hget<T>(this.k(key), field);
+  }
+  async hset(key: string, field: string, value: unknown): Promise<void> {
+    await this.inner.hset(this.k(key), field, value);
+    await this.touch(this.k(key));
+  }
+  async lpush(key: string, value: unknown): Promise<void> {
+    await this.inner.lpush(this.k(key), value);
+    await this.touch(this.k(key));
+  }
+  lrange<T>(key: string, start: number, stop: number): Promise<T[]> {
+    return this.inner.lrange<T>(this.k(key), start, stop);
+  }
+  incr(key: string, ttlSeconds: number): Promise<number> {
+    return this.inner.incr(this.k(key), ttlSeconds);
+  }
+  del(key: string): Promise<void> {
+    return this.inner.del(this.k(key));
+  }
+  expire(key: string, ttlSeconds: number): Promise<void> {
+    return this.inner.expire(this.k(key), ttlSeconds);
+  }
+}
+
+/** Wrap a store so every key it sees is written under `prefix`. */
+export function prefixed(inner: Store, prefix: string, ttlSeconds?: number): Store {
+  return new PrefixedStore(inner, prefix, ttlSeconds);
 }

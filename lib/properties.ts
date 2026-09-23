@@ -31,7 +31,27 @@ export const PROPERTIES: Property[] = [
   },
 ];
 
+/**
+ * The invented property the public demo prices. Deliberately NOT in
+ * `PROPERTIES`: it is not a hotel anyone collects for and it has no business
+ * appearing in the v1 API's property listing. It is resolvable by id, though,
+ * because the same route handlers serve demo sandboxes and check that the
+ * property they were asked about exists.
+ *
+ * Kestrel Bay is not a place, and Harbor Pine Inn is not a hotel. See lib/demo.ts
+ * for why the demo world is invented down to the last name.
+ */
+export const DEMO_PROPERTY: Property = {
+  id: 'demo-harbor-pine',
+  name: 'Harbor Pine Inn',
+  city: 'Kestrel Bay, OR',
+  timezone: 'America/Los_Angeles',
+  lat: 44.6285,
+  lng: -124.0538,
+};
+
 export function getProperty(id: string): Property | undefined {
+  if (id === DEMO_PROPERTY.id) return DEMO_PROPERTY;
   return PROPERTIES.find((p) => p.id === id);
 }
 

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { DEFAULT_PROPERTY_ID, getProperty, type Property } from '../properties';
+import { DEFAULT_PROPERTY_ID, DEMO_PROPERTY, getProperty, type Property } from '../properties';
+import { demoSid } from '../demo/context';
 
 /**
  * `?propertyId=` → a real property, or the 404 to early-return.
@@ -24,9 +25,16 @@ export type PropertyRequest =
  * `GET /api/watchlist` reads it this way on purpose: an unknown id there
  * returns an empty list rather than a 404, and the collector polls that
  * endpoint. Tightening it would be a behaviour change, not a refactor.
+ *
+ * The default is property-aware, not constant: a demo sandbox falls back to
+ * its invented property, never the live one. Putting that here rather than in
+ * each caller is the whole point of the shared prelude — a route added later
+ * gets it without knowing the demo exists.
  */
 export function propertyIdFromRequest(req: NextRequest | Request): string {
-  return new URL(req.url).searchParams.get('propertyId') ?? DEFAULT_PROPERTY_ID;
+  const explicit = new URL(req.url).searchParams.get('propertyId');
+  if (explicit) return explicit;
+  return demoSid() ? DEMO_PROPERTY.id : DEFAULT_PROPERTY_ID;
 }
 
 export function propertyFromRequest(req: NextRequest | Request): PropertyRequest {

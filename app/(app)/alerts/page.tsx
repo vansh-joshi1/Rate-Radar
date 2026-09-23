@@ -2,7 +2,7 @@ import { demoAlerts } from '../../../lib/demo';
 import { SampleBadge, SectionTitle } from '../../../components/ui';
 import { BellIcon, InfoIcon, ShieldIcon, TrendIcon, WarnIcon } from '../../../components/shell/Icons';
 import NoteBox from '../../../components/NoteBox';
-import { getStore } from '../../../lib/store';
+import { requestStore } from '../../../lib/demo/context';
 import { chicagoToday } from '../../../lib/ingest';
 import { loadSnapshot } from '../../../lib/dashboard-data';
 
@@ -17,7 +17,7 @@ export default async function Alerts() {
   // the automated alerts on this page.
   const { isDemo } = await loadSnapshot();
   const today = chicagoToday();
-  const note = isDemo ? '' : ((await getStore().hget<string>('notes', today)) ?? '');
+  const note = (await requestStore().hget<string>('notes', today)) ?? '';
 
   return (
     <div>

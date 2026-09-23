@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getStore } from '../../../lib/store';
+import { requestStore } from '../../../lib/demo/context';
 import { chicagoToday } from '../../../lib/ingest';
 import type { HistoryRecord, Snapshot } from '../../../lib/scoring/types';
 
 export async function GET() {
-  const store = getStore();
+  const store = requestStore();
   const today = chicagoToday();
   const [snapshot, note, actuals] = await Promise.all([
     store.get<Snapshot>('snapshot:latest'),
