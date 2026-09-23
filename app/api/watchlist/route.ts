@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { auth } from '../../../auth';
-import { demoSid, requestPropertyId, requestStore } from '../../../lib/demo/context';
+import { demoSid, requestStore } from '../../../lib/demo/context';
 import { DEMO_NEARBY_HOTELS } from '../../../lib/demo';
-import { getProperty } from '../../../lib/properties';
+import { propertyFromRequest, propertyIdFromRequest } from '../../../lib/api/property-request';
 import { hasHotel, loadWatchlist, normalizeName, saveWatchlist, type WatchlistHotel } from '../../../lib/watchlist';
 import { requireRole, type RoleGate } from '../../../lib/auth/guard';
 
@@ -41,10 +41,6 @@ async function authorizedWrite(): Promise<RoleGate> {
   return requireRole('manager');
 }
 
-function propertyIdFrom(req: NextRequest): string {
-  return new URL(req.url).searchParams.get('propertyId') ?? requestPropertyId();
-}
-
 async function geocode(name: string, city: string): Promise<Pick<WatchlistHotel, 'lat' | 'lng' | 'address'>> {
   // Invented hotels are not on the map. Answer from the demo directory instead
   // of asking Nominatim about a place that does not exist.
@@ -73,7 +69,8 @@ async function geocode(name: string, city: string): Promise<Pick<WatchlistHotel,
 
 export async function GET(req: NextRequest) {
   if (!(await authorizedRead(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  const propertyId = propertyIdFrom(req);
+  // Unvalidated on purpose — see propertyIdFromRequest.
+  const propertyId = propertyIdFromRequest(req);
   const hotels = await loadWatchlist(requestStore(), propertyId);
   return NextResponse.json({ propertyId, hotels });
 }
@@ -82,9 +79,9 @@ export async function POST(req: NextRequest) {
   const gate = await authorizedWrite();
   if (!gate.ok) return gate.response;
 
-  const propertyId = propertyIdFrom(req);
-  const property = getProperty(propertyId);
-  if (!property) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
+  const target = propertyFromRequest(req);
+  if (!target.ok) return target.response;
+  const { propertyId, property } = target;
 
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;
@@ -117,9 +114,9 @@ export async function PATCH(req: NextRequest) {
   const gate = await authorizedWrite();
   if (!gate.ok) return gate.response;
 
-  const propertyId = propertyIdFrom(req);
-  const property = getProperty(propertyId);
-  if (!property) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
+  const target = propertyFromRequest(req);
+  if (!target.ok) return target.response;
+  const { propertyId, property } = target;
 
   const { name } = (await req.json().catch(() => ({}))) as { name?: string };
   const store = requestStore();
@@ -138,7 +135,8 @@ export async function DELETE(req: NextRequest) {
   const gate = await authorizedWrite();
   if (!gate.ok) return gate.response;
 
-  const propertyId = propertyIdFrom(req);
+  // Unvalidated, as GET is — removal from an unknown id is a no-op 404 below.
+  const propertyId = propertyIdFromRequest(req);
   const { name } = (await req.json().catch(() => ({}))) as { name?: string };
   const store = requestStore();
   const hotels = await loadWatchlist(store, propertyId);

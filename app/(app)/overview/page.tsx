@@ -3,6 +3,8 @@ import { loadCurrentRates } from '../../../lib/current-rates';
 
 import { requestPropertyId, requestStore } from '../../../lib/demo/context';
 import { Chip, SampleBadge } from '../../../components/ui';
+import Icon from '../../../components/Icon';
+import { fmtWeekdayLong, fmtRange } from '../../../lib/date';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,24 +22,6 @@ export const dynamic = 'force-dynamic';
  * They only appear when the data is stale or a source failed — the moment
  * every number below becomes untrustworthy.
  */
-
-const Icon = ({ name, fill = false, className = '' }: { name: string; fill?: boolean; className?: string }) => (
-  <span className={`material-symbols-outlined ${className}`} {...(fill ? { 'data-weight': 'fill' } : {})} aria-hidden>
-    {name}
-  </span>
-);
-
-const fmtDate = (d: string) =>
-  new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC',
-  });
-
-const fmtRange = (from: string, to: string) => {
-  const opts = { month: 'short', day: 'numeric', timeZone: 'UTC' } as const;
-  const a = new Date(`${from}T12:00:00Z`).toLocaleDateString('en-US', opts);
-  const b = new Date(`${to}T12:00:00Z`).toLocaleDateString('en-US', opts);
-  return `${a} - ${b}, ${new Date(`${to}T12:00:00Z`).getUTCFullYear()}`;
-};
 
 const relative = (iso: string) => {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
@@ -89,12 +73,7 @@ function LogRow({ source, status, error, at }: { source: string; status: string;
   return (
     <div className="-mx-sm flex gap-sm rounded border-b border-line/50 px-sm py-sm transition-colors last:border-0 hover:bg-paper">
       <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded bg-paper">
-        <span
-          className={`material-symbols-outlined text-[14px] ${status === 'ok' ? 'text-muted' : 'text-warn'}`}
-          aria-hidden
-        >
-          {icon}
-        </span>
+        <Icon name={icon} className={`text-[14px] ${status === 'ok' ? 'text-muted' : 'text-warn'}`} />
       </div>
       <div>
         <p className="font-body-md text-body-md text-ink">{text}</p>
@@ -144,7 +123,7 @@ export default async function Overview() {
             Executive Overview
           </h2>
           <p className="mt-1 font-body-md text-body-md text-muted">
-            Live demand signals and transparent rate reasoning for {fmtDate(night.date)}.
+            Live demand signals and transparent rate reasoning for {fmtWeekdayLong(night.date)}.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-sm">

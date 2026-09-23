@@ -15,7 +15,7 @@ clear themselves after a day.
 
 ## What this actually is
 
-A working system, not a portfolio exercise. It runs three times a day for a real
+A working system, not a portfolio exercise. It runs twice a day for a real
 hotel — the [Red Roof Inn Franklin, TN](https://rate-radar-six.vercel.app) — pulling
 from six public data sources and emailing the owner when something merits attention.
 The architecture is multi-tenant (property registry, scoped storage keys, per-property
@@ -37,7 +37,7 @@ live today.
 ## How it works
 
 ```
-GitHub Actions (3x/day CT, free)          Vercel (Hobby, free)
+GitHub Actions (2x/day CT, free)          Vercel (Hobby, free)
 ┌─────────────────────────────┐          ┌──────────────────────────────┐
 │ collector/index.ts           │  POST    │ /api/ingest                  │
 │  ├ Ticketmaster (3 venues)   │ ───────► │  ├ score events per night    │

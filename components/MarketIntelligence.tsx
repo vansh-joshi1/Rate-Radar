@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { EventPin } from './EventsMap';
 import DemandCalendar from './DemandCalendar';
+import Icon from './Icon';
+import { fmtDay, fmtMonthYear } from '../lib/date';
 
 /*
  * Market Intelligence, built to the supplied design: an event map, a weather
@@ -23,12 +25,6 @@ const EventsMap = dynamic(() => import('./EventsMap'), {
   ssr: false,
   loading: () => <div className="absolute inset-0 z-0 bg-[#0B1C30]" />,
 });
-
-const Icon = ({ name, fill = false, className = '' }: { name: string; fill?: boolean; className?: string }) => (
-  <span className={`material-symbols-outlined ${fill ? 'fill' : ''} ${className}`} aria-hidden>
-    {name}
-  </span>
-);
 
 export interface MIEvent {
   id: string;
@@ -80,12 +76,6 @@ const KIND_LABEL: Record<string, string> = {
   other: 'Event',
 };
 
-const fmtDay = (d: string) =>
-  new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-
-const monthLabel = (d: string) =>
-  new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-
 export default function MarketIntelligence({ property, events, nights, weather, today, timeZone }: Props) {
   const [active, setActive] = useState<string[]>(FAMILIES.map((f) => f.key));
 
@@ -129,7 +119,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
         <div className="flex gap-sm">
           <span className="flex items-center gap-xs rounded border border-line bg-card px-md py-sm font-label-md text-label-md text-ink">
             <Icon name="calendar_today" className="text-[18px]" />
-            {nights.length > 0 ? monthLabel(nights[0].date) : '—'}
+            {nights.length > 0 ? fmtMonthYear(nights[0].date) : '—'}
           </span>
           <span className="flex items-center gap-xs rounded border border-line bg-card px-md py-sm font-label-md text-label-md text-muted">
             <Icon name="filter_list" className="text-[18px]" />

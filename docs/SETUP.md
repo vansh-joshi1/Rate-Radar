@@ -48,7 +48,7 @@ engines.
 
 ## Schedule
 
-3 runs/day Central: 7:00, 13:00, 18:00. GitHub cron is UTC and ignores DST, so the
+2 runs/day Central: 7:00 and 13:00. GitHub cron is UTC and ignores DST, so the
 workflow fires at both possible UTC hours and a data-freshness gate dedupes —
 correct in both CST and CDT. GitHub Actions scheduling can drift by a few minutes
 at busy times; that's normal, and the gate is drift-immune by design.
@@ -63,16 +63,25 @@ collector spends them down a fixed ladder rather than fetching everything every 
 
 | Slot | What it buys | Cost |
 |---|---|---|
-| 07:00 | tomorrow's compset + our parity/room rates + up to 3 event nights | 5 |
-| 13:00 | tomorrow's compset | 1 |
-| 18:00 | tomorrow's compset | 1 |
+| 07:00 | compset for tonight + the next 4 nights, and our parity/room rates | 6 |
+| 13:00 | compset for tonight again — the one rate still worth acting on today | 1 |
 
 That's ~217/month, leaving a 20-search reserve for on-demand runs. Before every run
 the collector reads the live balance and renewal date from SerpApi's free `/account`
-endpoint and picks a tier: **full** (7/day), **reduced** (4/day — event nights
-paused), or **minimal** (1/day). It degrades instead of erroring, and recovers on
-its own as the cycle runs down. Current state is on **Settings → Integrations →
-Price search budget**, and an email fires if fewer than 10 searches remain.
+endpoint and picks a tier: **full** (7/day), **reduced** (4/day — horizon cut to
+tonight and tomorrow), or **minimal** (1/day, tonight only). It degrades instead of
+erroring, and recovers on its own as the cycle runs down. Current state is on
+**Settings → Integrations → Price search budget**, and an email fires if fewer than
+10 searches remain.
+
+**The horizon starts at tonight, not tomorrow.** The Overview's headline
+recommendation is for tonight, and until 2026-08-23 tonight was the only night never
+priced — the most-read number on the site had no competitor bound under it.
+
+**There is no separate event-night fetch any more.** It used to pick nights scoring
+≥40 for their own compset search, but `applyCompsetBound` never caps a night scoring
+≥40 — so those searches only ever produced an informational note and never once moved
+a recommended price.
 
 One search returns every nearby hotel priced for a night, so the compset costs the
 same whether you track 3 competitors or 15. **"Collect now" is throttled to once per

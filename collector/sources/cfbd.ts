@@ -1,3 +1,4 @@
+import { todayIn } from '../../lib/date';
 import type { RawEvent, SourceResult } from '../../lib/scoring/types';
 
 /** collegefootballdata.com — Vanderbilt home games (clean API, no scraping). */
@@ -22,7 +23,8 @@ export async function collect(): Promise<SourceResult> {
       .map((g) => ({
         id: `cfbd:${g.id}`,
         name: `Vanderbilt vs ${g.awayTeam} (football)`,
-        date: new Date(g.startDate).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }),
+        // Kickoff instant → the Franklin calendar day the game falls on.
+        date: todayIn('America/Chicago', new Date(g.startDate)),
         venue: 'FirstBank Stadium',
         capacity: 34000,
         kind: 'sports',

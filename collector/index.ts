@@ -5,9 +5,7 @@ import { collect as faa } from './sources/faa';
 import { collect as calendars } from './sources/calendars';
 import { collect as rates } from './sources/rates';
 import { loadProperties } from './properties';
-import { pickCompsetDates } from './eventNights';
-import { chicagoToday } from '../lib/ingest';
-import type { RawEvent, SourceResult } from '../lib/scoring/types';
+import type { SourceResult } from '../lib/scoring/types';
 
 /**
  * Dumb collector: gather raw data from every source (isolated — one failing is
@@ -15,12 +13,12 @@ import type { RawEvent, SourceResult } from '../lib/scoring/types';
  * endpoint where all scoring/diffing/alerting happens.
  *
  * Market sources (events/weather/airport) run once and are shared across
- * properties; the SerpApi price searches run per property, sequentially —
- * which also keeps the per-run spend against the search budget predictable.
+ * properties; the SerpApi price fetches run per property, sequentially, each
+ * drawing from the same monthly search budget (see collector/budget.ts).
  *
  * Flags:
  *   --dry-run     print the bundles instead of POSTing
- *   --skip-rates  skip the SerpApi price searches (fast local testing, spends nothing)
+ *   --skip-rates  skip the price fetches (fast local testing, spends no searches)
  */
 
 /**
@@ -64,7 +62,7 @@ async function main() {
   const skipRates = process.argv.includes('--skip-rates');
   const properties = loadProperties();
 
-  // Stage 1: market sources (parallel, once). Their events feed stage 2's date picks.
+  // Stage 1: market sources (parallel, once). All free APIs.
   const apiNames = ['ticketmaster', 'cfbd', 'nws', 'faa', 'calendars'];
   const settled = await Promise.allSettled([ticketmaster(), cfbd(), nws(), faa(), calendars()]);
   const marketSources: SourceResult[] = settled.map((s, i) =>
@@ -77,12 +75,6 @@ async function main() {
           error: String(s.reason).slice(0, 300),
         }
   );
-
-  const events: RawEvent[] = marketSources
-    .filter((s) => ['ticketmaster', 'cfbd', 'calendars'].includes(s.source) && s.status === 'ok' && Array.isArray(s.data))
-    .flatMap((s) => s.data as RawEvent[]);
-  const eventNights = pickCompsetDates(events, chicagoToday());
-  if (eventNights.length > 0) console.log(`[compset] event nights selected: ${eventNights.join(', ')}`);
 
   // Stage 2: per-property rate checks + one bundle per property.
   let anyOk = false;
@@ -98,7 +90,7 @@ async function main() {
         prop.watchlistHotels = liveWatchlist;
       }
       try {
-        sources.push(await rates(eventNights, prop));
+        sources.push(await rates(prop));
       } catch (err) {
         sources.push({
           source: 'rates',

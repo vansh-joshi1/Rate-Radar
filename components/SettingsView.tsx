@@ -4,6 +4,7 @@ import BaselineEditor from './BaselineEditor';
 import TeamManager from './TeamManager';
 import CurrentRatesCard from './CurrentRates';
 import { Chip, SampleBadge } from './ui';
+import Icon from './Icon';
 
 /*
  * Settings, built to the supplied design: a vertical pill-tab rail beside
@@ -23,12 +24,6 @@ import { Chip, SampleBadge } from './ui';
  *     toggle would flip, appear saved, and change nothing about what lands in
  *     an inbox. The panel states the thresholds that actually fire instead.
  */
-
-const Icon = ({ name, fill = false, className = '' }: { name: string; fill?: boolean; className?: string }) => (
-  <span className={`material-symbols-outlined ${fill ? 'fill' : ''} ${className}`} aria-hidden>
-    {name}
-  </span>
-);
 
 const TABS = [
   { id: 'property', label: 'Property & Rates', icon: 'domain' },
@@ -98,17 +93,17 @@ interface Props {
 const TIER_COPY: Record<SearchBudget['tier'], { label: string; detail: string; tone: string }> = {
   full: {
     label: 'Full coverage',
-    detail: 'Tomorrow priced three times a day, parity once, plus every qualifying event night.',
+    detail: 'All five nights priced each morning, parity with them, and tonight re-priced at midday.',
     tone: 'text-[#029768]',
   },
   reduced: {
-    label: 'Reduced — event nights paused',
-    detail: 'Tomorrow and parity still run. Event nights are not being priced until the budget recovers.',
+    label: 'Reduced — horizon shortened',
+    detail: 'Tonight and tomorrow only, plus parity. Nights three to five are not being priced until the budget recovers.',
     tone: 'text-warn',
   },
   minimal: {
-    label: 'Minimal — tomorrow only',
-    detail: 'One search a day. No parity, no event nights. Pause manual runs or raise the plan.',
+    label: 'Minimal — tonight only',
+    detail: 'One search a day. No parity, no forward nights. Pause manual runs or raise the plan.',
     tone: 'text-bad',
   },
 };
@@ -436,14 +431,16 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
 
                   {budget.notFound.length > 0 && (
                     <p className="mt-sm font-body-md text-body-md text-muted">
-                      Not carried by Google Hotels, so never priced: {budget.notFound.join(', ')}. Remove them
-                      from the watchlist or accept that they stay blank — no number of searches will find them.
+                      Not seen in Google Hotels results yet: {budget.notFound.join(', ')}. Either Google does not
+                      carry them, or they were sold out every time we looked. Once one appears with a price we
+                      pin it by token, and from then on the two are told apart.
                     </p>
                   )}
 
                   {budget.unavailable.length > 0 && (
                     <p className="mt-sm font-body-md text-body-md text-muted">
-                      Listed but sold out for that night: {budget.unavailable.join(', ')}.
+                      Carried by Google but not sellable for that night — sold out, or off the market:{' '}
+                      {budget.unavailable.join(', ')}. These come back on their own; nothing to fix.
                     </p>
                   )}
 

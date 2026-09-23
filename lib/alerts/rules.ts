@@ -1,4 +1,6 @@
 import type { NightRecommendation, RateCheck, SourceResult, WeatherAlert } from '../scoring/types';
+import { noonUTC, fmtDowDay } from '../date';
+import { trackedParity } from '../parity/channels';
 
 export interface HolidayEntry {
   name: string;
@@ -63,12 +65,6 @@ const SOURCE_FAIL_THRESHOLD = 3;
 const SEARCH_BUDGET_FLOOR = 10;
 const SEVERE = new Set(['Severe', 'Extreme']);
 
-function fmtDate(date: string): string {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  });
-}
-
 function bucket(value: number, size: number): number {
   return Math.round(value / size);
 }
@@ -79,6 +75,11 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
   const newEmailedState = { ...input.prevEmailed };
   const newSeenEventIds = [...input.seenEventIds];
   const nowMs = new Date(input.now).getTime();
+
+  // Parity is reported against the tracked channels only, alerts included —
+  // so an email never names a channel no screen in the product shows. See
+  // lib/parity/channels.ts for what this deliberately stops catching.
+  const parity = trackedParity(input.parity);
 
   const isFresh = (fp: string): boolean => {
     const last = newFingerprints[fp];
@@ -103,7 +104,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
         fire(`rate:${n.date}:${bucket(std.recommended, RATE_DELTA_USD)}`, {
           type: 'rate-change',
           date: n.date,
-          line: `${fmtDate(n.date)}: recommended $${std.recommended} (was $${prev})${driver ? ` — ${driver.name}, ${driver.verdict.toLowerCase()}` : ''}.`,
+          line: `${fmtDowDay(n.date)}: recommended $${std.recommended} (was $${prev})${driver ? ` — ${driver.name}, ${driver.verdict.toLowerCase()}` : ''}.`,
         });
         newEmailedState[n.date] = std.recommended;
       }
@@ -112,10 +113,12 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
     }
   }
 
-  // 2) Parity gap across sources that actually reported a price.
-  // Google Hotels is excluded by owner request (its "official site" rate is a
-  // Google-side artifact) — shown on the dashboard as informational only.
-  const priced = input.parity.filter(
+  // 2) Parity gap across the tracked channels that reported a price — so the
+  // spread an email quotes is the spread the dashboard and API show.
+  // Google Hotels stays excluded by owner request (its "official site" rate is
+  // a Google-side artifact); that is a separate rule from the channel policy,
+  // and would still apply if Google ever arrived flagged official.
+  const priced = parity.filter(
     (p) => p.status === 'ok' && typeof p.price === 'number' && p.source !== 'google'
   );
   if (priced.length >= 2) {
@@ -138,7 +141,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
         fire(`event:${e.id}`, {
           type: 'new-event',
           date: n.date,
-          line: `New demand driver ${fmtDate(n.date)}: ${e.name} at ${e.venue} (score ${e.score})${e.verdict ? ` — ${e.verdict.toLowerCase()}` : ''}.`,
+          line: `New demand driver ${fmtDowDay(n.date)}: ${e.name} at ${e.venue} (score ${e.score})${e.verdict ? ` — ${e.verdict.toLowerCase()}` : ''}.`,
         });
       }
     }
@@ -161,7 +164,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
   const newSourceHealth: Record<string, SourceHealth> = {};
   const observations: { name: string; ok: boolean }[] = [
     ...(input.sources ?? []).map((s) => ({ name: s.source, ok: s.status === 'ok' })),
-    ...input.parity.map((p) => ({ name: `rate:${p.source}`, ok: p.status === 'ok' })),
+    ...parity.map((p) => ({ name: `rate:${p.source}`, ok: p.status === 'ok' })),
   ];
   for (const { name, ok } of observations) {
     const prev = input.sourceHealth?.[name] ?? { consecutiveFails: 0 };
@@ -202,12 +205,12 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
 
   // 6) Holiday within 14 days, flagged once
   for (const h of input.holidays) {
-    const days = (new Date(`${h.date}T12:00:00Z`).getTime() - nowMs) / 86400_000;
+    const days = (noonUTC(h.date).getTime() - nowMs) / 86400_000;
     if (days >= 0 && days <= HOLIDAY_LOOKAHEAD_DAYS) {
       fire(`holiday:${h.name}:${h.date}`, {
         type: 'holiday',
         date: h.date,
-        line: `${h.name} is coming up (${fmtDate(h.date)}) — expect ${h.drawProfile} travel demand.`,
+        line: `${h.name} is coming up (${fmtDowDay(h.date)}) — expect ${h.drawProfile} travel demand.`,
       });
     }
   }

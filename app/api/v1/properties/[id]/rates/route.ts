@@ -1,6 +1,7 @@
 import { propertyContext, provenance } from '../../../../../../lib/api/context';
 import { envelope } from '../../../../../../lib/api/auth';
 import { loadCurrentRates } from '../../../../../../lib/current-rates';
+import { trackedParity, CHANNEL_POLICY } from '../../../../../../lib/parity/channels';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,12 +10,17 @@ export const dynamic = 'force-dynamic';
  * (rate parity). Sources that could not be read this run are returned with
  * status "needs-manual-check" rather than omitted — absence of a price is
  * information, not an error.
+ *
+ * Only the tracked channels are reported (see lib/parity/channels.ts), and
+ * `parityGapUsd` is the spread across those same channels, so the figure
+ * always matches the rows beside it. `meta.channelPolicy` names the rule, so
+ * a consumer can tell three-of-many from three-of-three.
  */
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const ctx = await propertyContext(req, params.id);
   if (ctx instanceof Response) return ctx;
 
-  const checks = ctx.snapshot.parity.map((p) => ({
+  const checks = trackedParity(ctx.snapshot.parity).map((p) => ({
     source: p.source,
     official: p.official ?? false,
     status: p.status,
@@ -63,5 +69,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         }
       : null;
 
-  return Response.json(envelope({ checks, parityGapUsd: gap, currentRate, marketPosition }, provenance(ctx)));
+  return Response.json(
+    envelope(
+      { checks, parityGapUsd: gap, currentRate, marketPosition },
+      // Only this endpoint returns parity, so the policy is stated here rather
+      // than in the shared provenance block every v1 endpoint carries.
+      { ...provenance(ctx), channelPolicy: CHANNEL_POLICY },
+    ),
+  );
 }

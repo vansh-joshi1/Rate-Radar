@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { requestPropertyId, requestStore } from '../../../lib/demo/context';
-import { getProperty } from '../../../lib/properties';
+import { requestStore } from '../../../lib/demo/context';
 import { loadRatesConfig, saveRatesConfig, validateRatesConfig, type RatesConfig } from '../../../lib/rates-config';
+import { propertyFromRequest } from '../../../lib/api/property-request';
 import { requireRole } from '../../../lib/auth/guard';
 
 export const dynamic = 'force-dynamic';
@@ -12,23 +12,19 @@ export const dynamic = 'force-dynamic';
  * recommendation is computed from. Edits apply on the next collection run.
  */
 
-function propertyIdFrom(req: NextRequest): string {
-  return new URL(req.url).searchParams.get('propertyId') ?? requestPropertyId();
-}
-
 export async function GET(req: NextRequest) {
-  const propertyId = propertyIdFrom(req);
-  if (!getProperty(propertyId)) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
-  const config = await loadRatesConfig(requestStore(), propertyId);
-  return NextResponse.json({ propertyId, config });
+  const target = propertyFromRequest(req);
+  if (!target.ok) return target.response;
+  const config = await loadRatesConfig(requestStore(), target.propertyId);
+  return NextResponse.json({ propertyId: target.propertyId, config });
 }
 
 export async function PUT(req: NextRequest) {
   const gate = await requireRole('manager');
   if (!gate.ok) return gate.response;
 
-  const propertyId = propertyIdFrom(req);
-  if (!getProperty(propertyId)) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
+  const target = propertyFromRequest(req);
+  if (!target.ok) return target.response;
 
   const body = (await req.json().catch(() => null)) as { config?: RatesConfig } | null;
   if (!body?.config) return NextResponse.json({ error: 'body must be { config }' }, { status: 400 });
@@ -36,6 +32,6 @@ export async function PUT(req: NextRequest) {
   const problem = validateRatesConfig(body.config);
   if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
-  await saveRatesConfig(requestStore(), propertyId, body.config);
+  await saveRatesConfig(requestStore(), target.propertyId, body.config);
   return NextResponse.json({ ok: true, config: body.config });
 }

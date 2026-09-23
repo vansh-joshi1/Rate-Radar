@@ -7,6 +7,7 @@ import { demoPrefix, isValidDemoSid } from '../lib/demo/session';
 import { demoSnapshot, DEMO_NEARBY_HOTELS } from '../lib/demo';
 import { DEMO_PROPERTY, PROPERTIES, getProperty } from '../lib/properties';
 import { seedDemoSandbox } from '../lib/demo/context';
+import { isTrackedChannel } from '../lib/parity/channels';
 import { loadWatchlist } from '../lib/watchlist';
 import defaultCompset from '../config/compset.json';
 
@@ -76,12 +77,28 @@ describe('the demo world is invented', () => {
     }
   });
 
-  it('never attaches invented prices to a real hotel brand or booking channel', () => {
+  it('never attaches invented prices to a real hotel brand', () => {
     for (const term of ['Hampton', 'Holiday Inn', 'Quality Inn', 'Comfort Inn', 'Baymont', 'La Quinta',
-      'Super 8', 'Motel 6', 'Hilton', 'Marriott', 'Expedia', 'Booking.com', 'Hotels.com', 'Priceline',
-      'Agoda', 'Trip.com']) {
+      'Super 8', 'Motel 6', 'Hilton', 'Marriott', 'Best Western', 'Clarion', 'Candlewood', 'Drury']) {
       expect(fixture).not.toContain(term);
     }
+  });
+
+  /**
+   * Booking channels are the deliberate exception, decided 2026-09-22.
+   *
+   * lib/parity/channels.ts tracks 'booking' and 'expedia' by exact name, so a
+   * demo with invented channels would render its parity panel with the direct
+   * row alone — the headline feature demonstrating nothing. The market is
+   * invented; the channels are the integrations the product genuinely reports
+   * against, shown under a standing "sample data" badge.
+   */
+  it('still reaches the tracked channels, so the parity panel has something to show', () => {
+    const tracked = demoSnapshot().parity.filter(isTrackedChannel);
+    expect(tracked.some((c) => c.official)).toBe(true);
+    expect(tracked.map((c) => c.source)).toEqual(
+      expect.arrayContaining(['Booking.com', 'Expedia.com'])
+    );
   });
 
   it('never invents an event for a real venue or performer', () => {

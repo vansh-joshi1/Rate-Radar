@@ -1,10 +1,10 @@
 {
-  "_comment": "Synthetic SerpApi google_hotels property-details response. Shape copied verbatim from a real 2026-08-23 capture; the property and every booking channel are invented. Prices, channel count (26), the sub-direct undercut, the duplicate-room-across-channels case and the stray whitespace SerpApi leaves on some room names are all preserved, because tests/serp-mapping.test.ts asserts on each of them. Room-type names are generic hotel descriptions and identify nobody.",
+  "_comment": "Synthetic SerpApi google_hotels property-details response. Shape copied verbatim from a real 2026-08-23 capture. The PROPERTY is invented (Harbor Pine Inn, the demo world in lib/demo.ts) so no working hotel's rate structure is published here; the CHANNEL names are real, because they are the integrations the product actually reports against — lib/parity/channels.ts tracks 'booking' and 'expedia' by exact name, so a fixture of invented channels would test the policy against nothing. Prices, channel count (26), the sub-direct undercut, the duplicate-room-across-channels case and the stray whitespace SerpApi leaves on some room names are all preserved, because tests/serp-mapping.test.ts and tests/parity-channels.test.ts assert on each of them. Room-type names are generic hotel descriptions and identify nobody.",
   "name": "Harbor Pine Inn",
   "property_token": "ChkIp-bNgcS2-t4MGg0vZy8xMXd4NzBydGY3EAE",
   "featured_prices": [
     {
-      "source": "StayFinder",
+      "source": "Booking.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
@@ -27,7 +27,7 @@
       ]
     },
     {
-      "source": "Roamly",
+      "source": "Expedia.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
@@ -85,7 +85,7 @@
       ]
     },
     {
-      "source": "Voyagr",
+      "source": "Hotels.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
@@ -143,7 +143,7 @@
       ]
     },
     {
-      "source": "NightlyGo",
+      "source": "Priceline",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
@@ -169,126 +169,126 @@
       }
     },
     {
-      "source": "BunkRate",
+      "source": "Super.com",
       "rate_per_night": {
         "lowest": "$62",
         "extracted_lowest": 62
       }
     },
     {
-      "source": "Dealcove",
+      "source": "dealbase.com",
       "rate_per_night": {
         "lowest": "$64",
         "extracted_lowest": 64
       }
     },
     {
-      "source": "Comparo DEALS",
+      "source": "trivago DEALS",
       "rate_per_night": {
         "lowest": "$70",
         "extracted_lowest": 70
       }
     },
     {
-      "source": "Lodgings Direct",
+      "source": "Hotels In America",
       "rate_per_night": {
         "lowest": "$69",
         "extracted_lowest": 69
       }
     },
     {
-      "source": "Lodgely",
+      "source": "Traveluro",
       "rate_per_night": {
         "lowest": "$70",
         "extracted_lowest": 70
       }
     },
     {
-      "source": "TonightStay",
+      "source": "HotelTonight.com",
       "rate_per_night": {
         "lowest": "$73",
         "extracted_lowest": 73
       }
     },
     {
-      "source": "Roamly",
+      "source": "Expedia.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "Wanderdesk",
+      "source": "Agoda",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "NightlyGo",
+      "source": "Priceline",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "StayFinder",
+      "source": "Booking.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "Eventide",
+      "source": "Evendo",
       "rate_per_night": {
         "lowest": "$75",
         "extracted_lowest": 75
       }
     },
     {
-      "source": "Voyagr",
+      "source": "Hotels.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "Seekly",
+      "source": "goseek.com",
       "rate_per_night": {
         "lowest": "$76",
         "extracted_lowest": 76
       }
     },
     {
-      "source": "TripMosaic",
+      "source": "Trip.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "Trekly",
+      "source": "Travelocity.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "Waypoint",
+      "source": "Wego",
       "rate_per_night": {
         "lowest": "$76",
         "extracted_lowest": 76
       }
     },
     {
-      "source": "Orbital Stays",
+      "source": "Orbitz.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "ThriftStay",
+      "source": "CheapTickets.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
@@ -302,42 +302,42 @@
       }
     },
     {
-      "source": "Bluepillar",
+      "source": "Bluepillow.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "RoamHome",
+      "source": "HomeToGo",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "eNights",
+      "source": "eDreams",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81
       }
     },
     {
-      "source": "nüvo AI",
+      "source": "müv AI",
       "rate_per_night": {
         "lowest": "$80",
         "extracted_lowest": 80
       }
     },
     {
-      "source": "Finchly",
+      "source": "Kiwi.com",
       "rate_per_night": {
         "lowest": "$80",
         "extracted_lowest": 80
       }
     },
     {
-      "source": "Travelune",
+      "source": "Traveloka.com",
       "rate_per_night": {
         "lowest": "$81",
         "extracted_lowest": 81

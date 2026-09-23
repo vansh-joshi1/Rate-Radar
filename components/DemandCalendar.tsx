@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { todayIn } from '../lib/tz';
+import { todayIn, noonUTC, toIsoDate, fmtDowDayYear, fmtMonthYearLong } from '../lib/date';
+import Icon from './Icon';
 
 /*
  * Demand calendar — a real month grid, in the app's own language.
@@ -54,9 +55,6 @@ const cellClass = (t: Tier) => `${t.fill} ${t.text} ${t.border}`;
 const swatchClass = (t: Tier) => `${t.fill} border-line`;
 
 const tierFor = (score: number) => TIERS.find((t) => score >= t.min) ?? TIERS[TIERS.length - 1];
-
-const utc = (d: string) => new Date(`${d}T12:00:00Z`);
-const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 /**
  * Property-local today that stays correct in a tab left open past midnight.
@@ -125,8 +123,8 @@ export default function DemandCalendar({
      being omitted — a calendar with holes isn't a calendar. */
   const months = useMemo(() => {
     if (nights.length === 0) return [];
-    const first = utc(nights[0].date);
-    const last = utc(nights[nights.length - 1].date);
+    const first = noonUTC(nights[0].date);
+    const last = noonUTC(nights[nights.length - 1].date);
 
     const out: { key: string; label: string; cells: (string | null)[] }[] = [];
     const cursor = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1, 12));
@@ -138,14 +136,12 @@ export default function DemandCalendar({
       const lead = new Date(Date.UTC(year, month, 1, 12)).getUTCDay();
 
       const cells: (string | null)[] = Array<string | null>(lead).fill(null);
-      for (let d = 1; d <= daysIn; d++) cells.push(iso(new Date(Date.UTC(year, month, d, 12))));
+      for (let d = 1; d <= daysIn; d++) cells.push(toIsoDate(new Date(Date.UTC(year, month, d, 12))));
       while (cells.length % 7 !== 0) cells.push(null);
 
       out.push({
         key: `${year}-${month}`,
-        label: new Date(Date.UTC(year, month, 1, 12)).toLocaleDateString('en-US', {
-          month: 'long', year: 'numeric', timeZone: 'UTC',
-        }),
+        label: fmtMonthYearLong(new Date(Date.UTC(year, month, 1, 12))),
         cells,
       });
       cursor.setUTCMonth(month + 1);
@@ -176,9 +172,7 @@ export default function DemandCalendar({
 
   // Which rendered month holds today, if any — drives the "Today" jump.
   const todayIdx = useMemo(() => months.findIndex((m) => m.cells.includes(today)), [months, today]);
-  const todayLabel = utc(today).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
-  });
+  const todayLabel = fmtDowDayYear(today);
 
   const tracked = nights.length;
   const navBtn =
@@ -206,7 +200,7 @@ export default function DemandCalendar({
               title={canPrev ? `Back to ${months[idx - 1].label}` : 'No earlier month in the forecast window'}
               className={navBtn}
             >
-              <span className="material-symbols-outlined text-[18px]" aria-hidden>chevron_left</span>
+              <Icon name="chevron_left" className="text-[18px]" />
             </button>
             <span className="min-w-[132px] text-center font-headline-md text-[14px] text-ink">
               {month.label}
@@ -230,7 +224,7 @@ export default function DemandCalendar({
               title={canNext ? `Forward to ${months[idx + 1].label}` : 'No later month in the forecast window'}
               className={navBtn}
             >
-              <span className="material-symbols-outlined text-[18px]" aria-hidden>chevron_right</span>
+              <Icon name="chevron_right" className="text-[18px]" />
             </button>
           </div>
         )}
@@ -267,7 +261,7 @@ export default function DemandCalendar({
                   if (!date) return <div key={`pad-${month.key}-${i}`} className="min-h-[76px] rounded-lg" />;
 
                   const night = byDate.get(date);
-                  const day = utc(date).getUTCDate();
+                  const day = noonUTC(date).getUTCDate();
                   /* Computed BEFORE the out-of-window branch. It used to live
                      after it, so whenever the collector fell behind and today
                      sat outside the window, today went unmarked entirely — the

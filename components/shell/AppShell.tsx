@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import Icon from '../Icon';
 
 /*
  * App chrome, built to the executive-dashboard design: a 280px rail with the
@@ -12,12 +13,6 @@ import { signOut } from 'next-auth/react';
  * Colors come from the design tokens (globals.css) rather than hardcoded hex,
  * so pages not yet redesigned still sit coherently inside this chrome.
  */
-
-const Icon = ({ name, fill = false, className = '' }: { name: string; fill?: boolean; className?: string }) => (
-  <span className={`material-symbols-outlined ${className}`} {...(fill ? { 'data-weight': 'fill' } : {})} aria-hidden>
-    {name}
-  </span>
-);
 
 const NAV = [
   { href: '/overview', label: 'Dashboard', icon: 'dashboard' },

@@ -41,7 +41,7 @@ Competitor and parity prices come from a third-party rate-data API (SerpApi's Go
 
 ## Operating Context
 
-- **Collection runs 3×/day Central** (7:00, 13:00, 18:00) via GitHub Actions, POSTing a bundle to `/api/ingest`. Down from 7×/day: prices are now metered, and the schedule is sized to the search budget (`RUN_SLOTS_CT` in `collector/budget.ts`).
+- **Collection runs 2×/day Central** (7:00, 13:00) via GitHub Actions, POSTing a bundle to `/api/ingest`. Down from 7×/day: prices are now metered, and the schedule is sized to the search budget (`RUN_SLOTS_CT` in `collector/budget.ts`). The compset horizon is a rolling five nights starting tonight.
 - **Sources:** Ticketmaster (3 venues), College Football Data (Vanderbilt), NWS alerts (2 counties), FAA (BNA airport status), university and Music City Center calendars, and SerpApi's Google Hotels engine for competitor and parity prices.
 - **Alerts** go out by email (Resend) only when rules fire against the last-emailed state — not on every run.
 - **A manual note field exists for what no feed knows** — corporate events at nearby campuses (Nissan NA, CHS) are published nowhere. Human-entered context is a designed part of the pipeline, not a fallback.

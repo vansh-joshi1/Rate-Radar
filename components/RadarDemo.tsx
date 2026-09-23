@@ -473,7 +473,7 @@ export default function RadarDemo() {
           <span className="shrink-0 text-[11px] text-slate-400">too small to matter — shown anyway</span>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-700">Roamly listing $101</span>
+          <span className="text-slate-700">Expedia listing $101</span>
           <span className="shrink-0 rounded bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
             $12 parity gap
           </span>

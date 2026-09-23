@@ -110,6 +110,24 @@ describe('toCompsetEntries', () => {
     expect(entries).toEqual([]);
     expect(unavailable).toEqual(['Pinecrest Inn Kestrel Bay Area']);
   });
+
+  it('treats a hotel we have priced before but cannot see tonight as sold out, not missing', () => {
+    // Sold-out properties sometimes vanish from results entirely rather than
+    // appearing without a rate. A token we resolved on an earlier run is proof
+    // Google does carry the hotel, so absence means no inventory — not no listing.
+    const withoutPinecrest = PROPERTIES.filter((p) => !/Pinecrest Inn/.test(p.name ?? ''));
+    const knownToken = PROPERTIES.find((p) => /Pinecrest Inn/.test(p.name!))!.property_token!;
+
+    const { notFound, unavailable } = toCompsetEntries(withoutPinecrest, COMPSET, {
+      excludeToken: OURS.property_token,
+      knownTokens: { 'Pinecrest Inn': knownToken },
+    });
+
+    expect(unavailable).toContain('Pinecrest Inn');
+    expect(notFound).not.toContain('Pinecrest Inn');
+    // Beacon Rest and Dockside Motel have never resolved a token — genuinely not carried.
+    expect(notFound).toEqual(['Beacon Rest', 'Dockside Motel']);
+  });
 });
 
 describe('toParityChecks', () => {
@@ -125,16 +143,16 @@ describe('toParityChecks', () => {
   it('keeps every third-party channel, not just the four we used to scrape', () => {
     expect(checks).toHaveLength(26);
     const sources = checks.map((c) => c.source);
-    expect(sources).toContain('StayFinder');
-    expect(sources).toContain('Roamly');
-    expect(sources).toContain('BunkRate');
+    expect(sources).toContain('Booking.com');
+    expect(sources).toContain('Expedia.com');
+    expect(sources).toContain('Super.com');
   });
 
   it('exposes the undercut that matters — someone selling below our direct rate', () => {
     const official = checks.find((c) => c.official)!.price!;
     const cheapest = checks.filter((c) => !c.official).sort((a, b) => a.price! - b.price!)[0];
 
-    expect(cheapest.source).toBe('BunkRate');
+    expect(cheapest.source).toBe('Super.com');
     expect(cheapest.price).toBe(62);
     expect(cheapest.price!).toBeLessThan(official);
   });
@@ -164,7 +182,7 @@ describe('toRoomRates', () => {
   });
 
   it('takes the lowest rate for a room seen on more than one channel', () => {
-    // "Superior Room, 1 King Bed, Non Smoking" is $87 on Roamly and $89 on Voyagr.
+    // "Superior Room, 1 King Bed, Non Smoking" is $87 on Expedia and $89 on Hotels.com.
     const room = rooms.find((r) => r.room === 'Superior Room, 1 King Bed, Non Smoking');
     expect(room?.price).toBe(87);
   });

@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getProperty, type Property } from '../../../lib/properties';
+import { type Property } from '../../../lib/properties';
+import { propertyFromRequest } from '../../../lib/api/property-request';
 import { haversineMiles } from '../../../lib/geo';
-import { demoSid, requestPropertyId } from '../../../lib/demo/context';
+import { demoSid } from '../../../lib/demo/context';
 import { DEMO_NEARBY_HOTELS } from '../../../lib/demo';
 
 export const dynamic = 'force-dynamic';
@@ -86,11 +87,10 @@ async function nominatimSearch(q: string, property: Property): Promise<Suggestio
 }
 
 export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const q = (url.searchParams.get('q') ?? '').trim();
-  const propertyId = url.searchParams.get('propertyId') ?? requestPropertyId();
-  const property = getProperty(propertyId);
-  if (!property) return NextResponse.json({ error: 'unknown property' }, { status: 404 });
+  const q = (new URL(req.url).searchParams.get('q') ?? '').trim();
+  const target = propertyFromRequest(req);
+  if (!target.ok) return target.response;
+  const { property } = target;
   if (q.length < 3) return NextResponse.json({ results: [] });
 
   // In a demo, search the invented directory rather than the live geocoders.
@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
   // public demo traffic at two free community services for no good reason.
   if (demoSid()) {
     const needle = q.toLowerCase();
-    const results: Suggestion[] = DEMO_NEARBY_HOTELS.filter((h) => h.name.toLowerCase().includes(needle))
+    const hits: Suggestion[] = DEMO_NEARBY_HOTELS.filter((h) => h.name.toLowerCase().includes(needle))
       .map((h) => ({
         name: h.name,
         address: h.address,
@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
       }))
       .sort((a, b) => a.distanceMi - b.distanceMi)
       .slice(0, 6);
-    return NextResponse.json({ results });
+    return NextResponse.json({ results: hits });
   }
 
   let results: Suggestion[] = [];
