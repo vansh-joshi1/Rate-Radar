@@ -1,15 +1,15 @@
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import { loadSnapshot } from '../../../lib/dashboard-data';
 import { requestProperty, requestStore } from '../../../lib/demo/context';
 import { loadCurrentRates } from '../../../lib/current-rates';
 import { loadWatchlist } from '../../../lib/watchlist';
-import { chicagoToday } from '../../../lib/ingest';
-import { SampleBadge } from '../../../components/ui';
 import ParityGrid from '../../../components/ParityGrid';
+import { trackedParity } from '../../../lib/parity/channels';
 import CompetitorInsights, {
   type CompsetNight,
   type HistoryPoint,
 } from '../../../components/CompetitorInsights';
-import { DEFAULT_RATES_CONFIG } from '../../../lib/rates-config';
 import type { HistoryRecord } from '../../../lib/scoring/types';
 
 export const dynamic = 'force-dynamic';
@@ -70,34 +70,23 @@ export default async function Competitors() {
   }));
 
   return (
-    <div>
-      {isDemo && (
-        <div className="mb-md flex justify-end">
-          <SampleBadge />
-        </div>
-      )}
-
+    <div className={`${GeistSans.variable} ${GeistMono.variable} font-geist text-[#1a1b20] antialiased`}>
       <CompetitorInsights
         propertyId={property.id}
         propertyName={property.name}
         nights={nights}
         history={history}
         yourRate={yourRate?.price ?? null}
-        tiers={DEFAULT_RATES_CONFIG.tiers.map((t) => ({ tierId: t.id, label: t.label }))}
-        compSetName={watchlist.length > 0 ? `Watchlist (${watchlist.length} hotels)` : 'Default comp set'}
         initialWatchlist={watchlist.map((h) => h.name)}
+        isDemo={isDemo}
+        /*
+          Parity sits beside the price history because it answers the
+          neighbouring question: not "what are others charging" but "what are
+          others charging for MY rooms". Passed in only when a channel is
+          tracked, so the history panel can take the full row otherwise.
+        */
+        parity={trackedParity(snapshot.parity).length > 0 ? <ParityGrid parity={snapshot.parity} /> : null}
       />
-
-      {/*
-        Parity sits under the comp set because it answers the neighbouring
-        question: not "what are others charging" but "what are others charging
-        for MY rooms". It had no home on the page while prices came from four
-        scraped sources; now that every channel Google knows about is listed,
-        an undercutting reseller is a thing you can actually act on.
-      */}
-      <div className="mt-lg">
-        <ParityGrid parity={snapshot.parity} />
-      </div>
     </div>
   );
 }

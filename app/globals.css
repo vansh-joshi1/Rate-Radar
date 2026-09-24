@@ -41,7 +41,7 @@
   /* price-level dots on the watchlist grid: low / mid / high */
   --level-low-rgb: 132 249 195;
   --level-mid-rgb: 173 198 255;
-  --level-high-rgb: 255 218 214;
+  --level-high-rgb: 242 154 142;
 
   --ok-rgb: 2 151 104;
   --warn-rgb: 180 83 9;
