@@ -1,53 +1,51 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr/Buildings';
+import { CreditCardIcon } from '@phosphor-icons/react/dist/ssr/CreditCard';
+import { UsersThreeIcon } from '@phosphor-icons/react/dist/ssr/UsersThree';
+import { BellSimpleIcon } from '@phosphor-icons/react/dist/ssr/BellSimple';
+import { PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr/PlugsConnected';
+import { InfoIcon } from '@phosphor-icons/react/dist/ssr/Info';
 import BaselineEditor from './BaselineEditor';
 import TeamManager from './TeamManager';
 import CurrentRatesCard from './CurrentRates';
-import { Chip, SampleBadge } from './ui';
-import Icon from './Icon';
+import { Bezel } from './landing/Machined';
+import { Code, DIVIDER, FOCUS, Footnote, MONO_LABEL, PanelHead, StatusChip, type Tone } from './settings/parts';
 
 /*
- * Settings, built to the supplied design: a vertical pill-tab rail beside
- * stacked section cards.
+ * Settings, on the Machined Instrument language (DESIGN.md).
  *
- * Two panels depart from the mock's content, for the same reason as elsewhere:
+ * A pill tab bar over panels in double-bezel enclosures. The open tab lives in
+ * the URL hash, so /settings#team opens Team (the read-only notes elsewhere
+ * point there) and the back button steps between tabs. Arrow keys move along
+ * the tab bar.
  *
- *   - Integrations. The mock lists "Opera Cloud PMS" and "SiteMinder" as
- *     connected. This product has no PMS integration at all and its core
- *     promise is that it never writes a price anywhere, so those cards would
- *     be a flat fabrication on the one page people trust for configuration.
- *     The panel shows the integrations that genuinely exist — the collector's
- *     data sources — with their real health from the last run.
+ * Two panels depart from the original mock's content, for the same reason as
+ * elsewhere:
  *
- *   - Notifications. The mock has toggles. Alert rules live in
- *     lib/alerts/rules.ts and there is no store or endpoint behind them, so a
- *     toggle would flip, appear saved, and change nothing about what lands in
- *     an inbox. The panel states the thresholds that actually fire instead.
+ *   - Integrations. The mock listed "Opera Cloud PMS" and "SiteMinder" as
+ *     connected. This product has no PMS integration and its core promise is
+ *     that it never writes a price anywhere, so those cards would be a flat
+ *     fabrication on the one page people trust for configuration. The panel
+ *     shows the integrations that genuinely exist, the collector's data
+ *     sources, with their real health from the last run.
+ *
+ *   - Notifications. The mock had toggles. Alert rules live in
+ *     lib/alerts/rules.ts with no store or endpoint behind them, so a toggle
+ *     would flip, look saved, and change nothing about what lands in an inbox.
+ *     The panel states the thresholds that actually fire instead.
  */
 
 const TABS = [
-  { id: 'property', label: 'Property & Rates', icon: 'domain' },
-  { id: 'billing', label: 'Billing', icon: 'payments' },
-  { id: 'team', label: 'Team', icon: 'group' },
-  { id: 'notifications', label: 'Notifications', icon: 'notifications' },
-  { id: 'integrations', label: 'Integrations', icon: 'extension' },
+  { id: 'property', label: 'Property and rates', Icon: BuildingsIcon },
+  { id: 'billing', label: 'Billing', Icon: CreditCardIcon },
+  { id: 'team', label: 'Team', Icon: UsersThreeIcon },
+  { id: 'notifications', label: 'Notifications', Icon: BellSimpleIcon },
+  { id: 'integrations', label: 'Integrations', Icon: PlugsConnectedIcon },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
-
-const CARD = 'rounded-xl border border-line bg-card p-md md:p-xl';
-const FIELD_RO =
-  'w-full rounded-lg border border-line bg-paper px-4 py-2.5 font-body-md text-body-md text-ink';
-const LABEL = 'mb-1 block font-label-md text-label-md uppercase text-muted';
-
-function SectionHead({ title, action }: { title: string; action?: React.ReactNode }) {
-  return (
-    <div className="mb-lg flex flex-wrap items-center justify-between gap-sm border-b border-line pb-4">
-      <h3 className="font-headline-lg text-headline-lg text-ink">{title}</h3>
-      {action}
-    </div>
-  );
-}
+const isTab = (s: string): s is TabId => TABS.some((t) => t.id === s);
 
 export interface SourceHealth {
   source: string;
@@ -67,7 +65,7 @@ export interface Thresholds {
   dedupeHours: number;
 }
 
-/** Search-budget state from the last collector run — see collector/budget.ts. */
+/** Search-budget state from the last collector run, see collector/budget.ts. */
 export interface SearchBudget {
   tier: 'full' | 'reduced' | 'minimal';
   spent: number;
@@ -90,21 +88,21 @@ interface Props {
   isDemo: boolean;
 }
 
-const TIER_COPY: Record<SearchBudget['tier'], { label: string; detail: string; tone: string }> = {
+const TIER_COPY: Record<SearchBudget['tier'], { label: string; detail: string; tone: Tone }> = {
   full: {
     label: 'Full coverage',
-    detail: 'All five nights priced each morning, parity with them, and tonight re-priced at midday.',
-    tone: 'text-[#029768]',
+    detail: 'All five nights priced each morning, parity with them, and tonight priced again at midday.',
+    tone: 'ok',
   },
   reduced: {
-    label: 'Reduced — horizon shortened',
-    detail: 'Tonight and tomorrow only, plus parity. Nights three to five are not being priced until the budget recovers.',
-    tone: 'text-warn',
+    label: 'Reduced: shorter horizon',
+    detail: 'Tonight and tomorrow only, plus parity. Nights three to five are not priced until the budget recovers.',
+    tone: 'warn',
   },
   minimal: {
-    label: 'Minimal — tonight only',
-    detail: 'One search a day. No parity, no forward nights. Pause manual runs or raise the plan.',
-    tone: 'text-bad',
+    label: 'Minimal: tonight only',
+    detail: 'One search a day. No parity and no forward nights. Pause manual runs or raise the plan.',
+    tone: 'warn',
   },
 };
 
@@ -115,387 +113,462 @@ const relative = (iso: string) => {
   return hrs < 48 ? `${hrs}h ago` : `${Math.round(hrs / 24)}d ago`;
 };
 
-/** Human names for the collector's sources. */
-const SOURCE_LABEL: Record<string, string> = {
-  ticketmaster: 'Ticketmaster — concerts & shows',
-  cfbd: 'College Football Data — Vanderbilt games',
-  nws: 'National Weather Service — alerts',
-  faa: 'FAA — BNA airport status',
-  calendars: 'University & convention calendars',
-  rates: 'SerpApi — competitor prices & channel parity',
+/** Human names for the collector's sources: what it is, and what it feeds. */
+const SOURCE_LABEL: Record<string, { name: string; feeds: string }> = {
+  ticketmaster: { name: 'Ticketmaster', feeds: 'Concerts and shows' },
+  cfbd: { name: 'College Football Data', feeds: 'Vanderbilt games' },
+  nws: { name: 'National Weather Service', feeds: 'Weather alerts' },
+  faa: { name: 'FAA', feeds: 'BNA airport status' },
+  calendars: { name: 'University and convention calendars', feeds: 'Campus and convention dates' },
+  rates: { name: 'SerpApi', feeds: 'Competitor prices and channel parity' },
+  // The demo's sources are generic on purpose (lib/demo.ts names no real
+  // provider), so they get plain names rather than a raw id.
+  'events-api': { name: 'Events feed', feeds: 'Concerts, shows and conventions' },
+  'college-sports': { name: 'College sports feed', feeds: 'Home games' },
+  'weather-alerts': { name: 'Weather alerts feed', feeds: 'Active advisories' },
+  'hotel-prices': { name: 'Hotel price feed', feeds: 'Competitor prices and channel parity' },
 };
+
+const PANEL = 'space-y-6 p-6 md:p-8';
 
 export default function SettingsView({ property, tiers, sources, budget, thresholds, invoices, isDemo }: Props) {
   const [tab, setTab] = useState<TabId>('property');
+  const tabRefs = useRef(new Map<TabId, HTMLButtonElement>());
 
-  const tabBtn = (active: boolean) =>
-    `flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-5 py-2.5 font-body-md text-body-md transition-all duration-200 ${
-      active
-        ? 'bg-accent font-semibold text-white'
-        : 'font-medium text-muted hover:bg-paper hover:text-ink'
-    }`;
+  // The hash is the source of truth, so links and the back button both work.
+  useEffect(() => {
+    const read = () => {
+      const h = window.location.hash.slice(1);
+      if (isTab(h)) setTab(h);
+    };
+    read();
+    window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
+  }, []);
+
+  const choose = (id: TabId, focus = false) => {
+    setTab(id);
+    if (window.location.hash.slice(1) !== id) window.history.pushState(null, '', `#${id}`);
+    if (focus) tabRefs.current.get(id)?.focus();
+  };
+
+  const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = TABS.findIndex((t) => t.id === tab);
+    const next =
+      e.key === 'ArrowRight' ? (i + 1) % TABS.length
+      : e.key === 'ArrowLeft' ? (i - 1 + TABS.length) % TABS.length
+      : e.key === 'Home' ? 0
+      : e.key === 'End' ? TABS.length - 1
+      : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    choose(TABS[next].id, true);
+  };
+
+  const healthy = sources.filter((s) => s.status === 'ok').length;
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-xl">
-        <h2 className="mb-2 font-headline-xl text-headline-xl text-ink">Settings</h2>
-        <p className="font-body-lg text-body-lg text-muted">
-          Manage your property profile, preferences, and system integrations.
+    <div className="mx-auto max-w-5xl space-y-8">
+      <header>
+        <h1 className="text-balance text-[30px] font-semibold leading-[1.1] tracking-tighter md:text-[40px]">Settings</h1>
+        <p className="mt-2 max-w-[56ch] text-pretty text-[15px] leading-relaxed text-[#44474d]">
+          Your property, the rates the recommendations start from, who can sign in, and where the data comes from.
         </p>
+      </header>
+
+      {/* Sticky under the 64px top bar so it stays reachable while a long
+          panel scrolls; scrolls sideways on narrow screens rather than
+          wrapping into a ragged second row. Solid, not blurred: it scrolls
+          over content (DESIGN.md → the Blur-Is-Fixed Rule). */}
+      <div className="sticky top-16 z-30 -mx-1 bg-[#f8f9ff] px-1 py-2">
+        <div
+          role="tablist"
+          aria-label="Settings sections"
+          onKeyDown={onTabKey}
+          className="flex w-max max-w-full gap-1 overflow-x-auto rounded-full bg-white p-1 ring-1 ring-[#0b1c30]/[0.08] shadow-[0_12px_32px_-20px_rgba(11,28,48,0.35)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {TABS.map(({ id, label, Icon }) => {
+            const on = tab === id;
+            return (
+              <button
+                key={id}
+                ref={(node) => {
+                  if (node) tabRefs.current.set(id, node);
+                }}
+                id={`tab-${id}`}
+                role="tab"
+                type="button"
+                aria-selected={on}
+                aria-controls={`panel-${id}`}
+                tabIndex={on ? 0 : -1}
+                onClick={() => choose(id)}
+                className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-[14px] font-medium transition-[background-color,color,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] motion-reduce:transition-none ${FOCUS} ${
+                  on ? 'bg-[#e5eeff] text-[#085ac0]' : 'text-[#44474d] hover:bg-[#0b1c30]/[0.04] hover:text-[#1a1b20]'
+                }`}
+              >
+                <Icon weight={on ? 'regular' : 'light'} aria-hidden className="h-[18px] w-[18px]" />
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Tab rail runs across the top. Sticky under the 80px app header so it
-          stays reachable while a long panel scrolls; scrolls horizontally on
-          narrow screens rather than wrapping into a ragged second row. */}
-      <nav
-        className="sticky top-20 z-30 -mx-1 mb-lg flex gap-1 overflow-x-auto rounded-xl border border-line bg-card p-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        role="tablist"
-      >
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            role="tab"
-            aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
-            className={tabBtn(tab === t.id)}
-          >
-            <Icon name={t.icon} className="text-[20px]" />
-            <span>{t.label}</span>
-          </button>
-        ))}
-      </nav>
+      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="space-y-6">
+        {tab === 'property' && (
+          <>
+            <Bezel core={PANEL}>
+              <PanelHead title="Property profile">
+                <StatusChip title="Set in lib/properties.ts">Set in code</StatusChip>
+              </PanelHead>
+              <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                <Fact label="Property name">{property.name}</Fact>
+                <Fact label="Location">{property.city}</Fact>
+                <Fact label="Time zone">{property.timezone.replace(/_/g, ' ')}</Fact>
+                <Fact label="Coordinates" mono>
+                  {property.lat.toFixed(4)}, {property.lng.toFixed(4)}
+                </Fact>
+              </dl>
+              <div className={DIVIDER} />
+              <Footnote>
+                The property registry is configured in code (<Code>lib/properties.ts</Code>) because every stored record
+                is keyed by property id, and renaming one here would orphan its history. The rates below are yours to
+                edit.
+              </Footnote>
+            </Bezel>
 
-      <div className="flex flex-col gap-lg">
-          {tab === 'property' && (
-            <>
-              <section className={CARD}>
-                <SectionHead
-                  title="Property Profile"
-                  action={
-                    <span className="rounded bg-ink/5 px-2 py-1 font-label-md text-[10px] uppercase text-muted">
-                      Read-only
-                    </span>
-                  }
-                />
-                <div className="grid grid-cols-1 gap-md md:grid-cols-2">
-                  <div className="md:col-span-2">
-                    <label className={LABEL}>Property name</label>
-                    <input className={FIELD_RO} readOnly value={property.name} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className={LABEL}>Location</label>
-                    <input className={FIELD_RO} readOnly value={property.city} />
-                  </div>
-                  <div>
-                    <label className={LABEL}>Timezone</label>
-                    <input className={FIELD_RO} readOnly value={property.timezone} />
-                  </div>
-                  <div>
-                    <label className={LABEL}>Coordinates</label>
-                    <input
-                      className={`${FIELD_RO} font-data-mono tabular-nums`}
-                      readOnly
-                      value={`${property.lat.toFixed(4)}, ${property.lng.toFixed(4)}`}
-                    />
-                  </div>
-                </div>
-                <p className="mt-md text-xs text-muted">
-                  The property registry is code-configured (<code>lib/properties.ts</code>) because every stored
-                  record is keyed by property id — renaming one here would orphan its history. Rates below are
-                  fully editable.
-                </p>
-              </section>
+            <Bezel core={PANEL}>
+              <PanelHead title="Room tiers and baseline rates" />
+              <BaselineEditor propertyId={property.id} />
+            </Bezel>
 
-              <section className={CARD}>
-                <SectionHead title="Room Tiers & Baseline Rates" />
-                <BaselineEditor propertyId={property.id} />
-              </section>
+            <Bezel core={PANEL}>
+              <PanelHead title="Your current rates" />
+              <CurrentRatesCard propertyId={property.id} tiers={tiers} />
+            </Bezel>
+          </>
+        )}
 
-              <section className={CARD}>
-                <SectionHead title="Your Current Rates" />
-                <CurrentRatesCard propertyId={property.id} tiers={tiers} />
-              </section>
-            </>
-          )}
+        {tab === 'billing' && (
+          <Bezel core={PANEL}>
+            <PanelHead title="Billing and subscription">
+              {isDemo && <StatusChip title="Rendered from sample data, not a live feed">Sample data</StatusChip>}
+            </PanelHead>
 
-          {tab === 'billing' && (
-            <section className={CARD}>
-              <SectionHead
-                title="Billing & Subscription"
-                action={
-                  <div className="flex items-center gap-sm">
-                    <SampleBadge />
-                    <span className="rounded bg-[#029768] px-2 py-1 font-label-md text-[10px] font-bold uppercase text-white">
-                      Active Plan
-                    </span>
+            <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-3">
+              <Fact label="Plan" big>
+                Pro
+                <span className="mt-1 block text-[14px] font-normal tracking-normal text-[#44474d]">$29 a month</span>
+              </Fact>
+              <Fact label="Next invoice" big>
+                <span className="text-[#44474d]">None</span>
+                <span className="mt-1 block text-[14px] font-normal tracking-normal text-[#44474d]">
+                  No payment provider connected
+                </span>
+              </Fact>
+              <Fact label="Payment method" big>
+                Test card
+                <span className="mt-1 block text-[14px] font-normal tracking-normal text-[#44474d]">
+                  Stripe, ending <span className="font-geist-mono tabular-nums">4242</span>
+                </span>
+              </Fact>
+            </dl>
+
+            <div className={DIVIDER} />
+
+            <div>
+              <h3 className={MONO_LABEL}>Invoice history</h3>
+              {invoices.length === 0 ? (
+                <p className="mt-3 text-[14.5px] text-[#44474d]">No invoices yet.</p>
+              ) : (
+                <ul className="mt-2 divide-y divide-[#0b1c30]/[0.06]">
+                  {invoices.map((inv) => (
+                    <li key={inv.date} className="flex items-center justify-between gap-4 py-3">
+                      <span className="text-[14.5px]">{inv.date}</span>
+                      <span className="flex items-center gap-4">
+                        <span className="font-geist-mono text-[14px] tabular-nums">{inv.amount}</span>
+                        <StatusChip tone="ok">{inv.status}</StatusChip>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <Footnote>Billing is not wired to a payment provider yet. These figures are placeholders, not charges.</Footnote>
+          </Bezel>
+        )}
+
+        {tab === 'team' && (
+          <Bezel core={PANEL}>
+            <PanelHead title="Team" />
+            <TeamManager />
+          </Bezel>
+        )}
+
+        {tab === 'notifications' && (
+          <Bezel core={PANEL}>
+            <PanelHead title="Notifications">
+              <StatusChip title="Rules live in lib/alerts/rules.ts">Set in code</StatusChip>
+            </PanelHead>
+            <ul className="space-y-2">
+              {[
+                {
+                  title: 'Rate recommendation moved',
+                  trigger: `$${thresholds.rateDeltaUsd} or ${thresholds.rateDeltaPct}%`,
+                  desc: "Emails when a night's recommendation moves this much from the last figure you were emailed. It compares against what you were last told, not the last run, so small moves can't add up to a stream of emails.",
+                },
+                {
+                  title: 'Parity gap between channels',
+                  trigger: `$${thresholds.parityGapUsd} or ${thresholds.parityGapPct}%`,
+                  desc: 'Emails when your listed rate differs this much between your own site, Expedia and Booking.com.',
+                },
+                {
+                  title: 'New meaningful event',
+                  trigger: `Score ${thresholds.newEventMinScore}+`,
+                  desc: `Emails the first time an event scores this high. Holidays are flagged ${thresholds.holidayLookaheadDays} days ahead.`,
+                },
+                {
+                  title: 'A data source failing',
+                  trigger: `${thresholds.sourceFailThreshold} runs in a row`,
+                  desc: 'Emails after this many consecutive failed runs for one source, so a single flaky fetch stays quiet.',
+                },
+              ].map((rule) => (
+                <li
+                  key={rule.title}
+                  className="grid gap-x-6 gap-y-2 rounded-[1rem] bg-[#0b1c30]/[0.035] px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <div className="min-w-0">
+                    <h3 className="text-[15px] font-medium">{rule.title}</h3>
+                    <p className="mt-1 max-w-[64ch] text-pretty text-[13.5px] leading-relaxed text-[#44474d]">{rule.desc}</p>
                   </div>
-                }
-              />
-              <div className="mb-lg grid grid-cols-1 gap-md md:grid-cols-3">
-                <div className="rounded-lg border border-line bg-paper p-4">
-                  <p className="mb-1 font-label-md text-label-md uppercase text-muted">Current Plan</p>
-                  <p className="font-headline-md text-headline-md text-ink">Pro</p>
-                  <p className="mt-2 font-body-md text-body-md text-muted">$29 / month</p>
-                </div>
-                <div className="rounded-lg border border-line bg-paper p-4">
-                  <p className="mb-1 font-label-md text-label-md uppercase text-muted">Next Invoice</p>
-                  <p className="font-headline-md text-headline-md text-ink">—</p>
-                  <p className="mt-2 font-body-md text-body-md text-muted">Not yet billed</p>
-                </div>
-                <div className="rounded-lg border border-line bg-paper p-4">
-                  <p className="mb-1 font-label-md text-label-md uppercase text-muted">Payment Method</p>
-                  <div className="flex items-center gap-2">
-                    <Icon name="credit_card" className="text-muted" />
-                    <p className="font-body-md text-body-md text-ink">•••• 4242</p>
+                  <div className="flex items-start gap-3 sm:flex-col sm:items-end">
+                    <span className="font-geist-mono text-[14px] tabular-nums text-[#1a1b20]">{rule.trigger}</span>
+                    <StatusChip tone="ok">Active</StatusChip>
                   </div>
-                  <p className="mt-2 text-xs text-muted">Stripe test card</p>
-                </div>
-              </div>
-
-              <h4 className="mb-sm font-label-md text-label-md uppercase text-muted">Invoice history</h4>
-              <div className="overflow-x-auto rounded-lg border border-line">
-                <table className="w-full border-collapse text-sm">
-                  <thead>
-                    <tr>
-                      <th className="th">Date</th>
-                      <th className="th">Amount</th>
-                      <th className="th">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoices.map((inv) => (
-                      <tr key={inv.date} className="hover:bg-ink/[0.03]">
-                        <td className="td">{inv.date}</td>
-                        <td className="td tabular-nums">{inv.amount}</td>
-                        <td className="td"><Chip tone="ok">{inv.status}</Chip></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="mt-md text-xs text-muted">
-                Billing isn&apos;t wired to a payment provider yet — these figures are placeholders, not charges.
+                </li>
+              ))}
+            </ul>
+            <div className="flex items-start gap-3 rounded-[1rem] bg-[#e5eeff] px-4 py-3.5">
+              <InfoIcon weight="light" aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-[#085ac0]" />
+              <p className="text-pretty text-[14px] leading-relaxed text-[#1a1b20]">
+                These rules live in <Code>lib/alerts/rules.ts</Code> and repeat at most once every{' '}
+                {thresholds.dedupeHours} hours. Recipients come from <Code>ALERT_EMAIL_TO</Code>. They are shown rather
+                than toggled because a switch here would change nothing about what the alert engine sends.
               </p>
-            </section>
-          )}
+            </div>
+          </Bezel>
+        )}
 
-          {tab === 'team' && (
-            <section className={CARD}>
-              <SectionHead title="Team Management" />
-              <TeamManager />
-            </section>
-          )}
-
-          {tab === 'notifications' && (
-            <section className={CARD}>
-              <SectionHead
-                title="Notification Preferences"
-                action={
-                  <span className="rounded bg-ink/5 px-2 py-1 font-label-md text-[10px] uppercase text-muted">
-                    Configured in code
-                  </span>
-                }
-              />
-              <div className="divide-y divide-line">
-                {[
-                  {
-                    title: 'Rate recommendation moved',
-                    desc: `Emails when a night's recommendation shifts by $${thresholds.rateDeltaUsd} or ${thresholds.rateDeltaPct}% versus the last emailed figure — compared against what you were last told, not the last run, so it can't drip.`,
-                  },
-                  {
-                    title: 'Parity gap between sources',
-                    desc: `Emails when your listed rate differs by $${thresholds.parityGapUsd} or ${thresholds.parityGapPct}% across your own site, Expedia and Booking.com.`,
-                  },
-                  {
-                    title: 'New meaningful event detected',
-                    desc: `Emails the first time an event scores ${thresholds.newEventMinScore} or above. Holidays are flagged ${thresholds.holidayLookaheadDays} days ahead.`,
-                  },
-                  {
-                    title: 'Collector source failing',
-                    desc: `Emails after ${thresholds.sourceFailThreshold} consecutive failed runs for a source, so one flaky fetch stays quiet.`,
-                  },
-                ].map((rule) => (
-                  <div key={rule.title} className="flex items-start justify-between gap-md py-4">
-                    <div className="min-w-0">
-                      <h4 className="font-medium text-ink">{rule.title}</h4>
-                      <p className="mt-0.5 text-sm text-muted">{rule.desc}</p>
-                    </div>
-                    <Chip tone="ok">Active</Chip>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-lg flex items-start gap-3 rounded-lg border border-accent/20 bg-accent-muted p-4">
-                <Icon name="info" className="shrink-0 text-accent" />
-                <p className="font-body-md text-body-md text-ink">
-                  These rules live in <code>lib/alerts/rules.ts</code> and repeat at most once every{' '}
-                  {thresholds.dedupeHours} hours. Recipients come from <code>ALERT_EMAIL_TO</code>. They&apos;re
-                  shown rather than toggled because nothing here would change what the alert engine sends.
+        {tab === 'integrations' && (
+          <>
+            <Bezel core={PANEL}>
+              <PanelHead title="Data sources">
+                {isDemo ? (
+                  <StatusChip title="Rendered from sample data, not a live feed">Sample data</StatusChip>
+                ) : sources.length > 0 ? (
+                  <StatusChip tone={healthy === sources.length ? 'ok' : 'warn'}>
+                    {healthy} of {sources.length} healthy
+                  </StatusChip>
+                ) : null}
+              </PanelHead>
+              {sources.length === 0 ? (
+                <p className="rounded-[1.25rem] bg-[#0b1c30]/[0.05] px-5 py-4 text-[14.5px] text-[#44474d]">
+                  No collector run is recorded yet. Sources appear here after the first one.
                 </p>
-              </div>
-            </section>
-          )}
-
-          {tab === 'integrations' && (
-            <>
-              <section className={CARD}>
-                <SectionHead
-                  title="Data Sources"
-                  action={
-                    <span className="font-label-md text-label-md uppercase text-muted">
-                      {isDemo ? 'sample data' : `${sources.filter((s) => s.status === 'ok').length}/${sources.length} healthy`}
-                    </span>
-                  }
-                />
-                {sources.length === 0 ? (
-                  <p className="font-body-md text-body-md text-muted">
-                    No collector run recorded yet — sources appear after the first ingest.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {sources.map((s) => {
-                      const ok = s.status === 'ok';
-                      const bar = ok ? 'bg-[#029768]' : s.status === 'awaiting-key' ? 'bg-muted' : 'bg-bad';
-                      return (
-                        <div
-                          key={s.source}
-                          className="relative overflow-hidden rounded-lg border border-line bg-paper p-4"
-                        >
-                          <div className={`absolute right-0 top-0 h-full w-2 ${bar}`} />
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium text-ink">{SOURCE_LABEL[s.source] ?? s.source}</h4>
-                            {ok && <Icon name="check_circle" className="text-[16px] text-[#029768]" />}
+              ) : (
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {sources.map((s) => {
+                    const ok = s.status === 'ok';
+                    const awaiting = s.status === 'awaiting-key';
+                    const meta = SOURCE_LABEL[s.source] ?? { name: s.source, feeds: '' };
+                    return (
+                      <li key={s.source} className="rounded-[1rem] bg-[#0b1c30]/[0.035] px-4 py-3.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-[14.5px] font-medium leading-snug">{meta.name}</p>
+                            {meta.feeds && <p className="text-[13px] text-[#44474d]">{meta.feeds}</p>}
                           </div>
-                          <p
-                            className={`mt-1 font-label-md text-[11px] uppercase ${
-                              ok ? 'text-[#029768]' : s.status === 'awaiting-key' ? 'text-muted' : 'text-bad'
-                            }`}
-                          >
-                            {ok
-                              ? `Connected • ${relative(s.fetchedAt)}`
-                              : s.status === 'awaiting-key'
-                                ? 'API key not configured'
-                                : `Failed • ${relative(s.fetchedAt)}`}
-                          </p>
-                          {!ok && s.error && (
-                            <p className="mt-1 truncate text-xs text-muted" title={s.error}>
-                              {s.error}
-                            </p>
-                          )}
+                          <StatusChip tone={ok ? 'ok' : awaiting ? 'quiet' : 'bad'}>
+                            {ok ? 'Connected' : awaiting ? 'No API key' : 'Failing'}
+                          </StatusChip>
                         </div>
-                      );
-                    })}
+                        <p className={`${MONO_LABEL} mt-2 tabular-nums`}>
+                          {awaiting ? 'Add its key to start collecting' : `Last run ${relative(s.fetchedAt)}`}
+                        </p>
+                        {!ok && s.error && (
+                          <p className="mt-1 truncate text-[12.5px] text-[#44474d]" title={s.error}>
+                            {s.error}
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <Footnote>
+                These are the integrations this system actually has. It reads demand and price signals; it never
+                connects to a PMS or channel manager, because it never writes a price anywhere.
+              </Footnote>
+            </Bezel>
+
+            {budget && (
+              // Every figure here is the collector's own reading, so the core is navy.
+              <Bezel tone="data" core={`${PANEL} text-white`}>
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                  <h2 className="text-[22px] font-semibold tracking-tight">Price search budget</h2>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${
+                      TIER_COPY[budget.tier].tone === 'ok' ? 'bg-[#84f9c3]/15 text-[#84f9c3]' : 'bg-[#f5b56b]/15 text-[#f5c98f]'
+                    }`}
+                  >
+                    {TIER_COPY[budget.tier].label}
+                  </span>
+                </div>
+                <p className="max-w-[64ch] text-pretty text-[14.5px] leading-relaxed text-white/75">
+                  {TIER_COPY[budget.tier].detail}
+                </p>
+
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-4">
+                  {[
+                    { label: 'Searches left', value: String(budget.remaining) },
+                    {
+                      label: 'Used this cycle',
+                      value: budget.perMonth ? `${budget.usedThisMonth} of ${budget.perMonth}` : String(budget.usedThisMonth),
+                    },
+                    { label: 'Spent last run', value: String(budget.spent) },
+                    { label: 'Resets', value: budget.renewalDate ?? 'Unknown' },
+                  ].map((stat) => (
+                    <div key={stat.label} className="min-w-0">
+                      <dt className="font-geist-mono text-[12px] text-[#adc6ff]">{stat.label}</dt>
+                      <dd className="mt-1 text-[26px] font-semibold tracking-tight tabular-nums">{stat.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+
+                {(budget.skipped.length > 0 || budget.notFound.length > 0 || budget.unavailable.length > 0) && (
+                  <div className="space-y-2 border-t border-white/[0.08] pt-5 text-[14px] leading-relaxed">
+                    {budget.skipped.length > 0 && (
+                      <p className="text-[#f5c98f]">
+                        Skipped to save budget on the last run: {budget.skipped.map((s) => s.date).join(', ')}.
+                      </p>
+                    )}
+                    {budget.notFound.length > 0 && (
+                      <p className="text-white/70">
+                        Not seen in Google Hotels results yet: {budget.notFound.join(', ')}. Either Google does not carry
+                        them or they were sold out every time we looked. Once one appears with a price it is pinned by
+                        token, and from then on the two are told apart.
+                      </p>
+                    )}
+                    {budget.unavailable.length > 0 && (
+                      <p className="text-white/70">
+                        Carried by Google but not sellable that night, sold out or off the market:{' '}
+                        {budget.unavailable.join(', ')}. These come back on their own; nothing to fix.
+                      </p>
+                    )}
                   </div>
                 )}
-                <p className="mt-md text-xs text-muted">
-                  These are the integrations this system actually has. It reads demand and price signals — it
-                  never connects to a PMS or channel manager, because it never writes a price anywhere.
+
+                <p className="font-geist-mono text-[12px] leading-relaxed text-white/50">
+                  Prices come from SerpApi&apos;s Google Hotels engine on a metered plan, so each run draws from a monthly
+                  allowance. The collector reads the live balance before every run and narrows what it fetches rather
+                  than failing when the budget runs low.
                 </p>
-              </section>
+              </Bezel>
+            )}
 
-              {budget && (
-                <section className={CARD}>
-                  <SectionHead
-                    title="Price search budget"
-                    action={
-                      <span className={`font-label-md text-label-md uppercase ${TIER_COPY[budget.tier].tone}`}>
-                        {TIER_COPY[budget.tier].label}
-                      </span>
-                    }
-                  />
-                  <p className="mb-md font-body-md text-body-md text-ink">
-                    {TIER_COPY[budget.tier].detail}
-                  </p>
+            <Bezel core={PANEL}>
+              <PanelHead title="Public API">
+                <StatusChip>Version 1</StatusChip>
+              </PanelHead>
+              <p className="max-w-[64ch] text-pretty text-[14.5px] leading-relaxed text-[#44474d]">
+                A key-authenticated REST API serving collected prices and recommendations, scoped per property. Every
+                response carries its provenance (<Code>runAt</Code>, per-source status, confidence) so consumers can
+                judge freshness for themselves.
+              </p>
+              <ul className="space-y-2">
+                {[
+                  ['/api/v1/properties', 'Hotels this key can read, and how fresh each is'],
+                  ['/api/v1/properties/:id/rates', 'Your listed rate per source, and the parity gap'],
+                  ['/api/v1/properties/:id/compset?date=', 'Competitor prices per night, and the median'],
+                  ['/api/v1/properties/:id/recommendations?nights=', 'Nightly recommendations, reasoning and events'],
+                ].map(([path, returns]) => (
+                  <li
+                    key={path}
+                    className="grid gap-x-6 gap-y-1 rounded-[1rem] bg-[#0b1c30]/[0.035] px-4 py-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]"
+                  >
+                    <span className="min-w-0 break-all font-geist-mono text-[13px]">
+                      <span className="text-[#085ac0]">GET</span> {path}
+                    </span>
+                    <span className="text-[13.5px] text-[#44474d]">{returns}</span>
+                  </li>
+                ))}
+              </ul>
+              <Footnote>
+                Authenticate with <Code>Authorization: Bearer rr_…</Code> or <Code>x-api-key</Code>, up to 60 requests a
+                minute per key. Mint a key with <Code>npm run apikey -- --name &quot;label&quot;</Code>; it is stored
+                hashed and shown once.
+              </Footnote>
+            </Bezel>
 
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                    {[
-                      { label: 'Searches left', value: String(budget.remaining) },
-                      { label: 'Used this cycle', value: budget.perMonth ? `${budget.usedThisMonth} / ${budget.perMonth}` : String(budget.usedThisMonth) },
-                      { label: 'Spent last run', value: String(budget.spent) },
-                      { label: 'Resets', value: budget.renewalDate ?? 'unknown' },
-                    ].map((stat) => (
-                      <div key={stat.label} className="rounded-lg border border-line bg-paper p-4">
-                        <div className="font-label-md text-[10px] uppercase tracking-widest text-muted">
-                          {stat.label}
-                        </div>
-                        <div className="mt-1 text-xl font-semibold tabular-nums text-ink">{stat.value}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {budget.skipped.length > 0 && (
-                    <p className="mt-md font-body-md text-body-md text-warn">
-                      Skipped for budget on the last run:{' '}
-                      {budget.skipped.map((s) => s.date).join(', ')}.
-                    </p>
-                  )}
-
-                  {budget.notFound.length > 0 && (
-                    <p className="mt-sm font-body-md text-body-md text-muted">
-                      Not seen in Google Hotels results yet: {budget.notFound.join(', ')}. Either Google does not
-                      carry them, or they were sold out every time we looked. Once one appears with a price we
-                      pin it by token, and from then on the two are told apart.
-                    </p>
-                  )}
-
-                  {budget.unavailable.length > 0 && (
-                    <p className="mt-sm font-body-md text-body-md text-muted">
-                      Carried by Google but not sellable for that night — sold out, or off the market:{' '}
-                      {budget.unavailable.join(', ')}. These come back on their own; nothing to fix.
-                    </p>
-                  )}
-
-                  <p className="mt-md text-xs text-muted">
-                    Prices come from SerpApi&apos;s Google Hotels engine on a metered plan, so each run draws
-                    from a monthly allowance. The collector reads the live balance before every run and
-                    narrows what it fetches rather than failing when the budget tightens.
-                  </p>
-                </section>
-              )}
-
-              <section className={CARD}>
-                <SectionHead title="Public API (v1)" />
-                <p className="mb-md font-body-md text-body-md text-ink">
-                  Key-authenticated REST API serving collected prices and recommendations, scoped per property.
-                  Every response carries provenance — <code className="text-xs">runAt</code>, per-source status,
-                  confidence — so consumers can judge freshness themselves.
-                </p>
-                <div className="overflow-x-auto rounded-lg border border-line">
-                  <table className="w-full border-collapse text-sm">
-                    <thead>
-                      <tr><th className="th">Endpoint</th><th className="th">Returns</th></tr>
-                    </thead>
-                    <tbody>
-                      <tr><td className="td font-mono text-xs">GET /api/v1/properties</td><td className="td">Hotels this key can read + freshness</td></tr>
-                      <tr><td className="td font-mono text-xs">GET /api/v1/properties/:id/rates</td><td className="td">Own listed rate per source + parity gap</td></tr>
-                      <tr><td className="td font-mono text-xs">GET /api/v1/properties/:id/compset?date=</td><td className="td">Competitor prices per night, median</td></tr>
-                      <tr><td className="td font-mono text-xs">GET /api/v1/properties/:id/recommendations?nights=</td><td className="td">Nightly recs, reasoning, events</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-                <p className="mt-md text-xs text-muted">
-                  Auth: <code>Authorization: Bearer rr_…</code> or <code>x-api-key</code> · 60 req/min per key ·
-                  mint with <code>npm run apikey -- --name &quot;label&quot;</code> (hash-stored, shown once).
-                </p>
-              </section>
-
-              <section className={CARD}>
-                <SectionHead title="Ingest & Schedule" />
-                <label className={LABEL}>Webhook endpoint</label>
-                <input className={`${FIELD_RO} mb-md font-mono text-xs`} readOnly value="https://your-deployment.vercel.app/api/ingest" />
-                <label className={LABEL}>Secret</label>
-                <input className={`${FIELD_RO} font-mono text-xs`} readOnly value="Bearer ••••••••••••••••  (INGEST_SECRET)" />
-                <p className="mt-md font-body-md text-body-md text-ink">
-                  7:00 · 10:00 · 13:00 · 15:00 · 18:00 · 20:00 · 22:00{' '}
-                  <span className="text-muted">({property.timezone})</span>
-                </p>
-                <p className="mt-2 text-xs text-muted">
-                  GitHub cron is UTC and ignores DST — the workflow gates on the current Central hour, so it&apos;s
-                  correct in both CST and CDT.
-                </p>
-              </section>
-            </>
-          )}
+            <Bezel core={PANEL}>
+              <PanelHead title="Ingest and schedule" />
+              <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                <Fact label="Webhook endpoint" mono>
+                  https://your-deployment.vercel.app/api/ingest
+                </Fact>
+                <Fact label="Secret" mono>
+                  Bearer, from INGEST_SECRET
+                </Fact>
+              </dl>
+              <div>
+                <p className={MONO_LABEL}>Runs each day, {property.timezone.replace(/_/g, ' ')}</p>
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {['7:00', '10:00', '13:00', '15:00', '18:00', '20:00', '22:00'].map((t) => (
+                    <li key={t} className="rounded-full bg-[#0b1c30]/[0.05] px-3 py-1 font-geist-mono text-[13px] tabular-nums">
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <Footnote>
+                GitHub&apos;s cron runs in UTC and ignores daylight saving, so the workflow checks the current Central
+                hour before running. That keeps the schedule right in both CST and CDT.
+              </Footnote>
+            </Bezel>
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+/** One read-only fact: a mono label over its value. */
+function Fact({
+  label,
+  children,
+  mono = false,
+  big = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  mono?: boolean;
+  big?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className={MONO_LABEL}>{label}</dt>
+      <dd
+        className={`mt-1 break-words ${
+          big
+            ? 'text-[26px] font-semibold leading-tight tracking-tight'
+            : mono
+              ? 'font-geist-mono text-[14px] tabular-nums'
+              : 'text-[16px] font-medium'
+        }`}
+      >
+        {children}
+      </dd>
     </div>
   );
 }

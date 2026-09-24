@@ -1,4 +1,6 @@
 import type { NightRecommendation, ScoredEvent, Snapshot } from './scoring/types';
+import { DEMO_PROPERTY } from './properties';
+import { noonUTC, todayIn } from './date';
 
 /**
  * The demo world — sample data shaped exactly like a live Snapshot, used when
@@ -44,6 +46,28 @@ export const DEMO_NEARBY_HOTELS = [
   { name: 'Foghorn Bed & Breakfast', address: '62 Foghorn St, Kestrel Bay', lat: 44.6367, lng: -124.0649 },
   { name: 'Wavecrest Extended Stay', address: '505 Wavecrest Blvd, Alder Flats', lat: 44.6021, lng: -124.0918 },
 ];
+
+/**
+ * Where the invented venues stand, so the demo's event map has something to
+ * place. Real venues come from VENUE_COORDS in lib/scoring/venues.ts; these
+ * never go there, because that table feeds the live distance read and an
+ * invented stadium has no business in it.
+ *
+ * The map under them is real coastline (the demo property's coordinates are a
+ * real place), so each venue sits on land, in a spot that fits the fixture's
+ * story: downtown (Harborview) is up the coast and its overflow reaches
+ * Kestrel Bay, the stadium is inland, the 5K is down the road. The map hides
+ * real place names in the demo so none of this is pinned to a real town.
+ */
+export const DEMO_VENUE_COORDS: Record<string, { lat: number; lng: number }> = {
+  'harborview amphitheater': { lat: 44.8095, lng: -124.062 },
+  'fairmount field': { lat: 44.6215, lng: -123.9385 },
+  'mill creek park': { lat: 44.615, lng: -124.03 },
+};
+
+export function demoVenueCoords(venue: string): { lat: number; lng: number } | null {
+  return DEMO_VENUE_COORDS[venue.trim().toLowerCase()] ?? null;
+}
 
 function iso(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -108,7 +132,12 @@ function night(date: Date, overrides: Partial<NightRecommendation> = {}): NightR
 
 export function demoSnapshot(): Snapshot {
   const now = new Date();
-  const day = (n: number) => new Date(now.getTime() + n * 86400_000);
+  /* Nights are the property's local nights, the same as a live run. Counting
+     from the UTC date put tonight a day ahead every evening on the Pacific
+     coast, and the calendar then reported the collector as behind. Noon UTC
+     keeps getUTCDay() and the ISO date on the intended day. */
+  const tonight = noonUTC(todayIn(DEMO_PROPERTY.timezone, now));
+  const day = (n: number) => new Date(tonight.getTime() + n * 86400_000);
   const ago = (mins: number) => new Date(now.getTime() - mins * 60_000).toISOString();
 
   const nights: NightRecommendation[] = [
@@ -123,7 +152,7 @@ export function demoSnapshot(): Snapshot {
         upliftPct: 12,
         events: [
           event({ name: 'Neon Compass @ Harborview Amphitheater', date: iso(d), score: 82, tier: 'major', verdict: 'Sellout likely — downtown fills first, overflow reaches Kestrel Bay.' }),
-          event({ name: 'Cascadia State home game', date: iso(d), venue: 'Fairmount Field', capacity: 34000, kind: 'sports', score: 11, tier: 'too-small', verdict: 'Too small to matter — shown, not applied.' }),
+          event({ name: 'Cascadia State home game', date: iso(d), venue: 'Fairmount Field', capacity: 34000, attendanceEstimate: 4800, kind: 'sports', score: 11, tier: 'too-small', verdict: 'Too small to matter — shown, not applied.' }),
         ],
         tiers: [
           { tierId: 'standard', label: 'Standard Room', baselineMid: base, recommended: std, range: [std - 5, std + 5] },
@@ -145,7 +174,7 @@ export function demoSnapshot(): Snapshot {
       return night(d, {
         nightScore: 46,
         upliftPct: 5,
-        events: [event({ name: 'Cascadia State vs. Ridgeline', date: iso(d), venue: 'Fairmount Field', kind: 'sports', score: 46, tier: 'meaningful', verdict: 'Rivalry weekend — meaningful overflow expected.' })],
+        events: [event({ name: 'Cascadia State vs. Ridgeline', date: iso(d), venue: 'Fairmount Field', capacity: 34000, attendanceEstimate: 26500, kind: 'sports', score: 46, tier: 'meaningful', verdict: 'Rivalry weekend — meaningful overflow expected.' })],
         tiers: [
           { tierId: 'standard', label: 'Standard Room', baselineMid: base, recommended: std, range: [std - 5, std + 5] },
           { tierId: 'superior', label: 'Superior Room', baselineMid: base + 15, recommended: std + 15, range: [std + 10, std + 20] },
@@ -171,7 +200,7 @@ export function demoSnapshot(): Snapshot {
     })(),
     night(day(4), {
       nightScore: 8,
-      events: [event({ name: 'Harbor Run 5K', date: iso(day(4)), venue: 'Mill Creek Park', capacity: 2000, kind: 'other', score: 8, tier: 'too-small', verdict: 'Too small to matter — shown, not applied.' })],
+      events: [event({ name: 'Harbor Run 5K', date: iso(day(4)), venue: 'Mill Creek Park', capacity: 2000, attendanceEstimate: 1400, kind: 'other', score: 8, tier: 'too-small', verdict: 'Too small to matter — shown, not applied.' })],
     }),
     ...Array.from({ length: 16 }, (_, i) => night(day(5 + i))),
   ];

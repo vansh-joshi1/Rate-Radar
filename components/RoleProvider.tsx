@@ -31,7 +31,11 @@ export function useCanWrite(required: Role = 'manager'): boolean {
 export function ReadOnlyNote({ what, required = 'manager' }: { what: string; required?: Role }) {
   return (
     <p className="text-xs text-muted">
-      Your account is view-only. {what} needs the <strong>{required}</strong> role — ask an owner in Settings → Team.
+      Your account is view-only. {what} needs the <strong>{required}</strong> role. Ask an owner to change it in{' '}
+      <a href="/settings#team" className="underline decoration-current/30 underline-offset-2 hover:decoration-current">
+        Settings, Team
+      </a>
+      .
     </p>
   );
 }
