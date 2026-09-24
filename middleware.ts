@@ -34,7 +34,8 @@ export const config = {
     // the demo entry/exit routes (they mint the cookie this gate looks for),
     // NextAuth's own endpoints, ingest (bearer-token protected), the v1 API
     // (its own key auth), health, watchlist (self-auths: session OR ingest
-    // secret — the collector calls it), static assets
-    '/((?!$|demo|login|signup|onboarding|api/auth|api/ingest|api/v1|api/health|api/watchlist|api/cron|_next/static|_next/image|favicon.ico|robots.txt|originid.global.js).*)',
+    // secret — the collector calls it), static assets, and the favicon + link
+    // preview image, which unfurlers and signed-out tabs must be able to fetch
+    '/((?!$|demo|login|signup|onboarding|api/auth|api/ingest|api/v1|api/health|api/watchlist|api/cron|_next/static|_next/image|favicon.ico|icon.svg|opengraph-image|robots.txt|originid.global.js).*)',
   ],
 };

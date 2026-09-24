@@ -86,6 +86,15 @@
   --bad-rgb: 255 180 171;
 }
 
+/* In-page anchors glide rather than jump, except for viewers who asked for
+   less motion. The landing's floating nav covers the top ~5rem, so anchored
+   sections carry their own scroll-margin. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
   background: var(--bg-paper);
   color: rgb(var(--ink-rgb));
@@ -146,7 +155,69 @@ body {
   transform: translateX(4px);
 }
 
+/* Landing enter-on-scroll (components/Reveal.tsx). Only the `false` state is
+   styled, so an element with no attribute (pre-hydration, no JS) is visible. */
+/* Heavy fade-up: 64px of travel and a blur that resolves as it lands. The blur
+   is a one-shot filter on arrival, not on scroll, so it costs one paint. */
+.reveal {
+  transition:
+    opacity 900ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 900ms cubic-bezier(0.32, 0.72, 0, 1),
+    filter 900ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.reveal[data-shown='false'] {
+  opacity: 0;
+  transform: translate3d(0, 4rem, 0);
+  filter: blur(12px);
+}
+
+/* Landing hero sweep (components/landing/Backdrop.tsx). Constant rotation, so
+   linear: any ease would read as the radar stuttering once per turn. */
+@keyframes radar-sweep {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.radar-sweep {
+  animation: radar-sweep 18s linear infinite;
+  will-change: transform;
+}
+
+/* Hero pin pulse (components/RadarDemo.tsx). A ring leaves the pin, grows and
+   fades, then rests invisible before the next one, so it never snaps back into
+   view. Ease-out: it leaves fast and settles. */
+@keyframes radar-pulse {
+  0% {
+    transform: scale(0.18);
+    opacity: 0.7;
+  }
+  60% {
+    transform: scale(1);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .radar-pulse {
+    animation: radar-pulse 2.6s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .radar-sweep {
+    animation: none;
+  }
+  .reveal {
+    transition: none;
+  }
+  .reveal[data-shown='false'] {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
   .animate-fade-in-up {
     animation: none;
     opacity: 1;

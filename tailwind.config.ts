@@ -52,6 +52,11 @@ const config: Config = {
         'overlay-lg': '0 24px 60px -20px rgba(11, 28, 48, 0.45)',
       },
       fontFamily: {
+        // Marketing surface (landing, 404): Geist, self-hosted via next/font
+        // from the `geist` package. The variables are set on those pages' root
+        // elements only; the app still renders Sora + Inter until it migrates.
+        geist: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
+        'geist-mono': ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
         display: ['Sora', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
         inter: ['Inter', 'system-ui', 'sans-serif'],

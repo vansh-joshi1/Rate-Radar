@@ -65,7 +65,7 @@ Competitor and parity prices come from a third-party rate-data API (SerpApi's Go
 
 **Terminology the product owns:** compset, parity, uplift, baseline, room tier (Standard / Superior), demand signal, overflow-likelihood score, actuals, watchlist, "needs manual check", "too small to matter".
 
-**Explicitly undecided:** commercial model is **paid, with pricing and tier structure genuinely open**. Billing, plans, limits and upgrade paths may be designed as real surfaces; no amount or tier name may be invented to fill them.
+**Commercial model (decided by the owner, 2026-09-22):** paid, per property. **One property**, $99 per month with a 14-day free trial. **Three properties**, $349 per month, up to 3 properties with a 30-day price watch. **Enterprise**, priced on contact. These are the only plan facts; no other limit, feature split or tier name may be invented to fill a plan surface. The landing also lists "Included in every plan": the confirmed capabilities under Capabilities and Constraints, stated as common to all plans. The plan names ("One property", "Three properties") and one-line audiences are working copy, not settled names. Still open: annual billing, what "30-day price watch" means against the current five-night compset horizon, and where Enterprise enquiries go (the landing sends them to /signup).
 
 ## Brand Commitments
 
@@ -85,12 +85,12 @@ Competitor and parity prices come from a third-party rate-data API (SerpApi's Go
 
 **Known placeholders currently rendering in the codebase, which future work must not harden into claims:**
 
-- Pricing tiers Free / Pro $29 per month / Portfolio $79 per month — invented for an external design brief, not a commercial decision. **Accepted risk, decided 2026-08-19,** on the grounds that every page is `noindex` and access is invite-only, so no stranger reaches the tier cards or their CTAs. ⚠️ **That premise expired on 2026-09-22:** the public `/demo` route admits anyone with the link, with no account, and the README now leads with it. The pages are still `noindex`, but "no stranger reaches it" is no longer true. Do not treat these numbers as product truth or propagate them anywhere else, and settle them — remove the section, or make them real — before the repo is shown to anyone.
+- The in-app billing mock still shows the retired $29 plan: `components/SettingsView.tsx` and the invoice rows in `lib/demo.ts`. It predates the owner's pricing decision above and must be updated to match it or removed.
 - "Acceptance rate 71%", "+$1,420 estimated impact", "$4.20 avg. parity gap" — hardcoded in `app/(app)/analytics/page.tsx`.
 - "Sunrise Suites — Cookeville, TN" — a demo second property hardcoded in `components/shell/AppShell.tsx`. Not a customer.
 - Anything sourced from `lib/demo.ts`.
 
-Illustrative figures on any public surface must be labeled as illustrative.
+Illustrative figures on public surfaces: **the landing page no longer labels them "sample data", by the owner's decision (2026-09-23).** Every figure on it still comes from the invented demo world (`lib/demo.ts`): an invented hotel, town, competitors and events, so no real business's numbers are shown. The demo app keeps its own sample-data badge.
 
 ## Product Principles
 
