@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getStore } from '../../../../lib/store';
 import type { Snapshot } from '../../../../lib/scoring/types';
+import { pipelineStaleEmail, type EmailMessage } from '../../../../lib/email/messages';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -25,7 +26,7 @@ export const maxDuration = 30;
  */
 const STALE_HOURS = 20;
 
-async function alertByEmail(subject: string, body: string): Promise<void> {
+async function alertByEmail({ subject, html, text }: EmailMessage): Promise<void> {
   const key = process.env.RESEND_API_KEY;
   const to = process.env.ALERT_EMAIL_TO;
   if (!key || !to) return;
@@ -36,7 +37,8 @@ async function alertByEmail(subject: string, body: string): Promise<void> {
       from: 'Rate Radar <onboarding@resend.dev>',
       to: to.split(',').map((s) => s.trim()),
       subject,
-      text: body,
+      html,
+      text,
     }),
   }).catch(() => undefined);
 }
@@ -72,10 +74,15 @@ export async function GET(req: NextRequest) {
 
   if (!dispatched) {
     await alertByEmail(
-      'Rate Radar: data pipeline is stale and could not be revived',
-      `No collector data for ${Math.round(ageHours)}h and the heartbeat could not trigger the GitHub workflow ` +
-        `(${token ? 'dispatch rejected — check GITHUB_DISPATCH_TOKEN permissions/expiry' : 'GITHUB_DISPATCH_TOKEN is not set'}). ` +
-        `Check GitHub Actions: https://github.com/${repo}/actions`
+      pipelineStaleEmail({
+        ageHours,
+        staleAfterHours: STALE_HOURS,
+        reason: token
+          ? 'GitHub rejected the dispatch. Check that GITHUB_DISPATCH_TOKEN still has workflow permission and has not expired.'
+          : 'GITHUB_DISPATCH_TOKEN is not set, so the heartbeat has no way to start the workflow.',
+        actionsUrl: `https://github.com/${repo}/actions`,
+        origin: process.env.DASHBOARD_URL ?? req.nextUrl.origin,
+      })
     );
     return NextResponse.json({ ok: false, ageHours: Math.round(ageHours * 10) / 10, dispatched, alerted: true }, { status: 500 });
   }
