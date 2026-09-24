@@ -221,7 +221,7 @@ The same screen must survive a ten-second glance and a two-minute audit. It is r
 
 ### Migration status
 
-The marketing surface (`app/page.tsx`, `app/not-found.tsx` and `components/landing/*`) is on this language today. The logged-in app still renders the previous "Instrument Panel" treatment: Sora + Inter, 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
+The marketing surface (`app/page.tsx`, `app/not-found.tsx` and `components/landing/*`) and the sign-in / get-access screens (`components/AuthPanes.tsx`) are on this language today. The logged-in app still renders the previous "Instrument Panel" treatment: Sora + Inter, 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
 
 ## Colors
 
@@ -392,6 +392,7 @@ Components are **quietly tactile**: restrained but responsive. They acknowledge 
 - **Style:** Surface White fill, 1px Hairline border, 8px radius, `10px 14px` padding, 14px Ink text.
 - **Focus:** Border shifts to Signal Cobalt with a 2px cobalt ring at 20% opacity. No outline, no glow.
 - **Labels:** Sit above the field, 14px weight 600, 6px gap.
+- **Migrated surfaces (sign-in):** the field is a pill like the buttons beside it: 48px tall, white, a navy ring at 12% with a faint inset shadow, 15px text. Focus is a 2px cobalt ring at 60%; a refused value turns the ring State Warn and puts the reason directly below the field in State Warn text. Labels are 14px weight 500, inset to line up with the text inside the pill.
 
 ### Navigation
 

@@ -19,13 +19,15 @@ const RINGS = [150, 300, 450, 600, 750];
 
 /**
  * The range rings. The hero gets the full set with the sweep; the closing
- * section gets a smaller, still echo so the page ends the way it began.
+ * section gets a smaller, still echo so the page ends the way it began; the
+ * sign-in page centres a mid-sized set, with the sweep, behind its readout.
  */
-export function HeroRadar({ variant = 'hero' }: { variant?: 'hero' | 'echo' }) {
-  const place =
-    variant === 'hero'
-      ? 'left-1/2 top-[68%] h-[1500px] w-[1500px] lg:left-[73%] lg:top-[54%]'
-      : 'left-[85%] top-1/2 h-[1100px] w-[1100px] opacity-80 md:left-[80%]';
+export function HeroRadar({ variant = 'hero' }: { variant?: 'hero' | 'echo' | 'auth' }) {
+  const place = {
+    hero: 'left-1/2 top-[68%] h-[1500px] w-[1500px] lg:left-[73%] lg:top-[54%]',
+    echo: 'left-[85%] top-1/2 h-[1100px] w-[1100px] opacity-80 md:left-[80%]',
+    auth: 'left-1/2 top-1/2 h-[1300px] w-[1300px]',
+  }[variant];
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
       <div className={`absolute -translate-x-1/2 -translate-y-1/2 [mask-image:radial-gradient(closest-side,#000_30%,transparent)] ${place}`}>
@@ -35,7 +37,7 @@ export function HeroRadar({ variant = 'hero' }: { variant?: 'hero' | 'echo' }) {
           ))}
           <path d="M750 0v1500M0 750h1500" stroke="#0b1c30" strokeOpacity="0.045" />
         </svg>
-        {variant === 'hero' && (
+        {variant !== 'echo' && (
         <div
           className="radar-sweep absolute inset-0 rounded-full"
           style={{

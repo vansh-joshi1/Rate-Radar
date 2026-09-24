@@ -57,6 +57,32 @@ export function Eyebrow({ children, tone = 'light' }: { children: React.ReactNod
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f9ff]';
 
+type PillVariant = 'primary' | 'secondary';
+type PillSize = 'md' | 'sm';
+
+function pillClass(variant: PillVariant, size: PillSize) {
+  return `group inline-flex items-center justify-between gap-3 whitespace-nowrap rounded-full font-medium transition-[transform,background-color] duration-500 ${SPRING} active:scale-[0.98] motion-reduce:transition-none ${focusRing} ${
+    size === 'sm' ? 'py-1 pl-4 pr-1 text-[13px]' : 'py-1.5 pl-6 pr-1.5 text-[15px]'
+  } ${
+    variant === 'primary'
+      ? 'bg-[#085ac0] text-white hover:bg-[#06489c]'
+      : 'bg-white text-[#0b1c30] ring-1 ring-[#0b1c30]/[0.08] hover:bg-[#f3f5fc]'
+  }`;
+}
+
+function PillArrow({ variant, size, icon }: { variant: PillVariant; size: PillSize; icon?: React.ReactNode }) {
+  return (
+    <span
+      aria-hidden
+      className={`flex shrink-0 items-center justify-center rounded-full transition-transform duration-500 ${SPRING} group-hover:-translate-y-[1px] group-hover:translate-x-1 group-hover:scale-105 group-disabled:translate-x-0 group-disabled:translate-y-0 group-disabled:scale-100 motion-reduce:transition-none ${
+        size === 'sm' ? 'h-7 w-7' : 'h-9 w-9'
+      } ${variant === 'primary' ? 'bg-white/15' : 'bg-[#0b1c30]/[0.05]'}`}
+    >
+      {icon ?? <ArrowUpRightIcon weight="light" className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />}
+    </span>
+  );
+}
+
 export function PillCta({
   href,
   children,
@@ -65,30 +91,40 @@ export function PillCta({
 }: {
   href: string;
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary';
-  size?: 'md' | 'sm';
+  variant?: PillVariant;
+  size?: PillSize;
 }) {
-  const primary = variant === 'primary';
   return (
-    <Link
-      href={href}
-      className={`group inline-flex items-center justify-between gap-3 whitespace-nowrap rounded-full font-medium transition-[transform,background-color] duration-500 ${SPRING} active:scale-[0.98] motion-reduce:transition-none ${focusRing} ${
-        size === 'sm' ? 'py-1 pl-4 pr-1 text-[13px]' : 'py-1.5 pl-6 pr-1.5 text-[15px]'
-      } ${
-        primary
-          ? 'bg-[#085ac0] text-white hover:bg-[#06489c]'
-          : 'bg-white text-[#0b1c30] ring-1 ring-[#0b1c30]/[0.08] hover:bg-[#f3f5fc]'
-      }`}
+    <Link href={href} className={pillClass(variant, size)}>
+      {children}
+      <PillArrow variant={variant} size={size} />
+    </Link>
+  );
+}
+
+/**
+ * PillCta as a form button. Same pill and circle; `icon` swaps the arrow for
+ * another glyph (a spinner-free busy state is just a different label).
+ */
+export function PillButton({
+  children,
+  variant = 'primary',
+  size = 'md',
+  icon,
+  className = '',
+  ...rest
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: PillVariant;
+  size?: PillSize;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <button
+      {...rest}
+      className={`${pillClass(variant, size)} disabled:cursor-default disabled:opacity-60 disabled:active:scale-100 ${className}`}
     >
       {children}
-      <span
-        aria-hidden
-        className={`flex items-center justify-center rounded-full transition-transform duration-500 ${SPRING} group-hover:-translate-y-[1px] group-hover:translate-x-1 group-hover:scale-105 motion-reduce:transition-none ${
-          size === 'sm' ? 'h-7 w-7' : 'h-9 w-9'
-        } ${primary ? 'bg-white/15' : 'bg-[#0b1c30]/[0.05]'}`}
-      >
-        <ArrowUpRightIcon weight="light" className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-      </span>
-    </Link>
+      <PillArrow variant={variant} size={size} icon={icon} />
+    </button>
   );
 }
