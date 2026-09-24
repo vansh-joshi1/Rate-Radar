@@ -206,6 +206,31 @@ body {
   }
 }
 
+/* Sign-in (components/AuthPanes.tsx). The readout rises in once on load; a
+   tab's pane settles in when you switch to it, so the swap reads as the same
+   form changing rather than the page jumping. Gated, so reduced motion gets
+   the final state with no animation at all. */
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 1.5rem, 0);
+  }
+}
+@keyframes auth-settle {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.375rem, 0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .auth-rise {
+    animation: auth-rise 900ms cubic-bezier(0.32, 0.72, 0, 1) 150ms both;
+  }
+  .auth-settle {
+    animation: auth-settle 400ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+}
+
 /* While the landing's demo video plays (components/landing/WatchDemo.tsx),
    the page behind it holds still so the GPU only decodes video. */
 [data-video-open] .radar-sweep,
