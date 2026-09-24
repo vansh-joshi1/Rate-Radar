@@ -259,65 +259,6 @@ body {
   }
 }
 
-/* ---- Market Intelligence: event map pins + demand calendar ---- */
-.event-pin-you {
-  display: block;
-  width: 16px;
-  height: 16px;
-  transform: translate(-50%, -50%);
-  border-radius: 9999px;
-  background: rgb(var(--accent-rgb));
-  border: 2px solid #1a1b20;
-  box-shadow: 0 0 15px rgb(var(--accent-rgb) / 0.8);
-}
-.event-pin-you::after {
-  content: '';
-  position: absolute;
-  inset: -12px;
-  border-radius: 9999px;
-  background: rgb(var(--accent-rgb) / 0.3);
-  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-.event-pin {
-  display: flex;
-  width: 32px;
-  height: 32px;
-  transform: translate(-50%, -50%);
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  border: 2px solid #1a1b20;
-  background: rgb(var(--accent-rgb));
-  color: #fff;
-  box-shadow: 0 0 20px rgb(var(--accent-rgb) / 0.6);
-  transition: transform 0.2s ease;
-}
-.event-pin:hover {
-  transform: translate(-50%, -50%) scale(1.12);
-}
-.event-pin .material-symbols-outlined {
-  font-size: 16px;
-}
-.event-pin-hot {
-  background: rgb(var(--level-low-rgb));
-  color: rgb(var(--deep-rgb));
-  box-shadow: 0 0 20px rgb(var(--level-low-rgb) / 0.45);
-}
-/* Hover label on event pins — an Instrument Navy chip, because the map is a
-   data surface. Hairline at low alpha rather than a bespoke grey. */
-.leaflet-tooltip.event-tip {
-  background: rgb(var(--deep-rgb));
-  border: 1px solid rgb(var(--line-rgb) / 0.25);
-  color: rgb(var(--paper-rgb));
-  font: 600 11px 'Inter', sans-serif;
-  border-radius: 4px;
-  padding: 3px 7px;
-  box-shadow: 0 8px 24px rgb(11 28 48 / 0.45);
-}
-.leaflet-tooltip.event-tip::before {
-  border-top-color: rgb(var(--deep-rgb));
-}
-
 /* Heatmap cell hover polish, per the design system. */
 /* Exponential ease-out, not the old overshoot curve: a demand cell is a
    readout, and a readout that springs past its value and settles back is
@@ -406,42 +347,84 @@ body {
   }
 }
 
-/* ---- map (Leaflet + CARTO basemap) ---- */
-.leaflet-container {
-  font: inherit;
-}
-/* marker chips — centered on the location, modern pill look */
-.map-chip {
-  display: inline-block;
-  transform: translate(-50%, -50%);
-  background: rgb(var(--card-rgb));
-  color: rgb(var(--ink-rgb));
-  border: 1px solid rgb(var(--line-rgb));
+
+/* ---- Market Intelligence event map (MapLibre, components/EventMap.tsx) ----
+   The basemap is themed in code; these rules bring MapLibre's own chrome onto
+   the same language: zoom buttons as a white pill (pressable = pill), a quiet
+   attribution chip, and the "use ctrl + scroll" hint on a navy scrim. */
+.event-map .maplibregl-ctrl-group {
+  overflow: hidden;
   border-radius: 9999px;
-  padding: 2px 9px;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-  box-shadow: 0 1px 3px rgb(11 28 48 / 0.18);
-  cursor: pointer;
+  background: #fff;
+  box-shadow: 0 16px 32px -16px rgba(5, 12, 24, 0.55);
 }
-.map-chip-you {
-  background: rgb(var(--accent-rgb));
-  border-color: rgb(var(--accent-deep-rgb));
+.event-map .maplibregl-ctrl-group button {
+  width: 32px;
+  height: 32px;
+}
+.event-map .maplibregl-ctrl-group button + button {
+  border-top: 1px solid rgba(11, 28, 48, 0.08);
+}
+.event-map .maplibregl-ctrl-attrib {
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.85);
+  font: 11px/1.4 var(--font-geist-sans), system-ui, sans-serif;
+  color: #44474d;
+}
+.event-map .maplibregl-ctrl-attrib a {
+  color: #44474d;
+}
+.event-map .maplibregl-cooperative-gesture-screen {
+  background: rgba(11, 28, 48, 0.72);
+  font: 500 15px/1.4 var(--font-geist-sans), system-ui, sans-serif;
   color: #fff;
 }
-.map-chip-missing {
-  padding: 2px 8px;
-  color: rgb(var(--muted-rgb));
-  border-style: dashed;
-  background: rgb(var(--card-rgb) / 0.75);
+.event-map .maplibregl-marker {
+  line-height: 0;
 }
-/* soften leaflet chrome to match the card language */
-.leaflet-control-zoom a {
-  border-radius: 8px !important;
+
+/* Event map sweep (components/EventMap.tsx). The beam's bright leading edge
+   sits at north (360deg) and fades counter-clockwise, so rotating the element
+   clockwise drags a trail behind it. The rotation itself runs on the Web
+   Animations API so the venue pings can share its start time; the element is
+   never created under reduced motion. */
+.map-sweep-beam {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 285deg,
+    rgba(173, 198, 255, 0.04) 300deg,
+    rgba(173, 198, 255, 0.16) 350deg,
+    rgba(173, 198, 255, 0.42) 359.4deg,
+    transparent 360deg
+  );
 }
-.leaflet-popup-content-wrapper {
-  border-radius: 8px;
-  font-family: 'Inter', sans-serif;
+
+/* Blips arriving when a filter or night changes: a short rise from the point
+   they mark. Ease-out, and off under reduced motion. */
+@keyframes blip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .blip-in {
+    animation: blip-in 420ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+}
+
+/* Night popover (components/DemandCalendar.tsx): grows out of its cell. The
+   transform origin is set inline at the caret, so it opens from the day that
+   was pressed. Once per opening; moving between nights swaps the content in
+   place. Off under reduced motion. */
+@keyframes night-popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .night-popover {
+    animation: night-popover-in 220ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
 }
