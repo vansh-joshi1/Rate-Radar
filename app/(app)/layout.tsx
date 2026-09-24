@@ -1,4 +1,6 @@
-import Link from 'next/link';
+import { FlaskIcon } from '@phosphor-icons/react/dist/ssr/Flask';
+import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowCounterClockwise';
+import { PillCta } from '../../components/landing/Machined';
 import AppShell from '../../components/shell/AppShell';
 import { RoleProvider } from '../../components/RoleProvider';
 import { auth } from '../../auth';
@@ -21,7 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const [{ snapshot, isDemo }, session] = await Promise.all([loadSnapshot(), inDemo ? null : auth()]);
   const mins = Math.max(0, Math.round((Date.now() - new Date(snapshot.runAt).getTime()) / 60_000));
   const freshness = isDemo
-    ? 'Sample data — run the collector to go live'
+    ? 'Sample data. Run the collector to go live'
     : `Data fresh as of ${mins < 60 ? `${mins}m` : `${Math.round(mins / 60)}h`} ago`;
   // A demo visitor owns their sandbox outright, so every control is live for
   // them — that is the point of the demo. The role is real; its reach is not.
@@ -63,24 +65,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
  */
 function DemoBar() {
   return (
-    <div className="mb-lg flex flex-col gap-sm rounded-lg border border-accent/30 bg-accent/5 p-md sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-start gap-sm">
-        <span className="material-symbols-outlined mt-px shrink-0 text-accent" aria-hidden>
-          science
-        </span>
-        <p className="font-body-md text-body-md text-ink">
-          <strong>Demo sandbox.</strong> Harbor Pine Inn is an invented hotel in an invented town, and every
-          rate, competitor and event below is sample data. Everything is editable — your changes live only in
-          your own sandbox and clear themselves after a day.
+    <div className="flex flex-col gap-4 rounded-[1.25rem] bg-[#0b1c30]/[0.04] px-5 py-4 font-geist text-[#1a1b20] antialiased ring-1 ring-[#0b1c30]/[0.06] sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <FlaskIcon weight="light" className="mt-0.5 h-5 w-5 shrink-0 text-[#44474d]" aria-hidden />
+        <p className="max-w-[80ch] text-[14.5px] leading-relaxed text-[#44474d]">
+          <span className="font-semibold text-[#1a1b20]">Demo sandbox.</span> Harbor Pine Inn is an invented hotel in
+          an invented town, and every rate, competitor and event here is sample data. Edit anything: changes stay in
+          your own sandbox and clear after a day.
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-sm">
-        <Link href="/demo?reset=1" className="btn btn-sm">
+      <div className="flex shrink-0 items-center gap-2">
+        <PillCta href="/demo?reset=1" variant="secondary" size="sm" icon={<ArrowCounterClockwiseIcon weight="light" className="h-3.5 w-3.5" />}>
           Reset
-        </Link>
-        <Link href="/demo/exit" className="btn btn-sm">
+        </PillCta>
+        <PillCta href="/demo/exit" variant="secondary" size="sm">
           Exit demo
-        </Link>
+        </PillCta>
       </div>
     </div>
   );

@@ -88,16 +88,19 @@ export function PillCta({
   children,
   variant = 'primary',
   size = 'md',
+  icon,
 }: {
   href: string;
   children: React.ReactNode;
   variant?: PillVariant;
   size?: PillSize;
+  /** Swaps the arrow for another glyph, as on PillButton. */
+  icon?: React.ReactNode;
 }) {
   return (
     <Link href={href} className={pillClass(variant, size)}>
       {children}
-      <PillArrow variant={variant} size={size} />
+      <PillArrow variant={variant} size={size} icon={icon} />
     </Link>
   );
 }
