@@ -23,103 +23,106 @@ colors:
   level-high: "#FFDAD6"
 typography:
   display-xl:
-    fontFamily: "Sora, Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "56px"
     fontWeight: 700
     lineHeight: "60px"
     letterSpacing: "-0.03em"
   display-lg:
-    fontFamily: "Sora, Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "42px"
     fontWeight: 700
     lineHeight: "46px"
     letterSpacing: "-0.02em"
   display-md:
-    fontFamily: "Sora, Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "38px"
     fontWeight: 700
     lineHeight: "46px"
     letterSpacing: "-0.02em"
   display-sm:
-    fontFamily: "Sora, Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "32px"
     fontWeight: 700
     lineHeight: "38px"
     letterSpacing: "-0.02em"
   display:
-    fontFamily: "Sora, Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "36px"
     fontWeight: 700
     lineHeight: "44px"
     letterSpacing: "-0.02em"
   headline:
-    fontFamily: "Sora, Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "28px"
     fontWeight: 600
     lineHeight: "36px"
     letterSpacing: "-0.01em"
   headline-mobile:
-    fontFamily: "Sora, Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "24px"
     fontWeight: 600
     lineHeight: "32px"
     letterSpacing: "normal"
   title:
-    fontFamily: "Sora, Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "20px"
     fontWeight: 600
     lineHeight: "28px"
     letterSpacing: "normal"
   title-sm:
-    fontFamily: "Sora, Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "18px"
     fontWeight: 600
     lineHeight: "26px"
     letterSpacing: "normal"
   body-lg:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "16px"
     fontWeight: 400
     lineHeight: "24px"
     letterSpacing: "normal"
   body:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: "20px"
     letterSpacing: "normal"
   body-sm:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 400
     lineHeight: "18px"
     letterSpacing: "normal"
   label:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "12px"
     fontWeight: 600
     lineHeight: "16px"
     letterSpacing: "0.05em"
   label-sm:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "11px"
     fontWeight: 600
     lineHeight: "16px"
     letterSpacing: "0.05em"
   micro:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "10px"
     fontWeight: 600
     lineHeight: "14px"
     letterSpacing: "0.08em"
   data:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Geist Mono, ui-monospace, monospace"
     fontSize: "14px"
     fontWeight: 500
     lineHeight: "20px"
     letterSpacing: "-0.01em"
     fontFeature: "tnum"
 rounded:
+  shell: "2rem"
+  core: "calc(2rem - 0.375rem)"
+  well: "1.25rem"
   sm: "4px"
   md: "8px"
   lg: "12px"
@@ -197,23 +200,28 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Instrument Panel"**
+**Creative North Star: "The Machined Instrument"**
 
-Rate Radar looks like a calm operations console. Its instruments report honestly and never raise their voice: a rate is a reading, a confidence percentage is a gauge, and a stale feed is an indicator that has stopped moving — not an alarm. The product's core promise is that it recommends and a human decides, so the interface behaves like equipment a professional trusts precisely because it never oversells itself.
+Rate Radar looks like a piece of calm, precisely machined equipment. Its instruments report honestly and never raise their voice: a rate is a reading, a confidence percentage is a gauge, and a stale feed is an indicator that has stopped moving, not an alarm. The product's core promise is that it recommends and a human decides, so the interface behaves like equipment a professional trusts precisely because it never oversells itself. Quality shows in the fit and finish, not in volume.
 
-The world is built from three materials. A cool near-white canvas is the lit workspace. White cards separated by a single hairline are where readings are laid out. A deep navy is reserved for surfaces where the machine's own raw data lives — radar panels, map chrome, heat cells at the top of the ramp — and it is the only place the interface goes dark. One cobalt accent marks what the system concluded: the recommended rate, the active nav item, the "major" demand signal, the property's own pin. Everything else is ink, muted ink, and hairline. Color is a verdict, not decoration.
+The world is built from three materials. A cold near-white canvas is the lit bench. Panels sit on it the way a glass plate sits in an aluminium tray: a **double-bezel enclosure**, a faintly tinted outer shell holding a white core with its own inner highlight, lifted off the bench by one soft, navy-tinted ambient shadow. A deep navy is reserved for cores where the machine's own raw data lives (radar panels, parity readouts, the scoring pipeline, heat cells at the top of the ramp), and it is the only place the interface goes dark. One cobalt accent marks what the system concluded: the recommended rate, where you are, the "major" demand signal, the property's own pin. Everything else is ink, muted ink, and tinted air. Color is a verdict, not decoration.
 
-Density is high but never dense for its own sake. This is read by an owner at a desk, glanced at by front-desk staff mid-shift, and interrogated by a revenue manager who will not accept a number they cannot take apart — so the same screen must survive a ten-second glance and a two-minute audit. The system earns that by being ruthlessly consistent: tabular figures everywhere numbers appear, uppercase micro-labels above every reading, and rejected evidence kept on screen and dimmed rather than deleted. The most characteristic thing this design system does is show its own discarded work.
+The same screen must survive a ten-second glance and a two-minute audit. It is read by an owner at a desk, glanced at by front-desk staff mid-shift, and interrogated by a revenue manager who will not accept a number they cannot take apart. The system earns that by being ruthlessly consistent: tabular figures everywhere numbers appear, a Geist Mono label on every reading, and rejected evidence kept on screen and dimmed rather than deleted. The most characteristic thing this design system does is show its own discarded work.
 
 **Key Characteristics:**
 
 - One cobalt accent used as a verdict marker, never as decoration
-- Deep navy reserved exclusively for raw-data surfaces
-- Flat at rest; shadow means state or z-position, never style
+- Deep navy reserved exclusively for raw-data cores
+- Double-bezel frames only around instruments and plans; everything else sits open on the canvas
+- One family: Geist for everything, Geist Mono for readings and labels
 - Tabular figures on every number, without exception
-- Uppercase 12px micro-labels as the universal reading label
+- Pills for everything you can press or that reports a status; squircles for everything that holds data
+- Spring motion on one curve, `cubic-bezier(0.32, 0.72, 0, 1)`
 - Rejected and low-confidence information dimmed and kept, never hidden
-- Two typefaces only — Sora for structure, Inter for everything else
+
+### Migration status
+
+The marketing surface (`app/page.tsx`, `app/not-found.tsx` and `components/landing/*`) is on this language today. The logged-in app still renders the previous "Instrument Panel" treatment: Sora + Inter, 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
 
 ## Colors
 
@@ -235,7 +243,7 @@ A cool, instrumented palette: one saturated cobalt against near-neutral greys wi
 - **Surface White** (`#FFFFFF`): Every card, panel, input, and secondary button.
 - **Ink** (`#1A1B20`): Primary text and all figures.
 - **Ink Muted** (`#44474D`): Labels, secondary text, captions, and dimmed reasoning lines. Chosen dark enough to remain readable on a shared front-desk screen — it is a de-emphasis, not a fade-out.
-- **Hairline** (`#C4C6CD`): Every border and divider in the system. The primary means of separating surfaces.
+- **Hairline** (`#C4C6CD`): The app's border and divider color until it migrates. Migrated surfaces do not draw grey hairlines (see The No-Grey-Hairline Rule); they separate with navy-tinted rings and dividers.
 
 ### Tertiary
 
@@ -260,41 +268,38 @@ Two ramps carry quantitative meaning and must never be used decoratively.
 
 ## Typography
 
-**Display Font:** Sora (with Inter, system-ui, sans-serif)
-**Body Font:** Inter (with system-ui, sans-serif)
+**Family:** Geist (sans) and Geist Mono, self-hosted through `next/font` from the `geist` package. Pages opt in by putting `GeistSans.variable` and `GeistMono.variable` on their root and using `font-geist` / `font-geist-mono` (tailwind.config.ts).
 
-**Character:** Sora's geometric, slightly technical letterforms give headings the feel of equipment labelling; Inter carries everything else with maximum legibility at small sizes and excellent tabular figures. The pairing is deliberately unromantic — two contemporary sans faces, no editorial flourish. Fraunces (a serif previously used for currency figures) has been retired from the system; the two-face pairing is now the whole typographic vocabulary.
+**Character:** Geist is a precise, contemporary grotesk. It reads like an engraved equipment label at display sizes and stays neutral at 14px. Geist Mono carries every machine reading, so a label or a figure looks like it came off an instrument, not out of a sentence. The pairing is deliberately unromantic: one family, two cuts, no editorial flourish.
 
-### Hierarchy
+### Hierarchy (marketing surface)
 
-The scale splits in two. **Display steps belong to the marketing and auth surfaces**, where one heading has to carry a whole viewport; they are always used as responsive pairs, small at mobile and large from `md` up. **Headline and below belong to the app**, where hierarchy has to survive next to dense data.
+Display type is set heavy and tight: weight 600, `tracking-tighter`, leading close to 1. Always a responsive pair, small at mobile and large from `md` up.
 
-Marketing display (Sora, 700):
+- **Hero** (44px → 68px, leading 1.02): the landing's H1, and nothing else.
+- **Statement** (48px → 88px, leading 1): the single product-promise line, "It recommends. You decide." Nothing else gets this size.
+- **Section** (36px → 52px, leading 1.05): section headings.
+- **Panel title** (22–24px, weight 600, `tracking-tight`): headings inside an enclosure.
+- **Lead** (17px, `leading-relaxed`, max 56ch): the paragraph under a section heading.
+- **Body** (14.5px, `leading-relaxed`): panel copy, reasoning lines, list rows.
+- **Figure** (34–72px, weight 600, `tracking-tighter`, tabular): the rate itself.
+- **Mono label** (Geist Mono, 11.5–12px, sentence case): the name of a reading, sitting above it.
+- **Chip** (Geist, 12px, weight 500, sentence case, pill): status markers.
+- **Eyebrow** (15px, weight 500, muted, plain text): the hero only. No pill, no caps. A label over every heading is a template tell.
 
-- **Display XL / LG** (56px / 60px, −0.03em → 42px / 46px, −0.02em): The landing hero, and nothing else. `text-display-lg md:text-display-xl`.
-- **Display MD / SM** (38px / 46px → 32px / 38px, −0.02em): Marketing section headings. `text-display-sm md:text-display-md`.
+### App hierarchy (until migrated)
 
-App hierarchy:
-
-- **Display** (Sora, 700, 36px / 44px, −0.02em): The largest in-app title. Rare.
-- **Headline** (Sora, 600, 28px / 36px, −0.01em): Section and page headers inside the app. Drops to the 24px / 32px `headline-mobile` step below `md`.
-- **Title** (Sora, 600, 20px / 28px): Card and panel headings, and the hero figures on dashboard stat cards.
-- **Title SM** (Sora, 600, 18px / 26px): Sub-headings inside a card that already has a Title.
-- **Body LG** (Inter, 400, 16px / 24px): Marketing prose and long-form reading.
-- **Body** (Inter, 400, 14px / 20px): The workhorse. All reasoning text, descriptions, table content.
-- **Body SM** (Inter, 400, 13px / 18px): Compact UI text — button labels, dense list rows, helper text.
-- **Label** (Inter, 600, 12px / 16px, +0.05em, uppercase): The universal micro-label sitting above or beside a reading. The single most repeated typographic element in the product.
-- **Label SM** (Inter, 600, 11px / 16px, +0.05em, uppercase): Chips and table column headers.
-- **Micro** (Inter, 600, 10px / 14px, +0.08em, uppercase): The smallest marker in the system — timestamps under a log line, the "current property" caption. Below this, stop shrinking and cut words instead.
-- **Data** (Inter, 500, 14px / 20px, −0.01em, tabular figures): Dates, rate ranges, and any figure inside a table or aligned column.
+The app keeps its token steps (`text-headline-*`, `text-body-*`, `text-label-*`, `text-micro`, `text-data-mono`) in Sora + Inter. When a page migrates, it swaps the family and keeps the steps.
 
 ### Named Rules
 
 **The Tabular Rule.** Every number the user might compare or scan vertically uses tabular figures (`tabular-nums`). Rates, deltas, percentages, scores, counts, dates. A column of proportional digits that shifts as values change is a defect in this system, not a nuance.
 
-**The Micro-Label Rule.** Every reading gets an uppercase 12px label naming what it is. A number without a label is not an instrument reading — it is a mystery. This is what makes a dense screen scannable in ten seconds.
+**The Mono Label Rule.** Every reading gets a Geist Mono label, in sentence case, naming what it is. All-caps micro text is not part of this language. A number without a label is not an instrument reading; it is a mystery. This is what makes a dense screen scannable in ten seconds.
 
-**The Two-Face Rule.** Sora for structure, Inter for content. No third typeface enters the system without replacing one of these. In particular, do not reintroduce a serif for currency: money is expressed through tabular Inter and size, not through a change of voice.
+**The One-Family Rule.** Geist for structure and content, Geist Mono for readings. No third typeface, and no serif for currency: money is expressed through tabular Geist and size, not through a change of voice. Inter, Roboto, Arial, Open Sans and Helvetica do not enter new or migrated surfaces.
+
+**The Heavy-Not-Loud Rule.** Hierarchy comes from weight, tight tracking and size together. Display type never goes above weight 600; a bolder face would shout.
 
 ## Layout
 
@@ -304,6 +309,8 @@ Content is organised as a responsive bento: a 4-column grid on mobile, 8 at `md`
 
 Spacing follows a named 4px-based scale: `xs` 4px, `sm` 8px, `md` 16px, `gutter` 20px, `lg` 24px, `xl` 32px. Card internal padding is `md` (16px) on data-dense panels and 24px on prose or form panels. Vertical rhythm between sections is `lg` to `xl`.
 
+**Marketing surface:** content sits in a 1200px container with a 16px gutter on phones and 24px from `md`. Sections breathe: 96px of vertical space at mobile, 160px from `md` (`py-24` / `md:py-40`). The hero clears the floating nav with 128px → 176px of top padding. Every multi-column layout collapses to a single `grid-cols-1` column below its breakpoint, and grids always declare their columns so a wide child can never push the page sideways.
+
 Tables scroll horizontally inside their own container and never cause the page to scroll sideways. On dense data screens, density is a feature: a revenue manager wants everything visible at once, so resist adding whitespace that pushes rows below the fold.
 
 ### Named Rules
@@ -312,36 +319,45 @@ Tables scroll horizontally inside their own container and never cause the page t
 
 ## Elevation & Depth
 
-**Surfaces are flat at rest.** Depth comes from the hairline border and from tonal layering — Cold Daylight canvas, Surface White cards, Instrument Navy data panels. A shadow is never a style; it means one of exactly two things: the element is responding to interaction, or it is genuinely floating above the page.
+**Surfaces have depth at rest, and it is machined, not floated.** Every major panel is a double-bezel enclosure (`Bezel` in `components/landing/Machined.tsx`):
 
-Every shadow is tinted with Instrument Navy (`rgba(11, 28, 48, …)`), never neutral black. This keeps depth in the same cool key as the rest of the palette and is what stops the interface from looking like a generic admin panel.
+- **Outer shell:** Instrument Navy at 3.5% as a tray, a navy ring at 5%, `p-1.5`, radius 2rem, and one ambient shadow `0 32px 64px -32px rgba(11, 28, 48, 0.22)`.
+- **Inner core:** white (or Instrument Navy for data), radius `calc(2rem - 0.375rem)` so the curves stay concentric, with an inner top highlight: `inset 0 1px 1px rgba(255, 255, 255, 1)` on white and `… 0.12)` on navy.
+- **Wells:** an area inside a core that holds a live instrument (the radar surface, the confidence gauge) is recessed one more step, with its own smaller radius and a faint tint or inset highlight.
 
 ### Shadow Vocabulary
 
-- **Hover lift** (`box-shadow: 0 4px 12px rgba(11, 28, 48, 0.05)`): Appears on interactive cards on hover, alongside a `scale(1.02)` on stat cards. The card is flat until touched.
-- **Overlay small** (`box-shadow: 0 8px 24px rgba(11, 28, 48, 0.08)`): Dropdowns, popovers, the property switcher, map tooltips.
-- **Overlay large** (`box-shadow: 0 24px 60px -20px rgba(11, 28, 48, 0.45)`): The mobile navigation drawer and any full modal.
-- **Focus ring** (`box-shadow: 0 0 0 2px rgba(8, 90, 192, 0.20)` plus a Signal Cobalt border): Keyboard and input focus. Focus is the one state allowed to use color and elevation simultaneously.
+- **Ambient** (`0 32px 64px -32px rgba(11, 28, 48, 0.22)`): the bezel's lift. One per enclosure, never stacked.
+- **Island** (`0 12px 40px -16px rgba(11, 28, 48, 0.22)`): the floating nav pill.
+- **Readout** (`0 16px 32px -16px rgba(5, 12, 24, 0.55)`): a white readout floating over a navy data surface.
+- **Focus ring** (2px Signal Cobalt at 40%, offset from the element): keyboard focus. Focus is the one state allowed to use color and depth together.
 
 ### Named Rules
 
-**The Flat-At-Rest Rule.** If an element has a shadow and the user is not interacting with it and it is not floating above the page, delete the shadow. Resting elevation is expressed with the hairline border alone.
+**The Navy Tint Rule.** No shadow in this system uses black. Every value is navy-tinted `rgba(11, 28, 48, α)`, or a deeper navy over a navy surface. A `rgba(0,0,0,…)` shadow is a defect.
 
-**The Navy Tint Rule.** No shadow in this system uses black. Every value is `rgba(11, 28, 48, α)`. A `rgba(0,0,0,…)` shadow is a defect.
+**The No-Grey-Hairline Rule.** There is no 1px solid grey border in the language. Separation comes from the bezel, from navy rings at 8% or less, and from dividers tinted navy at about 6%. No dashed or dotted borders either. "Nothing here, honestly" is said with a quiet navy tint (about 5%) and muted text instead.
+
+**The Blur-Is-Fixed Rule.** `backdrop-blur` belongs to fixed layers only (the island nav, the phone menu). Scrolling content never blurs its backdrop.
+
+**The Background-Is-Instrument Rule.** The marketing canvas is not plain white and not decoration either. It carries the radar panel's own dot grid at ~7% navy, a fixed 3.5% grain layer (fixed only, never on a scrolling element), and, behind the hero, concentric range rings with one slow sweep in navy at 5 to 14%, echoed by a smaller, still set of rings behind the closing call to action so the page ends the way it began. Never cobalt, never a blob or gradient wash: the background concludes nothing. Components: `components/landing/Backdrop.tsx`.
 
 ## Shapes
 
-The form language is softly squared, not pill-shaped — with one loud exception.
+The form language is squircle and pill. Radii step down as you go inward, and every nested pair is concentric.
 
-Radii step: `sm` 4px for small inline elements (heat cells, tooltips, date pills), `md` 8px for the default surface (cards, inputs, panels, buttons' container), `lg` 12px and `xl` 16px for large feature cards and hero panels. **Buttons and chips are fully rounded** (`9999px`), and that contrast is deliberate: interactive controls and status markers are visibly a different species from the rectangular surfaces that hold data.
+- **Shell** 2rem, **core** `calc(2rem - 0.375rem)`: every enclosure.
+- **Well** 1.25rem (radar surface) or 1rem (gauge well): instruments recessed inside a core.
+- **Cell** 0.5rem: heat cells and small data tiles.
+- **Pill** `9999px`: buttons, chips, the nav.
 
-Borders are always 1px Hairline. There is no 2px border anywhere in the resting system, and no colored side-tab accent — a thick colored edge on one side of a card is explicitly outside this language.
-
-Circular geometry belongs to identity and location: avatars, map pins, the property badge, the radar mark's concentric arcs.
+Circular geometry still belongs to identity and location: avatars, map pins, the property badge, the radar mark's concentric arcs.
 
 ### Named Rules
 
-**The Pill-Or-Panel Rule.** If it can be clicked or it reports a status, it is fully rounded. If it holds data, it is 8px. There is no in-between and no per-component improvisation.
+**The Pill-Or-Panel Rule.** If it can be pressed or it reports a status, it is a pill. If it holds data, it is a squircle panel. There is no in-between and no per-component improvisation.
+
+**The Concentric Rule.** An inner radius is its outer radius minus the padding between them. Two curves that don't share a centre read as a manufacturing fault.
 
 ## Components
 
@@ -349,26 +365,27 @@ Components are **quietly tactile**: restrained but responsive. They acknowledge 
 
 ### Buttons
 
-- **Shape:** Fully rounded pill (`9999px`), 1px Hairline border, `8px 16px` padding, 14px Inter at weight 600.
-- **Secondary (default):** Surface White fill, Ink text, Hairline border. Hovers to Cold Daylight.
-- **Primary:** Signal Cobalt fill and border, white text. Hovers to Signal Cobalt Deep.
-- **Small:** `6px 12px` padding, 12px text. Used inside tables and card headers.
-- **States:** Color, background and border transition over 150ms ease; transform over 140ms `cubic-bezier(0, 0, 0.2, 1)`. Pressing scales to `0.97` — deliberately subtle, because these buttons are pressed often and anything larger reads as sluggish. Disabled buttons drop to 50% opacity and **do not move on press** — they did not hear anything. Under reduced-motion the press scale softens to `0.99` rather than disappearing.
+- **Shape:** a pill, `py-1.5 pl-6 pr-1.5`, 15px Geist weight 500 (`PillCta` in `components/landing/Machined.tsx`).
+- **Button-in-button:** the trailing arrow (Phosphor `ArrowUpRight`, light weight) never sits naked beside the label. It lives in its own 36px circle, flush with the right padding: white at 15% on primary, navy at 5% on secondary.
+- **Primary:** Signal Cobalt fill, white text; hovers to Signal Cobalt Deep.
+- **Secondary:** white, navy ring at 8%, navy text; hovers to a cool tint.
+- **Small:** `py-1 pl-4 pr-1`, 13px, 28px circle. Used in the nav.
+- **States:** on hover the circle nudges 4px right, 1px up and scales to 1.05; on press the pill scales to 0.98. Everything moves on the spring curve over 500ms. Under reduced motion transitions are off; the press still registers.
+- **Text links:** muted ink that darkens on hover, with the same focus ring as buttons. Inline links carry a navy-20% underline.
 
 ### Chips
 
-- **Style:** Fully rounded, `1px 10px` padding, 11px uppercase bold with wide tracking, 1px border in the current text color.
+- **Style (migrated surfaces):** fully rounded, `2px 10px` padding, 12px Geist weight 500 in sentence case, a tinted fill or a solid 40% ring in the current text color. The app keeps its 11px uppercase chips until it migrates.
 - **Status tones:** OK, Warn, Bad and Neutral, each as colored text on a 5% tint of the same color.
-- **Demand signal chips** are the system's signature status marker and encode score bands: `major` (≥70) is a solid Signal Cobalt fill with white text; `meaningful` (≥40) is Signal Cobalt Wash with cobalt text and no border; `minor` (≥15) is a 10% ink tint; `quiet` (<15) is a **dashed** border with muted text and no fill.
-- **The dashed border means "nothing here, honestly."** It also marks the `sample data` badge — a chip that exists solely to admit a panel is not wired to a live feed.
+- **Demand signal chips** are the system's signature status marker and encode score bands: `major` (≥70) is a solid Signal Cobalt fill with white text; `meaningful` (≥40) is Signal Cobalt Wash with cobalt text and no border; `minor` (≥15) is a 10% ink tint; `quiet` (<15) is a 4–5% navy tint with muted text and no border.
+- **The quiet tint means "nothing here, honestly."** Muted text on a ~5% navy fill marks too-small-to-matter lines, quiet nights and the `sample data` badge, a chip that exists solely to admit a panel is not wired to a live feed. "Needs manual check" is State Warn text inside a solid 40% warn ring. No dashed or dotted borders anywhere.
 
-### Cards / Containers
+### Enclosures (formerly Cards)
 
-- **Corner style:** 8px (`rounded-lg`); 12px on large feature panels.
-- **Background:** Surface White on the Cold Daylight canvas; Instrument Navy when the card contains raw machine data.
-- **Border:** 1px Hairline, always.
-- **Shadow strategy:** None at rest. Interactive cards gain the hover-lift shadow over 300ms; stat cards additionally scale to `1.02`.
-- **Internal padding:** 16px on data panels, 24px on prose and form panels.
+- **Frame instruments, not prose.** A Bezel goes around a live instrument (the radar, a data panel, the scoring pipeline) or a plan you can buy. Headings, lists, the closing call to action and the footer sit open on the canvas, separated by space and a tinted divider. Never a box inside a box inside a box: inside a Bezel, sub-areas are split by a divider, not wrapped again. `tone="data"` (navy core) only when every reading inside came from the collector.
+- **Internal padding:** 28–40px (`p-7` to `p-10`) on marketing panels; data rows inside keep their own rhythm (`py-3`).
+- **Dividers:** navy at 6% on light cores, white at 8% on navy cores. Never a grey hairline.
+- **Grouping:** an asymmetric bento. A 7/5 split over a full-width row, never three equal columns.
 
 ### Inputs / Fields
 
@@ -378,11 +395,18 @@ Components are **quietly tactile**: restrained but responsive. They acknowledge 
 
 ### Navigation
 
-- **Rail:** 280px, Surface White, 1px Hairline right edge, brand block at top, then the property switcher, then icon-and-label links.
-- **Links:** 14px, `md` gap between icon and label, `md`/`sm` padding. Inactive links are Ink Muted and hover to a Cold Daylight fill with Ink text. Active links are Signal Cobalt on a 10% cobalt tint.
-- **Motion:** Links nudge 4px right on hover over 200ms; suppressed under reduced-motion.
-- **Mobile:** Below `md`, the rail slides off-canvas and returns over 300ms on `cubic-bezier(0.32, 0.72, 0, 1)` — fast out of the gate, long settle. A 280px drawer travelling in Tailwind's default 150ms reads as a glitch rather than a movement. Reduced-motion shortens it to 150ms. The drawer is always dismissable by its scrim.
-- **Icons:** Material Symbols Outlined, variable `FILL` axis; filled for active, outlined for inactive.
+- **Marketing: the island.** A glass pill floating 16px below the top edge (`fixed`, `w-max` from `md`, white at 70%, `backdrop-blur-xl`, navy ring 6%, Island shadow). It holds the mark, the section links, Sign in and the small primary CTA. The section currently under the middle of the viewport reads in Signal Cobalt (scroll-spy by IntersectionObserver, never a scroll listener).
+- **Marketing, phone:** the island shrinks to the mark and a hamburger. Its two lines rotate about their shared centre into an X. The menu is a screen-filling glass layer (white at 80%, `backdrop-blur-3xl`) whose links rise 48px out of clipped boxes with a 50ms stagger. Escape closes it, focus moves in, and the page behind stops scrolling.
+- **Layers:** phone menu z-30 < island z-40 < skip link z-50. Nothing else takes a z-index on the marketing surface.
+- **App (until migrated):** the 280px rail with a Hairline right edge, the property switcher and icon-and-label links. Active links are Signal Cobalt on a 10% cobalt tint; the rail becomes an off-canvas drawer below `md` on `cubic-bezier(0.32, 0.72, 0, 1)` over 300ms. Icons are Material Symbols Outlined until the app migrates to Phosphor Light.
+
+### Motion
+
+- **One curve:** `cubic-bezier(0.32, 0.72, 0, 1)`, fast out of the gate with a long settle. No `ease-in-out`, no bounce, and no `linear` except for constant motion: the hero radar sweep (one turn every 18s) is linear because any ease would read as a stutter once per turn.
+- **Durations:** 500ms for hover and press, 700–900ms for arrivals.
+- **Scroll arrivals:** 4rem of rise, 12px of blur resolving to sharp, opacity 0 to 1, over 900ms (`.reveal` in globals.css, driven by `components/Reveal.tsx`). Children stagger by 30–120ms.
+- **Only transform, opacity and a one-shot filter** animate. Never width, height, top or left.
+- **Reduced motion:** every arrival lands instantly and fully visible; the radar sweep stops; drag stays 1:1 because that motion is the user's own.
 
 ### Data Tables
 
@@ -407,24 +431,26 @@ A radar sweep drawn as inline SVG on a 24px viewbox: two concentric arcs opening
 
 ### Do:
 
-- **Do** give every number tabular figures and an uppercase 12px label above it.
-- **Do** keep surfaces flat at rest and let the 1px Hairline border do the separating.
-- **Do** tint every shadow with Instrument Navy (`rgba(11, 28, 48, α)`).
-- **Do** reserve Signal Cobalt for the system's conclusions — the recommended rate, the active location, the user's own property.
-- **Do** reserve Instrument Navy for surfaces displaying raw collector data.
-- **Do** render rejected, low-confidence, and unavailable information in Ink Muted and leave it on screen.
+- **Do** give every number tabular figures and a Geist Mono label above it.
+- **Do** frame instruments and plans in a double-bezel with concentric radii, and leave everything else open.
+- **Do** tint every shadow with Instrument Navy, and give each enclosure exactly one.
+- **Do** reserve Signal Cobalt for the system's conclusions: the recommended rate, where you are, the user's own property.
+- **Do** reserve Instrument Navy for cores displaying raw collector data.
+- **Do** render rejected, low-confidence and unavailable information in Ink Muted and leave it on screen.
 - **Do** use State Warn for honest limitations ("needs manual check", stale data) and State Bad only for actual breakage.
-- **Do** make controls and status markers fully rounded, and data surfaces 8px.
-- **Do** suppress transforms under `prefers-reduced-motion` while keeping content visible — entry animations reset opacity to 1 rather than leaving the page blank.
+- **Do** put the arrow of a CTA in its own circle.
+- **Do** keep content visible under `prefers-reduced-motion`: arrivals land in place rather than leaving the page blank.
 
 ### Don't:
 
-- **Don't** put a thick colored border on one side of a card. No `border-l-4` accent tabs — the most recognizable tell of a generated interface, and outside this form language entirely.
-- **Don't** use bounce or elastic easing (`cubic-bezier(0.34, 1.56, 0.64, 1)` and relatives). Real instruments decelerate smoothly; use exponential ease-out.
-- **Don't** reintroduce a serif, Fraunces included. Money is expressed through tabular Inter and size, not a change of voice.
-- **Don't** use black shadows, gradient text, glowing cards, or purple-to-blue washes.
-- **Don't** build toward dense BI/analyst tooling — no wall of widgets, no chart junk, no configuration surfaced as interface. This is for an operator, not an analyst.
-- **Don't** adopt consumer-fintech playfulness: no confetti, mascots, streaks, celebratory microcopy, or oversized rounded cards. Someone's revenue is on the line.
-- **Don't** let the palette drift to undifferentiated enterprise grey. The navy data surfaces and the heat ramps are what keep this from becoming an anonymous admin panel.
-- **Don't** import the external design system's `borderRadius` scale — it redefines `full` as 0.75rem and would turn every avatar, pill and chip into a squircle app-wide. Radii are set at the call site.
-- **Don't** wire dark mode to `prefers-color-scheme`. Night mode is opt-in via a `dark` class on `<html>`; the dashboard is specified as a light surface and must not silently repalette on someone's OS setting.
+- **Don't** use a 1px solid grey border to separate anything. Use the bezel, a tinted ring or a tinted divider.
+- **Don't** put a thick colored border on one side of a card. No `border-l-4` accent tabs.
+- **Don't** use bounce, elastic, `linear` or `ease-in-out` easing. Instruments decelerate; use the spring curve.
+- **Don't** reintroduce a serif or a third typeface.
+- **Don't** use black shadows, gradient text, glowing cards, neon, or purple-to-blue washes.
+- **Don't** blur the backdrop of anything that scrolls.
+- **Don't** build toward dense BI/analyst tooling: no wall of widgets, no chart junk, no configuration surfaced as interface. This is for an operator, not an analyst.
+- **Don't** adopt consumer-fintech playfulness: no confetti, mascots, streaks or celebratory microcopy. Someone's revenue is on the line.
+- **Don't** import an external design system's `borderRadius` scale. It redefines `full` and would turn every avatar, pill and chip into a squircle app-wide. Radii are set at the call site.
+- **Don't** wire dark mode to `prefers-color-scheme`. Night mode is opt-in via a `dark` class on `<html>`.
+

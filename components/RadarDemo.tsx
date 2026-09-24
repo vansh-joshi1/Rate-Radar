@@ -75,24 +75,9 @@ function priceAt(fx: number, fy: number) {
   return { rate: Math.round(local * 0.905), nearest };
 }
 
-const TrendIcon = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-    aria-hidden
-  >
-    <path d="M3.5 16.5 9 11l3.5 3.5L20.5 6.5" />
-    <path d="M15.5 6.5h5v5" />
-  </svg>
-);
-
 export default function RadarDemo() {
   const surfaceRef = useRef<HTMLDivElement>(null);
+  const readoutRef = useRef<HTMLDivElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
 
   // Physics lives in refs — React never re-renders for a position change.
@@ -113,6 +98,9 @@ export default function RadarDemo() {
   const [readout, setReadout] = useState(() => priceAt(HOME.x, HOME.y));
   const [active, setActive] = useState(false);
   const [touched, setTouched] = useState(false);
+  // True when a competitor's price label sits just above the pin, so the
+  // "You" label moves below it instead of colliding.
+  const [crowded, setCrowded] = useState(false);
 
   const paint = useCallback(() => {
     const pin = pinRef.current;
@@ -123,6 +111,56 @@ export default function RadarDemo() {
     if (!w || !h) return;
     const next = priceAt(pos.current.x / w, pos.current.y / h);
     setReadout((prev) => (prev.rate === next.rate && prev.nearest === next.nearest ? prev : next));
+    const hit = COMPETITORS.some((c) => {
+      const dx = c.x * w - pos.current.x;
+      const dy = c.y * h - pos.current.y;
+      return Math.abs(dx) < 56 && dy > -34 && dy < 18;
+    });
+    setCrowded((prev) => (prev === hit ? prev : hit));
+  }, []);
+
+  /* The readout card is a wall, not a surface to slide under or over: it shows
+     the number the user is watching. Past its edge the pin follows with growing
+     resistance, along whichever edge it pushed through, and on release the
+     safe target brings it back out. */
+  const resistCard = useCallback((x: number, y: number) => {
+    const card = readoutRef.current;
+    const surface = surfaceRef.current;
+    if (!card || !surface) return { x, y };
+    const c = card.getBoundingClientRect();
+    const sr = surface.getBoundingClientRect();
+    const left = c.left - sr.left - 18;
+    const top = c.top - sr.top - 18;
+    if (x <= left || y <= top) return { x, y };
+    const inX = x - left;
+    const inY = y - top;
+    return inX < inY
+      ? { x: left + rubberband(inX, c.width), y }
+      : { x, y: top + rubberband(inY, c.height) };
+  }, []);
+
+  /* Where the pin is allowed to come to rest: 26px inside every edge (so the
+     pin and its label are never clipped), and never under the readout card in
+     the corner. A resting point inside the card moves to the card's nearer
+     edge. Dragging may still pass over the card; the pin rides above it. */
+  const safeTarget = useCallback((x: number, y: number) => {
+    const { w, h } = size.current;
+    const pad = 26;
+    let tx = Math.max(pad, Math.min(w - pad, x));
+    let ty = Math.max(pad + 16, Math.min(h - pad, y));
+    const card = readoutRef.current;
+    const surface = surfaceRef.current;
+    if (card && surface) {
+      const c = card.getBoundingClientRect();
+      const sr = surface.getBoundingClientRect();
+      const left = c.left - sr.left - 18;
+      const top = c.top - sr.top - 18;
+      if (tx > left && ty > top) {
+        if (tx - left < ty - top) tx = left;
+        else ty = top;
+      }
+    }
+    return { x: tx, y: ty };
   }, []);
 
   /* One rAF loop, two independent springs. X and Y are integrated separately —
@@ -270,7 +308,7 @@ export default function RadarDemo() {
     const rawX = e.clientX - rect.left - grabOffset.current.x;
     const rawY = e.clientY - rect.top - grabOffset.current.y;
 
-    pos.current = { x: resist(rawX, w), y: resist(rawY, h) };
+    pos.current = resistCard(resist(rawX, w), resist(rawY, h));
 
     const now = performance.now();
     history.current.push({ t: now, x: pos.current.x, y: pos.current.y });
@@ -283,7 +321,6 @@ export default function RadarDemo() {
     if (!dragging.current) return;
     dragging.current = false;
     setActive(false);
-    const { w, h } = size.current;
 
     // Velocity from the recent sample window, not the last event — a single
     // frame's delta is far too noisy to throw with.
@@ -297,10 +334,7 @@ export default function RadarDemo() {
     // Where the throw wants to end up, then clamped back inside the surface.
     const projX = pos.current.x + project(vx);
     const projY = pos.current.y + project(vy);
-    target.current = {
-      x: Math.max(0, Math.min(w, projX)),
-      y: Math.max(0, Math.min(h, projY)),
-    };
+    target.current = safeTarget(projX, projY);
 
     vel.current = { x: vx, y: vy };
     const flicked = Math.hypot(vx, vy) > 220;
@@ -323,62 +357,49 @@ export default function RadarDemo() {
     if (!move) return;
     e.preventDefault();
     setTouched(true);
-    target.current = {
-      x: Math.max(0, Math.min(w, target.current.x + move[0])),
-      y: Math.max(0, Math.min(h, target.current.y + move[1])),
-    };
+    target.current = safeTarget(target.current.x + move[0], target.current.y + move[1]);
     startSpring(1);
   }
 
   const uplift = Math.round(((readout.rate - BASELINE) / BASELINE) * 100);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white shadow-overlay-lg">
-      {/* window chrome */}
-      <div className="flex h-11 items-center gap-2 border-b border-slate-200 bg-slate-50 px-4">
-        <div className="flex gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-          <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+    <div className="bg-white">
+      {/* panel header: which property, and what the panel is showing */}
+      <div className="flex h-14 items-center justify-between gap-3 px-5">
+        <div className="min-w-0">
+          <div className="truncate text-[14px] font-semibold tracking-tight text-[#0b1c30]">Harbor Pine Inn</div>
+          <div className="font-geist-mono text-[11.5px] text-[#44474d]">Compset, tonight</div>
         </div>
-        <div className="ml-auto text-[11px] font-medium text-slate-400">Harbor Pine Inn · Kestrel Bay, OR</div>
       </div>
 
-      {/* radar surface */}
-      <div ref={surfaceRef} className="relative h-[340px] bg-[#131b2e]">
+      {/* radar surface: Instrument Navy, because every mark on it is a reading */}
+      <div ref={surfaceRef} className="relative h-[320px] overflow-hidden bg-[#131b2e] md:h-[340px]">
         <div
-          className="absolute inset-0 opacity-25"
+          aria-hidden
+          className="absolute inset-0 opacity-20"
           style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, #adc6ff 1px, transparent 0)',
             backgroundSize: '24px 24px',
           }}
         />
 
-        {/* competitor rates — the nearest one lights up as you approach it, so
+        {/* competitor rates. The nearest one lights up as you approach it, so
             the number in the corner always shows its work. */}
         {COMPETITORS.map((c, i) => {
           const near = readout.nearest === i;
           return (
-            <div
-              key={c.name}
-              className="absolute transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-              style={{
-                top: `${c.y * 100}%`,
-                left: `${c.x * 100}%`,
-                transform: near ? 'scale(1.25)' : 'scale(1)',
-              }}
-            >
+            <div key={c.name} className="absolute" style={{ top: `${c.y * 100}%`, left: `${c.x * 100}%` }}>
+              {/* Only the dot grows. Scaling the price would soften the text. */}
               <span
-                className="block h-2 w-2 rounded-full bg-[#67dca8] transition-shadow duration-300"
-                style={{
-                  boxShadow: near ? '0 0 16px rgba(103,220,168,0.95)' : '0 0 10px rgba(103,220,168,0.7)',
-                }}
+                className={`absolute left-0 top-0 block h-2 w-2 rounded-full transition-[transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                  near ? 'bg-white ring-4 ring-white/15' : 'bg-[#adc6ff]'
+                }`}
+                style={{ transform: `translate(-50%, -50%) scale(${near ? 1.35 : 1})` }}
               />
               <span
-                className={`absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded border px-1.5 text-[10px] font-semibold transition-colors duration-300 ${
-                  near
-                    ? 'border-[#67dca8]/60 bg-white text-slate-900'
-                    : 'border-white/15 bg-white/90 text-slate-700'
+                className={`absolute -top-7 left-0 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-px font-geist-mono text-[11px] tabular-nums transition-colors duration-300 ${
+                  near ? 'bg-white text-[#1a1b20]' : 'bg-white/10 text-[#d8e2ff]'
                 }`}
               >
                 ${c.price}
@@ -387,8 +408,8 @@ export default function RadarDemo() {
           );
         })}
 
-        {/* your property — the draggable one */}
-        <div ref={pinRef} className="absolute left-0 top-0">
+        {/* your property, the draggable one */}
+        <div ref={pinRef} className="absolute left-0 top-0 z-10">
           <div
             role="slider"
             tabIndex={0}
@@ -405,52 +426,46 @@ export default function RadarDemo() {
             className="relative flex -translate-x-1/2 -translate-y-1/2 touch-none cursor-grab items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:cursor-grabbing"
             style={{ width: 44, height: 44 }}
           >
+            {/* The pulse invites the first drag and nothing more: it leaves the
+                pin, fades out before it restarts, and stops for good once the
+                pin has been touched. Never for viewers who asked for less motion. */}
+            {!touched && (
+              <span
+                aria-hidden
+                className="radar-pulse absolute h-[160px] w-[160px] rounded-full border border-[#adc6ff]/50 opacity-0"
+              />
+            )}
+            <span aria-hidden className="absolute h-[88px] w-[88px] rounded-full border border-[#adc6ff]/25" />
             {/* 44px hit target, but the visible pin stays small */}
             <span
-              className={`absolute rounded-full border border-[#085ac0]/40 ${active ? '' : 'animate-ping'}`}
-              style={{ width: 192, height: 192, opacity: 0.2 }}
+              className="rounded-full bg-[#085ac0] ring-2 ring-white transition-transform duration-150 ease-[cubic-bezier(0,0,0.2,1)]"
+              style={{ width: 14, height: 14, transform: active ? 'scale(1.35)' : 'scale(1)' }}
             />
             <span
-              className={`absolute rounded-full border border-[#085ac0]/50 ${active ? '' : 'animate-ping'}`}
-              style={{ width: 128, height: 128, opacity: 0.4, animationDelay: '1s' }}
-            />
-            <span
-              className="rounded-full bg-[#085ac0] transition-transform duration-150 ease-[cubic-bezier(0,0,0.2,1)]"
-              style={{
-                width: 14,
-                height: 14,
-                boxShadow: '0 0 16px rgba(8,90,192,0.9)',
-                transform: active ? 'scale(1.35)' : 'scale(1)',
-              }}
-            />
-            <span className="pointer-events-none absolute -top-7 whitespace-nowrap rounded bg-[#085ac0] px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white">
-              YOUR PROPERTY
+              className={`pointer-events-none absolute whitespace-nowrap rounded-full bg-[#085ac0] px-2 py-px font-geist-mono text-[11.5px] text-white ${
+                crowded ? 'top-[calc(100%+2px)]' : '-top-7'
+              }`}
+            >
+              You
             </span>
           </div>
         </div>
 
-        <div className="pointer-events-none absolute left-4 top-4 rounded border border-[#085ac0]/40 bg-[#085ac0]/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#adc6ff] backdrop-blur">
-          Radar active
-        </div>
-
-        {/* the recommendation itself — recomputed on every frame of the drag,
+        {/* the recommendation itself, recomputed on every frame of the drag,
             so the number leads the gesture instead of reporting on it. */}
-        <div className="pointer-events-none absolute bottom-4 right-4 min-w-[150px] rounded-xl border border-white/15 bg-white/95 p-3.5 text-center shadow-overlay-sm backdrop-blur">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Tonight · Standard
-          </div>
-          <div className="font-display text-[32px] font-semibold leading-none tabular-nums text-[#0b1c30]">
+        <div ref={readoutRef} className="pointer-events-none absolute bottom-4 right-4 min-w-[156px] rounded-2xl bg-white px-4 py-3.5 text-right shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_16px_32px_-16px_rgba(5,12,24,0.55)]">
+          <div className="font-geist-mono text-[11.5px] text-[#44474d]">Tonight, Standard</div>
+          <div className="mt-1.5 text-[34px] font-semibold leading-none tracking-tighter tabular-nums text-[#085ac0]">
             ${readout.rate}
           </div>
-          <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] font-semibold text-emerald-600">
-            <TrendIcon className="h-3 w-3" />
+          <div className="mt-1.5 font-geist-mono text-[11px] tabular-nums text-[#029768]">
             {uplift >= 0 ? '+' : ''}
-            {uplift}% · vs ${BASELINE} baseline
+            {uplift}% vs ${BASELINE} baseline
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-5 left-4 text-[10px] font-medium uppercase tracking-[0.14em] text-[#adc6ff]/60">
-          {touched ? `Anchored by ${COMPETITORS[readout.nearest].name}` : 'Drag your property →'}
+        <div className="pointer-events-none absolute bottom-5 left-4 max-w-[45%] font-geist-mono text-[11.5px] text-[#adc6ff]">
+          {touched ? `Anchored by ${COMPETITORS[readout.nearest].name}` : 'Drag your property'}
         </div>
 
         {/* Announced on settle rather than on every frame, so a screen reader
@@ -460,25 +475,27 @@ export default function RadarDemo() {
         </span>
       </div>
 
-      {/* reasoning strip — the honest states, on the marketing page too */}
-      <div className="space-y-2.5 px-5 py-4 text-[13px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-700">Neon Compass @ Harborview Amphitheater</span>
-          <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
-            score 82 · major
+      {/* reasoning strip: the honest states, on the marketing page too */}
+      <ul className="divide-y divide-[#0b1c30]/[0.06] px-5 text-[13.5px]">
+        <li className="flex items-center justify-between gap-3 py-2.5">
+          <span className="min-w-0 truncate text-[#1a1b20]">Neon Compass, Harborview Amphitheater</span>
+          <span className="shrink-0 rounded-full bg-[#085ac0] px-2.5 py-0.5 text-[12px] font-medium text-white">
+            Major
           </span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-500">Cascadia State home game</span>
-          <span className="shrink-0 text-[11px] text-slate-400">too small to matter — shown anyway</span>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-700">Expedia listing $101</span>
-          <span className="shrink-0 rounded bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700">
-            $12 parity gap
+        </li>
+        <li className="flex items-center justify-between gap-3 py-2.5">
+          <span className="min-w-0 truncate text-[#44474d]">Cascadia State home game</span>
+          <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[12px] font-medium text-[#44474d] bg-[#0b1c30]/[0.05]">
+            Too small to matter
           </span>
-        </div>
-      </div>
+        </li>
+        <li className="flex items-center justify-between gap-3 py-2.5">
+          <span className="min-w-0 truncate text-[#1a1b20]">Expedia lists $101, direct is $89</span>
+          <span className="shrink-0 rounded-full bg-[#b45309]/[0.08] px-2.5 py-0.5 text-[12px] font-medium text-[#b45309]">
+            $12 gap
+          </span>
+        </li>
+      </ul>
     </div>
   );
 }

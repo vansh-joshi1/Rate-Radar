@@ -1,379 +1,375 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /*
- * "How it works", scrubbed by scroll instead of asserted in three cards.
+ * "How it works", told as the pipeline actually runs: sources arrive, each
+ * event is scored, the one judged too small stays on screen dimmed, and a rate
+ * lands at the end.
  *
- * The page claims the scoring is deterministic and inspectable, so this section
- * runs it: sources arrive, each event gets a score, the one judged too small is
- * shown and dimmed rather than dropped, and a rate lands at the end. Scroll
- * position IS the timeline — there is no playback, so scrubbing backwards
- * reverses everything for free. That is the whole reason to drive it from
- * scroll rather than from a timer.
+ * On wide screens the navy panel sticks while three invisible sentinels scroll
+ * past behind it. An IntersectionObserver watches which sentinel is crossing
+ * the middle of the viewport, and that is the active stage. React state changes
+ * three times per pass, never per frame, and there is no scroll listener. The
+ * page never stops scrolling; nothing here locks the wheel.
  *
- * Rules it holds to:
- *  - the page never stops scrolling; nothing here hijacks or locks the wheel
- *  - scroll is read in a rAF, and only transform/opacity/textContent are written
- *  - React state changes three times (the active stage), never per frame
- *  - reduced motion gets a real static version, not a disabled one
- *  - before hydration the static version is what renders, so the content is
- *    readable with no JS at all
+ * Phones, reduced motion and pre-hydration all get the static version: a real
+ * stacked layout, not the sticky one with motion switched off.
  *
- * Illustrative sample data, matching the figures used elsewhere on the page.
+ * Illustrative sample data from the demo world (lib/demo.ts). Source labels are
+ * generic there for the same reason they are here: no real call happened.
  */
 
-const SOURCES = [
-  { name: 'Ticketmaster', detail: '3 venues' },
-  { name: 'College Football Data', detail: 'Vanderbilt' },
-  { name: 'NWS alerts', detail: '2 counties' },
-  { name: 'FAA', detail: 'BNA status' },
-  { name: 'University + MCC calendars', detail: 'scraped' },
-  { name: 'OTA listings', detail: '4 sources' },
+const SOURCES: { name: string; detail: string; stale?: string }[] = [
+  { name: 'Events', detail: '3 venues' },
+  { name: 'College sports', detail: 'home schedule' },
+  { name: 'Weather alerts', detail: '2 counties' },
+  { name: 'Airport status', detail: 'delays + closures' },
+  { name: 'Campus + convention calendars', detail: 'scraped' },
+  { name: 'Hotel prices', detail: 'compset + parity', stale: '4h old cache' },
 ];
 
 type Signal = { label: string; note: string; delta: string; kind: 'base' | 'major' | 'plain' | 'rejected' };
 
 const SIGNALS: Signal[] = [
-  { label: 'Friday baseline', note: 'day-of-week curve', delta: '$94', kind: 'base' },
-  { label: 'Neon Compass @ Harborview Amphitheater', note: 'score 82 · major', delta: '+18%', kind: 'major' },
-  { label: 'Downtown absorbs most of the draw', note: 'distance dampener', delta: '−6%', kind: 'plain' },
-  { label: 'Compset median $96', note: 'quiet-night bound', delta: 'in range', kind: 'plain' },
-  { label: 'Cascadia State home game', note: 'score 11', delta: 'too small to matter', kind: 'rejected' },
+  { label: 'Friday baseline', note: 'day-of-week', delta: '$79', kind: 'base' },
+  { label: 'Neon Compass, Harborview Amphitheater', note: 'score 82, major', delta: '+18%', kind: 'major' },
+  { label: 'Downtown absorbs most of the draw', note: 'distance dampener', delta: '−5%', kind: 'plain' },
+  { label: 'Compset median $96', note: 'event nights are never capped', delta: 'no cap', kind: 'plain' },
+  { label: 'Cascadia State home game', note: 'score 11', delta: 'Too small to matter', kind: 'rejected' },
 ];
 
 const STAGES = [
-  { n: '1', title: 'Collect', body: 'Six public sources, seven times a day, gathered automatically.' },
-  { n: '2', title: 'Score', body: 'Every signal scored and compounded — including the ones that lose.' },
-  { n: '3', title: 'You decide', body: 'A rate with its reasoning attached. You set the price.' },
+  { title: 'Collect', body: 'Six sources, twice a day. A source that breaks is skipped and named, and the run carries on.' },
+  { title: 'Score', body: 'Every event is scored for overflow. The ones that lose stay on screen.' },
+  { title: 'Recommend', body: 'A rate with its reasoning attached. You set the price.' },
 ];
 
 const BASELINE = 79;
 const RECOMMENDED = 89;
 
-const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
-/** Exponential ease-out — things arrive quickly and settle, never accelerate in. */
-const easeOut = (t: number) => 1 - Math.pow(1 - clamp01(t), 3);
-/** Local progress of a window inside the overall 0..1 scrub. */
-const window_ = (p: number, from: number, to: number) => clamp01((p - from) / (to - from));
+/* Where each stage starts, as a fraction of the 300vh track. Uneven on purpose:
+   the middle stage has the most to read. */
+const BOUNDS = ['0%', '37%', '63%', '100%'];
 
 export default function HowItWorks() {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const sourceRefs = useRef<(HTMLLIElement | null)[]>([]);
-  const signalRefs = useRef<(HTMLLIElement | null)[]>([]);
-  const stageRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const railFill = useRef<HTMLSpanElement>(null);
+  const sentinelRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rateRef = useRef<HTMLSpanElement>(null);
-  const upliftRef = useRef<HTMLSpanElement>(null);
-  const raf = useRef<number | null>(null);
-
-  const [mounted, setMounted] = useState(false);
-  const [reduced, setReduced] = useState(false);
+  const [interactive, setInteractive] = useState(false);
   const [stage, setStage] = useState(0);
 
-  const draw = useCallback(() => {
-    raf.current = null;
-    const track = trackRef.current;
-    if (!track) return;
-
-    const rect = track.getBoundingClientRect();
-    const travel = rect.height - window.innerHeight;
-    const p = travel > 0 ? clamp01(-rect.top / travel) : 0;
-
-    railFill.current?.style.setProperty('height', `${p * 100}%`);
-
-    // Stage 1 — sources arrive one at a time.
-    SOURCES.forEach((_, i) => {
-      const el = sourceRefs.current[i];
-      if (!el) return;
-      const local = easeOut(window_(p, 0.02 + i * 0.035, 0.14 + i * 0.035));
-      el.style.opacity = String(local);
-      el.style.transform = `translate3d(0, ${(1 - local) * 10}px, 0)`;
-    });
-
-    // Stage 2 — signals resolve in order. The rejected one arrives like the
-    // rest and then stays dimmed; it is evidence, not an error.
-    SIGNALS.forEach((_, i) => {
-      const el = signalRefs.current[i];
-      if (!el) return;
-      const local = easeOut(window_(p, 0.36 + i * 0.045, 0.48 + i * 0.045));
-      el.style.opacity = String(local);
-      el.style.transform = `translate3d(${(1 - local) * -8}px, 0, 0)`;
-    });
-
-    // Stage 3 — the number resolves from baseline to recommendation.
-    const settle = easeOut(window_(p, 0.72, 0.94));
-    const value = Math.round(BASELINE + (RECOMMENDED - BASELINE) * settle);
-    if (rateRef.current) rateRef.current.textContent = `$${value}`;
-    if (upliftRef.current) {
-      const pct = Math.round(((value - BASELINE) / BASELINE) * 100);
-      upliftRef.current.textContent = `+${pct}% vs $${BASELINE} baseline`;
-    }
-
-    // Panels cross-fade; only one is legible at a time.
-    const activeIdx = p < 0.33 ? 0 : p < 0.69 ? 1 : 2;
-    stageRefs.current.forEach((el, i) => {
-      if (!el) return;
-      const on = i === activeIdx;
-      el.style.opacity = on ? '1' : '0';
-      el.style.transform = `translate3d(0, ${on ? 0 : 12}px, 0)`;
-      el.style.pointerEvents = on ? 'auto' : 'none';
-      el.setAttribute('aria-hidden', on ? 'false' : 'true');
-    });
-
-    setStage((prev) => (prev === activeIdx ? prev : activeIdx));
-  }, []);
-
-  const onScroll = useCallback(() => {
-    if (raf.current !== null) return;
-    raf.current = requestAnimationFrame(draw);
-  }, [draw]);
-
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReduced(mq.matches);
-    setMounted(true);
-    const onChange = () => setReduced(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted || reduced) return;
-    draw();
-    /* Backgrounded tabs stop servicing rAF, so a frame queued on the way out
-       never resolves and the coalescing guard stays armed. Drop it on the way
-       back in and redraw once from wherever the page now sits — the scroll
-       position can have moved while we were away. */
-    const onVisibility = () => {
-      if (raf.current !== null) {
-        cancelAnimationFrame(raf.current);
-        raf.current = null;
-      }
-      if (!document.hidden) draw();
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    document.addEventListener('visibilitychange', onVisibility);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const wide = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setInteractive(wide.matches && !reduced.matches);
+    sync();
+    reduced.addEventListener('change', sync);
+    wide.addEventListener('change', sync);
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      document.removeEventListener('visibilitychange', onVisibility);
-      if (raf.current !== null) cancelAnimationFrame(raf.current);
+      reduced.removeEventListener('change', sync);
+      wide.removeEventListener('change', sync);
     };
-  }, [mounted, reduced, draw, onScroll]);
+  }, []);
+
+  useEffect(() => {
+    if (!interactive) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          const i = sentinelRefs.current.indexOf(e.target as HTMLDivElement);
+          if (i >= 0) setStage(i);
+        });
+      },
+      // A one-pixel line across the middle of the viewport.
+      { rootMargin: '-50% 0px -50% 0px' },
+    );
+    sentinelRefs.current.forEach((el) => el && io.observe(el));
+    return () => io.disconnect();
+  }, [interactive]);
+
+  // The number resolves from baseline to recommendation once, on arrival.
+  useEffect(() => {
+    const el = rateRef.current;
+    if (!el) return;
+    if (stage !== 2) {
+      el.textContent = `$${BASELINE}`;
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min((now - start) / 800, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = `$${Math.round(BASELINE + (RECOMMENDED - BASELINE) * eased)}`;
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [stage]);
 
   const heading = (
-    <div className="mx-auto max-w-[1200px] px-6">
-      <h2 className="max-w-2xl font-display text-[32px] font-bold tracking-tight text-[#0b1c30] md:text-[38px]">
+    <div className="mx-auto w-full max-w-[1200px]">
+      <h2 className="text-balance text-[36px] font-semibold leading-[1.05] tracking-tighter text-[#0b1c30] md:text-[52px]">
         Watch it reason
       </h2>
-      <p className="mt-4 max-w-xl text-[16px] leading-relaxed text-[#44474d]">
-        No black box. Every recommendation is the same three steps, and every step shows its arithmetic — including
-        the signals it decides not to act on.
+      <p className="mt-6 max-w-[56ch] text-pretty text-[17px] leading-relaxed text-[#44474d]">
+        Collect, score, recommend. Every step shows its arithmetic, including the signals it decides not to act on.
       </p>
     </div>
   );
 
-  /* Static version: pre-hydration, no-JS, and reduced motion all land here. It
-     is a real layout rather than the scrubbed one with the motion switched off. */
-  if (!mounted || reduced) {
+  if (!interactive) {
     return (
-      <section id="how-it-works" className="bg-white px-6 py-24">
+      <section id="how-it-works" className="scroll-mt-24 px-4 pb-24 md:px-6 md:pb-40">
         {heading}
-        <div className="mx-auto mt-14 grid max-w-[1200px] gap-6 md:grid-cols-3">
+        <ol className="mx-auto mt-14 max-w-[1200px] space-y-12">
           {STAGES.map((s, i) => (
-            <div key={s.n} className="rounded-2xl border border-[#c4c6cd] bg-white p-8">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#085ac0] font-display text-[14px] font-bold text-white">
-                {s.n}
+            <li key={s.title} className="grid grid-cols-1 gap-5 md:grid-cols-[240px_minmax(0,1fr)] md:gap-10">
+              <div>
+                <h3 className="text-[20px] font-semibold tracking-tight text-[#0b1c30]">{s.title}</h3>
+                <p className="mt-2 text-pretty text-[14.5px] leading-relaxed text-[#44474d]">{s.body}</p>
               </div>
-              <h3 className="mt-5 font-display text-[20px] font-semibold text-[#0b1c30]">{s.title}</h3>
-              <p className="mt-2.5 text-[14px] leading-relaxed text-[#44474d]">{s.body}</p>
-              <ul className="mt-5 space-y-1.5 border-t border-[#c4c6cd]/60 pt-4 text-[13px] text-[#44474d]">
-                {i === 0 && SOURCES.map((x) => <li key={x.name}>{x.name} · {x.detail}</li>)}
-                {i === 1 &&
-                  SIGNALS.map((x) => (
-                    <li key={x.label} className={x.kind === 'rejected' ? 'text-[#74777d]' : ''}>
-                      {x.label} — {x.delta}
-                    </li>
-                  ))}
-                {i === 2 && (
-                  <>
-                    <li className="font-display text-[24px] font-semibold tabular-nums text-[#0b1c30]">
-                      ${RECOMMENDED}
-                    </li>
-                    <li>+13% vs ${BASELINE} baseline</li>
-                    <li className="text-[#74777d]">Rate Radar never changes a price anywhere.</li>
-                  </>
-                )}
-              </ul>
-            </div>
+              <div className="rounded-[2rem] bg-[#0b1c30]/[0.035] p-1.5 ring-1 ring-[#0b1c30]/[0.05]"><div className="rounded-[calc(2rem-0.375rem)] bg-[#0b1c30] p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]">
+                {i === 0 && <SourceList visible />}
+                {i === 1 && <SignalList visible />}
+                {i === 2 && <Verdict rate={RECOMMENDED} visible />}
+              </div></div>
+            </li>
           ))}
-        </div>
+        </ol>
       </section>
     );
   }
 
   return (
-    <section id="how-it-works" className="bg-white">
-      {/* The scroll distance the scrub is mapped onto. Nothing is pinned or
-          hijacked — the page scrolls normally, the panel just stays put while
-          it passes. */}
-      <div ref={trackRef} className="relative h-[300vh]">
-        <div className="sticky top-24 pb-16 pt-20">
+    <section id="how-it-works" className="scroll-mt-24">
+      <div className="relative h-[300vh]">
+        {/* the sentinels: invisible, stacked behind the sticky panel */}
+        <div aria-hidden className="absolute inset-0">
+          {STAGES.map((s, i) => (
+            <div
+              key={s.title}
+              ref={(el) => {
+                sentinelRefs.current[i] = el;
+              }}
+              className="absolute inset-x-0"
+              style={{ top: BOUNDS[i], height: `calc(${BOUNDS[i + 1]} - ${BOUNDS[i]})` }}
+            />
+          ))}
+        </div>
+
+        <div className="sticky top-0 flex h-[100dvh] flex-col justify-center px-6 pt-16">
           {heading}
 
-          <div className="mx-auto mt-12 grid max-w-[1200px] gap-10 px-6 lg:grid-cols-[220px_1fr]">
+          <div className="mx-auto mt-10 grid w-full max-w-[1200px] grid-cols-[240px_1fr] gap-12">
             {/* stage rail */}
-            <ol className="relative hidden lg:block">
-              <span aria-hidden className="absolute left-[15px] top-2 h-[calc(100%-1rem)] w-px bg-[#c4c6cd]/70" />
+            <ol className="relative self-start">
+              <span aria-hidden className="absolute bottom-3 left-[5px] top-3 w-px bg-[#0b1c30]/[0.12]" />
               <span
-                ref={railFill}
                 aria-hidden
-                className="absolute left-[15px] top-2 w-px bg-[#085ac0]"
-                style={{ height: '0%' }}
+                className="absolute left-[5px] top-3 w-px origin-top bg-[#085ac0] transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                style={{ height: 'calc(100% - 1.5rem)', transform: `scaleY(${stage / (STAGES.length - 1)})` }}
               />
               {STAGES.map((s, i) => (
-                <li key={s.n} className="relative mb-9 pl-11">
+                <li key={s.title} className="relative mb-8 pl-8 last:mb-0" aria-current={i === stage ? 'step' : undefined}>
                   <span
-                    className={`absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full border font-display text-[13px] font-bold transition-colors duration-300 ${
-                      i <= stage
-                        ? 'border-[#085ac0] bg-[#085ac0] text-white'
-                        : 'border-[#c4c6cd] bg-white text-[#74777d]'
+                    aria-hidden
+                    className={`absolute left-0 top-[7px] h-[11px] w-[11px] rounded-full border transition-colors duration-300 ${
+                      i <= stage ? 'border-[#085ac0] bg-[#085ac0]' : 'border-[#0b1c30]/20 bg-[#f8f9ff]'
                     }`}
-                  >
-                    {s.n}
-                  </span>
+                  />
                   <h3
-                    className={`font-display text-[16px] font-semibold transition-colors duration-300 ${
-                      i === stage ? 'text-[#0b1c30]' : 'text-[#74777d]'
+                    className={`text-[18px] font-semibold tracking-tight transition-colors duration-500 ${
+                      i === stage ? 'text-[#0b1c30]' : 'text-[#44474d]/70'
                     }`}
                   >
                     {s.title}
                   </h3>
-                  <p className="mt-1 text-[13px] leading-relaxed text-[#74777d]">{s.body}</p>
+                  <p
+                    className={`mt-1.5 text-[13.5px] leading-relaxed transition-colors duration-500 ${
+                      i === stage ? 'text-[#44474d]' : 'text-[#44474d]/60'
+                    }`}
+                  >
+                    {s.body}
+                  </p>
                 </li>
               ))}
             </ol>
 
-            {/* the panel — Instrument Navy, because everything in it is a raw
+            {/* the panel: Instrument Navy, because everything in it is a raw
                 machine reading rather than an interpretation of one */}
-            <div className="relative h-[420px] overflow-hidden rounded-2xl border border-white/10 bg-[#0b1c30]">
-              <div
-                aria-hidden
-                className="absolute inset-0 opacity-20"
-                style={{
-                  backgroundImage: 'radial-gradient(circle at 2px 2px, #adc6ff 1px, transparent 0)',
-                  backgroundSize: '24px 24px',
-                }}
-              />
-
-              {/* stage 1 — collect */}
-              <div
-                ref={(el) => { stageRefs.current[0] = el; }}
-                className="absolute inset-0 p-7 transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-              >
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#adc6ff]">
-                  Collector run · 07:00 CT
-                </div>
-                <ul className="mt-5 space-y-2.5">
-                  {SOURCES.map((s, i) => (
-                    <li
-                      key={s.name}
-                      ref={(el) => { sourceRefs.current[i] = el; }}
-                      className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5"
-                      style={{ opacity: 0 }}
-                    >
-                      <span className="flex items-center gap-2.5 text-[14px] text-white">
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#67dca8]" />
-                        {s.name}
-                      </span>
-                      <span className="shrink-0 text-[11px] uppercase tracking-wider text-[#adc6ff]/70">
-                        {s.detail}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* stage 2 — score */}
-              <div
-                ref={(el) => { stageRefs.current[1] = el; }}
-                className="absolute inset-0 p-7 transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                style={{ opacity: 0 }}
-              >
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#adc6ff]">
-                  Scoring · Friday 14 August
-                </div>
-                <ul className="mt-5 space-y-2">
-                  {SIGNALS.map((s, i) => (
-                    <li
-                      key={s.label}
-                      ref={(el) => { signalRefs.current[i] = el; }}
-                      className={`flex items-baseline justify-between gap-4 border-b border-white/10 pb-2.5 ${
-                        s.kind === 'rejected' ? 'opacity-100' : ''
-                      }`}
-                      style={{ opacity: 0 }}
-                    >
-                      <span className="min-w-0">
-                        <span
-                          className={`block truncate text-[14px] ${
-                            s.kind === 'rejected' ? 'text-[#75859d]' : 'text-white'
-                          }`}
-                        >
-                          {s.label}
-                        </span>
-                        <span className="block text-[11px] uppercase tracking-wider text-[#adc6ff]/60">{s.note}</span>
-                      </span>
-                      <span
-                        className={`shrink-0 tabular-nums ${
-                          s.kind === 'rejected'
-                            ? 'text-[11px] text-[#75859d]'
-                            : s.kind === 'major'
-                              ? 'text-[14px] font-semibold text-[#67dca8]'
-                              : 'text-[14px] text-white'
-                        }`}
-                      >
-                        {s.delta}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-4 text-[11px] leading-relaxed text-[#75859d]">
-                  The rejected line stays on screen. A recommendation you can only see the winners of is not
-                  auditable.
-                </p>
-              </div>
-
-              {/* stage 3 — decide */}
-              <div
-                ref={(el) => { stageRefs.current[2] = el; }}
-                className="absolute inset-0 flex flex-col items-center justify-center p-7 text-center transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-                style={{ opacity: 0 }}
-              >
-                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#adc6ff]">
-                  Tonight · Standard
-                </div>
-                <span
-                  ref={rateRef}
-                  className="mt-2 font-display text-[56px] font-bold leading-none tabular-nums text-white"
+            <div className="rounded-[2rem] bg-[#0b1c30]/[0.035] p-1.5 shadow-[0_32px_64px_-32px_rgba(11,28,48,0.25)] ring-1 ring-[#0b1c30]/[0.05]"><div className="relative h-[420px] overflow-hidden rounded-[calc(2rem-0.375rem)] bg-[#0b1c30] shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)] [@media(max-height:760px)]:h-[360px]">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  aria-hidden={i !== stage}
+                  className={`absolute inset-0 p-7 transition-opacity duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                    i === stage ? 'opacity-100' : 'pointer-events-none opacity-0'
+                  }`}
                 >
-                  ${BASELINE}
-                </span>
-                <span ref={upliftRef} className="mt-3 text-[14px] font-semibold tabular-nums text-[#67dca8]">
-                  +0% vs ${BASELINE} baseline
-                </span>
-                <p className="mt-6 max-w-sm text-[14px] leading-relaxed text-[#adc6ff]">
-                  It lands on your dashboard, and in your inbox when it matters.
-                </p>
-                <p className="mt-2 text-[13px] font-semibold text-white">
-                  You set the price. Rate Radar never touches it.
-                </p>
-              </div>
-            </div>
+                  {i === 0 && <SourceList visible={stage === 0} />}
+                  {i === 1 && <SignalList visible={stage === 1} />}
+                  {i === 2 && <Verdict rateRef={rateRef} rate={BASELINE} visible={stage === 2} />}
+                </div>
+              ))}
+            </div></div>
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+/* Rows arrive one after another when their stage becomes active, and reset
+   when it leaves, so scrolling back replays them in order. */
+function arrive(visible: boolean, i: number) {
+  return {
+    className: `transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+      visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
+    }`,
+    style: { transitionDelay: visible ? `${i * 70}ms` : '0ms' },
+  };
+}
+
+function PanelLabel({ children }: { children: React.ReactNode }) {
+  return <div className="font-geist-mono text-[12px] text-[#adc6ff]">{children}</div>;
+}
+
+function SourceList({ visible }: { visible: boolean }) {
+  return (
+    <>
+      <PanelLabel>Collector run, 07:00 CT</PanelLabel>
+      <ul className="mt-4 divide-y divide-white/[0.08]">
+        {SOURCES.map((s, i) => {
+          const a = arrive(visible, i);
+          return (
+            <li key={s.name} className={`flex items-center justify-between gap-4 py-2.5 ${a.className}`} style={a.style}>
+              <span className="min-w-0">
+                <span className="block truncate text-body-md text-white">{s.name}</span>
+                <span className="block text-body-sm text-[#adc6ff]/80">{s.detail}</span>
+              </span>
+              {s.stale ? (
+                <span className="shrink-0 rounded-full bg-[#fbbf24]/10 px-2.5 py-0.5 text-[12px] font-medium text-[#fbbf24]">
+                  {s.stale}
+                </span>
+              ) : (
+                <span className="shrink-0 text-[12px] font-medium text-[#67dca8]">Fresh</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
+function SignalList({ visible }: { visible: boolean }) {
+  return (
+    <>
+      <PanelLabel>Scoring, Friday</PanelLabel>
+      <ul className="mt-4 divide-y divide-white/[0.08]">
+        {SIGNALS.map((s, i) => {
+          const a = arrive(visible, i);
+          const rejected = s.kind === 'rejected';
+          return (
+            <li key={s.label} className={`flex items-baseline justify-between gap-4 py-2.5 ${a.className}`} style={a.style}>
+              <span className="min-w-0">
+                <span className={`block truncate text-body-md ${rejected ? 'text-[#9ba4b4]' : 'text-white'}`}>
+                  {s.label}
+                </span>
+                <span className="block text-body-sm text-[#adc6ff]/70">{s.note}</span>
+              </span>
+              {rejected ? (
+                <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[12px] font-medium bg-white/[0.06] text-[#9ba4b4]">
+                  {s.delta}
+                </span>
+              ) : (
+                <span
+                  className={`shrink-0 font-geist-mono text-[13px] tabular-nums ${
+                    s.kind === 'major' ? 'font-semibold text-[#67dca8]' : 'text-white'
+                  }`}
+                >
+                  {s.delta}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
+function Verdict({
+  rate,
+  visible,
+  rateRef,
+}: {
+  rate: number;
+  visible: boolean;
+  rateRef?: React.RefObject<HTMLSpanElement>;
+}) {
+  const a = arrive(visible, 0);
+  const b = arrive(visible, 3);
+  return (
+    <div className="grid h-full grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)] lg:gap-10">
+      <div>
+        <PanelLabel>Tonight, Standard</PanelLabel>
+        <span ref={rateRef} className="mt-3 block text-[72px] font-semibold leading-none tracking-tighter tabular-nums text-white">
+          ${rate}
+        </span>
+        <span className="mt-3 block font-geist-mono text-[13px] tabular-nums text-[#67dca8]">
+          +{Math.round(((RECOMMENDED - BASELINE) / BASELINE) * 100)}% vs ${BASELINE} baseline, range $84 to $94
+        </span>
+        <div className={`mt-8 max-w-sm ${a.className}`} style={a.style}>
+          <p className="text-body-md text-[#adc6ff]">
+            It lands on the dashboard every morning, and in your inbox when the number moves.
+          </p>
+        </div>
+        <p className={`mt-2 text-body-md font-semibold text-white ${b.className}`} style={b.style}>
+          You set the price. Rate Radar never touches it.
+        </p>
+      </div>
+      <AlertEmail visible={visible} />
+    </div>
+  );
+}
+
+/* The alert as it reaches the owner's inbox, arriving once the number has
+   settled: this is what "in your inbox when the number moves" means. The
+   subject is the demo world's own alert (lib/demo.ts). */
+function AlertEmail({ visible }: { visible: boolean }) {
+  return (
+    <div
+      className={`rounded-2xl bg-white p-5 text-left shadow-[0_24px_48px_-24px_rgba(2,6,14,0.6)] transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
+        visible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-4 scale-[0.98] opacity-0'
+      }`}
+      style={{ transitionDelay: visible ? '950ms' : '0ms' }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-[#085ac0]">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+              <path d="M19.07 4.93a10 10 0 1 0 2.5 4.07" />
+              <path d="M15.5 8.5a5 5 0 1 0 1.9 3.1" />
+              <path d="M12 12 20 4" />
+            </svg>
+          </span>
+          <span className="text-[13px] font-semibold text-[#1a1b20]">Rate Radar</span>
+        </span>
+        <span className="font-geist-mono text-[11.5px] text-[#44474d]">07:02</span>
+      </div>
+      <p className="mt-4 text-balance text-[14.5px] font-semibold leading-snug text-[#0b1c30]">
+        Friday: recommended rate moved $84 &rarr; $89
+      </p>
+      <p className="mt-2 text-pretty text-[13px] leading-relaxed text-[#44474d]">
+        Neon Compass at Harborview Amphitheater is a major event. Downtown absorbs part of the draw.
+      </p>
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#0b1c30]/[0.06] pt-3">
+        <span className="font-geist-mono text-[12px] tabular-nums text-[#029768]">+$5, 3 reasons</span>
+        <span className="text-[12px] text-[#44474d]">Nothing was changed</span>
+      </div>
+    </div>
   );
 }

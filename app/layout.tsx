@@ -5,6 +5,14 @@ export const metadata: Metadata = {
   title: 'Rate Radar — Know what to charge tonight',
   description: 'Revenue management for independent hotels. Recommends nightly rates — a human decides.',
   robots: { index: false, follow: false },
+  // The image comes from app/opengraph-image.tsx. Previews matter even while
+  // the site is noindex: the demo link gets shared by hand.
+  openGraph: {
+    title: 'Rate Radar: know what to charge tonight',
+    description: 'Nightly rate recommendations for independent hotels, with the arithmetic attached. It recommends; you decide.',
+    type: 'website',
+  },
+  twitter: { card: 'summary_large_image' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
