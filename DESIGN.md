@@ -221,7 +221,7 @@ The same screen must survive a ten-second glance and a two-minute audit. It is r
 
 ### Migration status
 
-The marketing surface (`app/page.tsx`, `app/not-found.tsx` and `components/landing/*`) and the sign-in / get-access screens (`components/AuthPanes.tsx`) are on this language today. The logged-in app still renders the previous "Instrument Panel" treatment: Sora + Inter, 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
+The marketing surface (`app/page.tsx`, `app/not-found.tsx` and `components/landing/*`) the sign-in / get-access screens (`components/AuthPanes.tsx`) and the dashboard's content (`app/(app)/overview/page.tsx`), the app shell (rail and top bar, `components/shell/AppShell.tsx`) and the demo sandbox notice (`app/(app)/layout.tsx`) are on this language today. The other logged-in pages still render the previous "Instrument Panel" treatment: Sora + Inter, 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
 
 ## Colors
 
@@ -399,7 +399,7 @@ Components are **quietly tactile**: restrained but responsive. They acknowledge 
 - **Marketing: the island.** A glass pill floating 16px below the top edge (`fixed`, `w-max` from `md`, white at 70%, `backdrop-blur-xl`, navy ring 6%, Island shadow). It holds the mark, the section links, Sign in and the small primary CTA. The section currently under the middle of the viewport reads in Signal Cobalt (scroll-spy by IntersectionObserver, never a scroll listener).
 - **Marketing, phone:** the island shrinks to the mark and a hamburger. Its two lines rotate about their shared centre into an X. The menu is a screen-filling glass layer (white at 80%, `backdrop-blur-3xl`) whose links rise 48px out of clipped boxes with a 50ms stagger. Escape closes it, focus moves in, and the page behind stops scrolling.
 - **Layers:** phone menu z-30 < island z-40 < skip link z-50. Nothing else takes a z-index on the marketing surface.
-- **App (until migrated):** the 280px rail with a Hairline right edge, the property switcher and icon-and-label links. Active links are Signal Cobalt on a 10% cobalt tint; the rail becomes an off-canvas drawer below `md` on `cubic-bezier(0.32, 0.72, 0, 1)` over 300ms. Icons are Material Symbols Outlined until the app migrates to Phosphor Light.
+- **App shell:** a 280px rail on the canvas, separated by a navy 6% divider: the radar lockup, the property switcher as a white pill (a cobalt-wash badge, because it is the user's own property) opening a 1.25rem panel, and pill links with Phosphor Light icons. Active links are Signal Cobalt on Signal Cobalt Wash; links nudge 4px on hover. Below `md` the rail becomes an off-canvas drawer on the spring curve over 300ms. The 64px top bar holds the section links in one white pill, the page jumper, alerts, the small primary CTA and the avatar.
 
 ### Motion
 
