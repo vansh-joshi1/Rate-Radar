@@ -20,7 +20,7 @@ colors:
   heat-4: "#131B2E"
   level-low: "#84F9C3"
   level-mid: "#ADC6FF"
-  level-high: "#FFDAD6"
+  level-high: "#F29A8E"
 typography:
   display-xl:
     fontFamily: "Geist, system-ui, sans-serif"
@@ -221,7 +221,7 @@ The same screen must survive a ten-second glance and a two-minute audit. It is r
 
 ### Migration status
 
-The marketing surface (`app/page.tsx`, `app/not-found.tsx` and `components/landing/*`) the sign-in / get-access screens (`components/AuthPanes.tsx`) and the dashboard's content (`app/(app)/overview/page.tsx`), the app shell (rail and top bar, `components/shell/AppShell.tsx`) and the demo sandbox notice (`app/(app)/layout.tsx`) are on this language today. The other logged-in pages still render the previous "Instrument Panel" treatment: Sora + Inter, 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
+The marketing surface (`app/page.tsx`, `app/not-found.tsx` and `components/landing/*`) the sign-in / get-access screens (`components/AuthPanes.tsx`) and the dashboard's content (`app/(app)/overview/page.tsx`), competitor insights (`app/(app)/competitors/page.tsx`, `components/CompetitorInsights.tsx`, `components/ParityGrid.tsx`), the app shell (rail and top bar, `components/shell/AppShell.tsx`) and the demo sandbox notice (`app/(app)/layout.tsx`) are on this language today. The other logged-in pages still render the previous "Instrument Panel" treatment: Sora + Inter, 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
 
 ## Colors
 
@@ -250,7 +250,7 @@ A cool, instrumented palette: one saturated cobalt against near-neutral greys wi
 Two ramps carry quantitative meaning and must never be used decoratively.
 
 - **Heat ramp** (`#D3E4FE` → `#D8E2FF` → `#085AC0` → `#131B2E`): Demand and occupancy intensity, low to high. Steps 3 and 4 are dark enough to require white text.
-- **Price-level dots** (`level-low #84F9C3`, `level-mid #ADC6FF`, `level-high #FFDAD6`): Relative price position on the watchlist grid.
+- **Price-level dots** (`level-low #84F9C3`, `level-mid #ADC6FF`, `level-high #F29A8E`): Relative price position on the watchlist grid. High is a soft coral, dark enough to find on white next to Mid, and deliberately short of State Bad: a dear competitor is not a failure.
 
 ### State
 
