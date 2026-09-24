@@ -4,6 +4,7 @@ import authConfig from './auth.config';
 import { getStore } from './lib/store';
 import { storeAdapter } from './lib/auth/adapter';
 import { isAllowed, roleFor } from './lib/auth/members';
+import { signInEmail } from './lib/email/messages';
 
 /**
  * Full Auth.js setup (node runtime — API routes and server components).
@@ -22,6 +23,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Resend({
       apiKey: process.env.RESEND_API_KEY,
       from: 'Rate Radar <onboarding@resend.dev>',
+      // Same send as the provider default, with the branded template in place
+      // of Auth.js's generic "Sign in to <host>" email.
+      async sendVerificationRequest({ identifier: to, provider, url }) {
+        const { subject, html, text } = signInEmail({ url, email: to });
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${provider.apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from: provider.from, to, subject, html, text }),
+        });
+        if (!res.ok) throw new Error('Resend error: ' + JSON.stringify(await res.json()));
+      },
     }),
   ],
   callbacks: {

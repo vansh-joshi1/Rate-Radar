@@ -36,7 +36,7 @@ export const config = {
     // (its own key auth), health, watchlist (self-auths: session OR ingest
     // secret — the collector calls it), static assets, and the favicon + link
     // preview image, which unfurlers and signed-out tabs must be able to fetch,
-    // and the landing page's demo video
-    '/((?!$|demo|login|signup|onboarding|api/auth|api/ingest|api/v1|api/health|api/watchlist|api/cron|_next/static|_next/image|favicon.ico|icon.svg|opengraph-image|robots.txt|originid.global.js|rate-radar-demo.mp4).*)',
+    // the landing page's demo video, and the email mark, which inboxes fetch with no session
+    '/((?!$|demo|login|signup|onboarding|api/auth|api/ingest|api/v1|api/health|api/watchlist|api/cron|_next/static|_next/image|favicon.ico|icon.svg|opengraph-image|email-mark.png|robots.txt|originid.global.js|rate-radar-demo.mp4).*)',
   ],
 };
