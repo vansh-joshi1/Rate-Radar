@@ -10,6 +10,7 @@ import IslandNav from '../components/landing/IslandNav';
 import { Bezel, Eyebrow, PillCta } from '../components/landing/Machined';
 import { DOT_FIELD, Grain, HeroRadar } from '../components/landing/Backdrop';
 import HonestStates from '../components/landing/HonestStates';
+import WatchDemo from '../components/landing/WatchDemo';
 
 /*
  * Marketing landing in the "Machined Instrument" language (DESIGN.md →
@@ -279,7 +280,7 @@ export default function Landing() {
                 the arithmetic attached.
               </p>
               <div className="animate-fade-in-up delay-300 mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                <PillCta href="/demo">Open the demo</PillCta>
+                <WatchDemo />
                 <PillCta href="/signup" variant="secondary">
                   Get access
                 </PillCta>
@@ -468,6 +469,7 @@ export default function Landing() {
                 </div>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                   <PillCta href="/demo">Open the demo</PillCta>
+                  <WatchDemo variant="secondary" />
                   <Link
                     href="/login"
                     className={`text-[14px] font-medium text-[#44474d] underline decoration-[#0b1c30]/20 underline-offset-4 ${textLink}`}
