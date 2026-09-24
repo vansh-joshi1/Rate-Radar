@@ -206,6 +206,13 @@ body {
   }
 }
 
+/* While the landing's demo video plays (components/landing/WatchDemo.tsx),
+   the page behind it holds still so the GPU only decodes video. */
+[data-video-open] .radar-sweep,
+[data-video-open] .radar-pulse {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .radar-sweep {
     animation: none;

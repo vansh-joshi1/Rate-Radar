@@ -21,14 +21,23 @@ export default function WatchDemo({ variant = 'primary' }: { variant?: 'primary'
   const primary = variant === 'primary';
 
   // React's onClose isn't wired for <dialog>, so pause on the native event.
+  // `data-video-open` freezes the page's CSS animations (the radar sweep)
+  // while the video plays, so the GPU is only decoding video.
   useEffect(() => {
     const d = dialog.current;
-    const pause = () => video.current?.pause();
-    d?.addEventListener('close', pause);
-    return () => d?.removeEventListener('close', pause);
+    const onClose = () => {
+      video.current?.pause();
+      delete document.documentElement.dataset.videoOpen;
+    };
+    d?.addEventListener('close', onClose);
+    return () => {
+      d?.removeEventListener('close', onClose);
+      delete document.documentElement.dataset.videoOpen;
+    };
   }, []);
 
   const open = () => {
+    document.documentElement.dataset.videoOpen = '';
     dialog.current?.showModal();
     video.current?.play().catch(() => {});
   };
@@ -60,7 +69,7 @@ export default function WatchDemo({ variant = 'primary' }: { variant?: 'primary'
         ref={dialog}
         aria-label="Rate Radar demo video"
         onClick={(e) => e.target === dialog.current && close()}
-        className="m-auto w-[min(1100px,calc(100vw-2rem))] max-w-none overflow-visible bg-transparent p-0 backdrop:bg-[#0b1c30]/70 backdrop:backdrop-blur-sm"
+        className="m-auto w-[min(1100px,calc(100vw-2rem))] max-w-none overflow-visible bg-transparent p-0 backdrop:bg-[#0b1c30]/90"
       >
         <div className="relative rounded-[1.25rem] bg-[#0b1c30] p-1.5 shadow-[0_32px_64px_-24px_rgba(0,0,0,0.5)]">
           <video
