@@ -105,6 +105,21 @@ export async function sendMagicLink(email: string, origin: string, next: string)
   if (!res.ok) throw new Error('Resend error: ' + JSON.stringify(await res.json()));
 }
 
+/**
+ * Kill a removed member's Supabase sessions by deleting their auth user. The
+ * middleware only checks "has a session", and refresh tokens never expire, so
+ * without this a removed member keeps read access to middleware-gated routes.
+ * Their current access token still works until it expires (≤1h).
+ */
+export async function revokeUser(email: string): Promise<void> {
+  const admin = supabaseAdmin().auth.admin;
+  // ponytail: first 1000 users only; page through listUsers if a team ever gets near that.
+  const { data, error } = await admin.listUsers({ perPage: 1000 });
+  if (error) throw new Error(`Supabase listUsers: ${error.message}`);
+  const user = data.users.find((u) => u.email?.toLowerCase() === email);
+  if (user) await admin.deleteUser(user.id);
+}
+
 /** Only same-site paths survive as a post-sign-in destination — no open redirects. */
 export function safeNext(next: unknown): string {
   return typeof next === 'string' && /^\/(?![/\\])/.test(next) ? next : '/overview';

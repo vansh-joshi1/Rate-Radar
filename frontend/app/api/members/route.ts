@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { auth } from '../../../../backend/auth';
+import { auth, revokeUser } from '../../../../backend/auth';
 import { requestStore, demoSid } from '../../../../backend/lib/demo/context';
 import { listMembers, ownerEmail, saveMembers, type Role } from '../../../../backend/lib/auth/members';
 import { requireRole } from '../../../../backend/lib/auth/guard';
@@ -68,5 +68,7 @@ export async function DELETE(req: NextRequest) {
   const remaining = members.filter((m) => m.email !== e);
   if (remaining.length === members.length) return NextResponse.json({ error: 'not on the team' }, { status: 404 });
   await saveMembers(store, remaining);
+  // A sandbox's team is fictional; only a real removal has sessions to kill.
+  if (!demoSid()) await revokeUser(e);
   return NextResponse.json({ ok: true });
 }

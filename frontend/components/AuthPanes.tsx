@@ -277,7 +277,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
     const password = new FormData(e.currentTarget).get('password');
     const res = await fetch('/api/auth/password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) }).catch(() => null);
     if (!res?.ok) {
-      setPwError('That password is not right. Check with the property owner.');
+      setPwError(res?.status === 429 ? 'Too many attempts. Wait a minute and try again.' : 'That password is not right. Check with the property owner.');
       setPwBusy(false);
     } else {
       window.location.href = redirectTo;
