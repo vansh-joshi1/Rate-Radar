@@ -45,7 +45,8 @@ async function alertByEmail({ subject, html, text }: EmailMessage): Promise<void
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get('authorization') !== `Bearer ${secret}`) {
+  // Fail closed: an unset secret would let anyone trigger collections and burn SerpApi quota.
+  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 

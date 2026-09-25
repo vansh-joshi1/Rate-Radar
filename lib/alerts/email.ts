@@ -17,12 +17,14 @@ export async function sendAlertEmail(triggers: Trigger[]): Promise<'sent' | 'ski
   const { subject, html, text } = alertDigestEmail(triggers, process.env.DASHBOARD_URL);
 
   const resend = new Resend(key);
-  await resend.emails.send({
+  // Resend returns failures as `{ error }` instead of throwing.
+  const { error } = await resend.emails.send({
     from: 'Rate Radar <onboarding@resend.dev>',
     to: to.split(',').map((s) => s.trim()),
     subject,
     html,
     text,
   });
+  if (error) throw new Error(`Resend: ${error.message}`);
   return 'sent';
 }

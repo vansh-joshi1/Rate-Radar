@@ -102,27 +102,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Material Symbols — icon set for the app chrome and dashboard. */
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  user-select: none;
-}
-.material-symbols-outlined[data-weight='fill'] {
-  font-variation-settings: 'FILL' 1;
-}
-
 /* Entry animation, per the design system. Suppressed for viewers who ask for
    reduced motion — content must still end up visible, so opacity resets to 1
    rather than leaving the page blank. */
@@ -138,22 +117,6 @@ body {
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
 .delay-400 { animation-delay: 400ms; }
-
-/* Sidebar links nudge right on hover.
-   Named properties rather than `all`: `all` puts every animatable property on
-   the compositor's watch list, and it was also transitioning colour on the same
-   200ms curve as the movement. The nudge gets an exponential ease-out — it
-   starts from an already-visible resting state, so any ease-IN reads as lag
-   before the element agrees to move. */
-.nav-link {
-  transition:
-    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
-    color 150ms ease,
-    background-color 150ms ease;
-}
-.nav-link:hover {
-  transform: translateX(4px);
-}
 
 /* Landing enter-on-scroll (components/Reveal.tsx). Only the `false` state is
    styled, so an element with no attribute (pre-hydration, no JS) is visible. */
@@ -254,26 +217,8 @@ body {
     animation: none;
     opacity: 1;
   }
-  .nav-link:hover {
-    transform: none;
-  }
 }
 
-/* Heatmap cell hover polish, per the design system. */
-/* Exponential ease-out, not the old overshoot curve: a demand cell is a
-   readout, and a readout that springs past its value and settles back is
-   telling a small lie about the data. */
-.heatmap-cell {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
-}
-.heatmap-cell:hover {
-  transform: scale(1.05);
-  filter: brightness(1.1);
-  position: relative;
-  z-index: 10;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgb(11 28 48 / 0.1);
-}
 
 /* Slim scrollbars, per the design system. */
 ::-webkit-scrollbar {
@@ -294,9 +239,6 @@ body {
 @layer components {
   .card {
     @apply rounded-xl border border-line bg-card p-6;
-  }
-  .divider {
-    @apply my-6 border-0 border-t border-line;
   }
   /* `transition-colors` is deliberately NOT in the @apply chain: @apply inlines
      into this same rule, so the explicit `transition` below would override it

@@ -1,6 +1,10 @@
 import { demoAlerts } from '../../../lib/demo';
 import { SampleBadge, SectionTitle } from '../../../components/ui';
-import { BellIcon, InfoIcon, ShieldIcon, TrendIcon, WarnIcon } from '../../../components/shell/Icons';
+import { BellIcon } from '@phosphor-icons/react/dist/ssr/Bell';
+import { InfoIcon } from '@phosphor-icons/react/dist/ssr/Info';
+import { ShieldIcon } from '@phosphor-icons/react/dist/ssr/Shield';
+import { TrendUpIcon } from '@phosphor-icons/react/dist/ssr/TrendUp';
+import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
 import NoteBox from '../../../components/NoteBox';
 import { requestStore } from '../../../lib/demo/context';
 import { chicagoToday } from '../../../lib/ingest';
@@ -8,7 +12,7 @@ import { loadSnapshot } from '../../../lib/dashboard-data';
 
 export const dynamic = 'force-dynamic';
 
-const ICONS = { accent: TrendIcon, bad: ShieldIcon, warn: WarnIcon, neutral: InfoIcon } as const;
+const ICONS = { accent: TrendUpIcon, bad: ShieldIcon, warn: WarningIcon, neutral: InfoIcon } as const;
 const COLORS = { accent: 'text-accent', bad: 'text-bad', warn: 'text-warn', neutral: 'text-muted' } as const;
 
 export default async function Alerts() {
@@ -26,7 +30,7 @@ export default async function Alerts() {
           <SectionTitle>Alert center</SectionTitle>
           <SampleBadge />
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted"><BellIcon size={16} /> {unread} unread</div>
+        <div className="flex items-center gap-2 text-sm text-muted"><BellIcon size={16} aria-hidden /> {unread} unread</div>
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_300px]">
@@ -41,7 +45,7 @@ export default async function Alerts() {
                 }`}
               >
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-paper ${COLORS[a.tone]}`}>
-                  <Icon size={20} />
+                  <Icon size={20} aria-hidden />
                 </div>
                 <div>
                   <div className="mb-0.5 text-xs text-muted">{a.time}</div>

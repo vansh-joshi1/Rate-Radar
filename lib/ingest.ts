@@ -270,13 +270,21 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
     await store.set('history:dates', [today, ...historyDates].slice(0, 400));
   }
 
-  await store.set('emailed:state', alertResult.newEmailedState);
-  await store.set('alert:fingerprints', alertResult.newFingerprints);
-  await store.set('events:seen', alertResult.newSeenEventIds);
-  await store.set(healthKey, alertResult.newSourceHealth);
-
-  let emailStatus: 'sent' | 'skipped' | 'none' = 'none';
-  if (alertResult.triggers.length > 0) emailStatus = await sendAlertEmail(alertResult.triggers);
+  // Send before recording alert state: a failed send must leave the triggers
+  // un-delivered so the next run fires them again.
+  let emailStatus: 'sent' | 'skipped' | 'none' | 'failed' = 'none';
+  if (alertResult.triggers.length > 0) {
+    emailStatus = await sendAlertEmail(alertResult.triggers).catch((err) => {
+      console.error('[ingest] alert email failed:', err);
+      return 'failed' as const;
+    });
+  }
+  if (emailStatus !== 'failed') {
+    await store.set('emailed:state', alertResult.newEmailedState);
+    await store.set('alert:fingerprints', alertResult.newFingerprints);
+    await store.set('events:seen', alertResult.newSeenEventIds);
+    await store.set(healthKey, alertResult.newSourceHealth);
+  }
 
   return {
     nights: nights.length,

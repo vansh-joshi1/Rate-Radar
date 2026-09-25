@@ -185,6 +185,11 @@ describe('planSearches — slot resolution', () => {
     expect(planSearches({ remaining: 250, now: evening, dates: WEEK }).cost).toBe(1);
   });
 
+  it('puts the winter midday run (12:07 CST) in the 13:00 slot', () => {
+    const winterNoon = new Date('2026-12-01T18:07:00Z'); // 12:07 CST
+    expect(planSearches({ remaining: 250, now: winterNoon, dates: WEEK }).cost).toBe(1);
+  });
+
   it('exposes the two slot times the workflow crons must match', () => {
     expect(RUN_SLOTS_CT).toEqual([7, 13]);
   });

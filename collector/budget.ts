@@ -133,10 +133,16 @@ function daysLeftInCycle(now: Date, renewalDate?: string): number {
   return daysInMonth - day + 1;
 }
 
-/** Most recent slot that has passed; a run before the first slot belongs to it. */
+/**
+ * Nearest slot, split at the midpoint between slots. The UTC crons fire an hour
+ * early in CST (06:07 and 12:07 CT), so an "hour >= slot" test put winter's
+ * midday run in the 07:00 slot and bought the full ladder twice a day.
+ */
 function slotIndex(hour: number): number {
   let slot = 0;
-  for (let i = 0; i < RUN_SLOTS_CT.length; i++) if (hour >= RUN_SLOTS_CT[i]) slot = i;
+  for (let i = 1; i < RUN_SLOTS_CT.length; i++) {
+    if (hour >= (RUN_SLOTS_CT[i - 1] + RUN_SLOTS_CT[i]) / 2) slot = i;
+  }
   return slot;
 }
 

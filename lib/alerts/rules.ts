@@ -85,8 +85,9 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
     const last = newFingerprints[fp];
     return last !== undefined && nowMs - new Date(last).getTime() < DEDUPE_HOURS * 3600_000;
   };
-  const fire = (fp: string, t: Trigger): void => {
-    if (isFresh(fp)) return;
+  /** `once` fires a fingerprint only ever once, instead of once per DEDUPE_HOURS. */
+  const fire = (fp: string, t: Trigger, once = false): void => {
+    if (once ? fp in newFingerprints : isFresh(fp)) return;
     newFingerprints[fp] = input.now;
     triggers.push(t);
   };
@@ -211,7 +212,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
         type: 'holiday',
         date: h.date,
         line: `${h.name} is coming up (${fmtDowDay(h.date)}) — expect ${h.drawProfile} travel demand.`,
-      });
+      }, true);
     }
   }
 
