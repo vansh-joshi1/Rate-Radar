@@ -43,7 +43,7 @@ which is the data any future forecast would need.
 | File | Responsibility |
 |---|---|
 | `lib/properties.ts` | `Property` gains `totalRooms: number`. Franklin gets its real count (from the owner); the demo hotel an invented one. |
-| `app/onboarding/page.tsx` | The mock gains a "Number of rooms" field on the Property step. Still a mock — it persists nothing. |
+| `app/onboarding/page.tsx` | The mock gains a "Number of rooms" field on the step it renders (it shows only the listings step). Still a mock — it persists nothing. |
 | `lib/bellhop/context.ts` | Builds the system prompt: rules above, tonight's date in the property timezone, `totalRooms`, the latest snapshot (nights, tiers, ranges, events, `reasoning[]`, weather/holiday/BNA notes, compsets, parity), the last 30 history records with actuals, and tonight's booking readings. |
 | `lib/bellhop/gemini.ts` | The only file that knows the provider. Takes system prompt + messages, returns a text stream. |
 | `app/api/bellhop/route.ts` | POST `{ messages }`. `requireRole('viewer')`. Demo callers counted against the daily cap. Streams text back. |

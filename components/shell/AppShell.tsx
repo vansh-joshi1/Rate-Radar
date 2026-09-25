@@ -37,7 +37,7 @@ const NAV = [
   { href: '/overview', label: 'Dashboard', icon: SquaresFourIcon },
   { href: '/competitors', label: 'Competitor insights', icon: ChartLineUpIcon },
   { href: '/calendar', label: 'Market intelligence', icon: CalendarDotsIcon },
-  { href: '/analytics', label: 'AI strategy', icon: LightbulbIcon },
+  { href: '/analytics', label: 'Bellhop', icon: LightbulbIcon },
 ];
 
 const TOP_NAV = [

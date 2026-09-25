@@ -12,6 +12,7 @@
     "apikey": "tsx scripts/create-api-key.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.24.0",
     "@phosphor-icons/react": "^2.1.10",
     "geist": "^1.7.2",
     "maplibre-gl": "^5.24.0",

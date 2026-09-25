@@ -47,6 +47,10 @@ export default function Onboarding() {
         {/* Demo flow: persists once onboarding is wired to per-property config. */}
         <form action="/overview">
           <div className="mb-4">
+            <label className="label" htmlFor="rooms">Number of rooms</label>
+            <input id="rooms" type="number" min={1} step={1} className="field" placeholder="55" />
+          </div>
+          <div className="mb-4">
             <label className="label" htmlFor="direct">Direct website URL</label>
             <input id="direct" type="url" className="field" placeholder="https://redroof-franklin.com" defaultValue="https://redroof-franklin.com" />
           </div>

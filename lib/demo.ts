@@ -289,12 +289,6 @@ export const demoAlerts = [
   },
 ];
 
-export const demoEventPerformance = [
-  { event: 'Harbor Days (Day 1)', date: '6/08', applied: true, adr: 149, uplift: '+45%' },
-  { event: 'Harbor Days (Day 2)', date: '6/09', applied: true, adr: 159, uplift: '+55%' },
-  { event: 'Harbor Run 5K', date: '6/15', applied: false, adr: 89, uplift: '0%' },
-];
-
 export const demoPortfolio = [
   { name: 'Harbor Pine Inn', city: 'Kestrel Bay, OR', rec: 89, occupancy: '82%', parity: 'gap' as const, alerts: 3 },
   { name: 'Sunrise Suites', city: 'Alder Flats, OR', rec: 114, occupancy: '65%', parity: 'ok' as const, alerts: 0 },

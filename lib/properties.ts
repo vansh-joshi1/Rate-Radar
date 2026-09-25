@@ -15,6 +15,8 @@ export interface Property {
   /** Approximate coordinates — map centering and the property's own pin. */
   lat: number;
   lng: number;
+  /** Rooms the property sells — the ceiling for a rooms-booked reading. */
+  totalRooms: number;
 }
 
 export const DEFAULT_PROPERTY_ID = 'rri-franklin';
@@ -28,6 +30,7 @@ export const PROPERTIES: Property[] = [
     // 3915 Carothers Pkwy, Franklin TN (Cool Springs) — approximate
     lat: 35.9273,
     lng: -86.8149,
+    totalRooms: 55,
   },
 ];
 
@@ -48,6 +51,7 @@ export const DEMO_PROPERTY: Property = {
   timezone: 'America/Los_Angeles',
   lat: 44.6285,
   lng: -124.0538,
+  totalRooms: 48,
 };
 
 export function getProperty(id: string): Property | undefined {
