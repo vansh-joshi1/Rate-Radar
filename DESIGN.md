@@ -451,7 +451,7 @@ A radar sweep drawn as inline SVG on a 24px viewbox: two concentric arcs opening
 - **Don't** use black shadows, gradient text, glowing cards, neon, or purple-to-blue washes.
 - **Don't** blur the backdrop of anything that scrolls.
 - **Don't** build toward dense BI/analyst tooling: no wall of widgets, no chart junk, no configuration surfaced as interface. This is for an operator, not an analyst.
-- **Don't** adopt consumer-fintech playfulness: no confetti, mascots, streaks or celebratory microcopy. Someone's revenue is on the line.
+- **Don't** adopt consumer-fintech playfulness: no confetti, streaks or celebratory microcopy. Someone's revenue is on the line. The one character is Bellhop, the assistant (`components/Bellhop.tsx`), unbanned by the owner 2026-09-25: it stays in the palette and stays in its avatar circle.
 - **Don't** import an external design system's `borderRadius` scale. It redefines `full` and would turn every avatar, pill and chip into a squircle app-wide. Radii are set at the call site.
 - **Don't** wire dark mode to `prefers-color-scheme`. Night mode is opt-in via a `dark` class on `<html>`.
 

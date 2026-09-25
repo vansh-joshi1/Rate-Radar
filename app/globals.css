@@ -113,26 +113,29 @@ body {
   animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
-/* Bellhop typing (components/Bellhop.tsx): the laptop rises in, keys light in
-   turn, the bell dips per keystroke. All three stop under reduced motion below. */
-@keyframes bellhop-laptop-in {
-  from { opacity: 0; transform: translateY(6px) scale(0.8); }
+/* Bellhop typing (components/Bellhop.tsx, an inline SVG): the laptop rises in,
+   the hands tap in turn and the head nods with the rhythm. All of it stops
+   under reduced motion below; the laptop still appears, so "answering" still
+   reads. */
+.bh-part { transform-box: fill-box; }
+@keyframes bh-laptop-in {
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
-@keyframes bellhop-key {
-  0%, 60%, 100% { opacity: 0.25; }
-  30% { opacity: 1; }
-}
-@keyframes bellhop-tap {
+@keyframes bh-tap {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(1px); }
+  50% { transform: translateY(-2.5px); }
 }
-.bellhop-laptop { animation: bellhop-laptop-in 400ms cubic-bezier(0.32, 0.72, 0, 1) both; }
-.bellhop-key { animation: bellhop-key 900ms cubic-bezier(0.32, 0.72, 0, 1) infinite; }
-.bellhop-tap { animation: bellhop-tap 450ms cubic-bezier(0.32, 0.72, 0, 1) infinite; }
+@keyframes bh-nod {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(0.6px); }
+}
+.bh-laptop { animation: bh-laptop-in 400ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+.bh-hand { animation: bh-tap 320ms cubic-bezier(0.32, 0.72, 0, 1) infinite; }
+.bh-hand-r { animation-delay: 160ms; }
+.bh-head { animation: bh-nod 640ms cubic-bezier(0.32, 0.72, 0, 1) infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .bellhop-laptop, .bellhop-tap { animation: none; }
-  .bellhop-key { animation: none; opacity: 1; }
+  .bh-laptop, .bh-hand, .bh-head { animation: none; }
 }
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }

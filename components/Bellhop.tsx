@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { CallBellIcon } from '@phosphor-icons/react/dist/ssr/CallBell';
-import { LaptopIcon } from '@phosphor-icons/react/dist/ssr/Laptop';
 import { Bezel, PillButton } from './landing/Machined';
 import { DIVIDER, FIELD, FIELD_BAD, FOCUS, MONO_LABEL, NUMBER, StatusLine } from './settings/parts';
 import type { ChatTurn } from '../lib/bellhop/gemini';
@@ -309,54 +307,77 @@ function UserSays({ children }: { children: ReactNode }) {
 }
 
 /**
- * Bellhop's mark: the front-desk call bell in a tiny double bezel (a navy-tinted
- * tray around a white core). Navy on white rather than cobalt, so it never reads
- * as the user's own avatar or property badge, which are cobalt wash.
- *
- * While Bellhop answers, a small laptop slides up in front of it: keys light up
- * across the screen and the bell dips with each keystroke. Built from Phosphor
- * glyphs rather than a drawn character; DESIGN.md rules out mascots, and this
- * is the least illustration that still reads as "typing". Still under reduced
- * motion (globals.css).
+ * Bellhop himself: an inline-SVG bellhop in a cobalt pillbox cap and navy
+ * jacket, in the product palette, inside a small double bezel (a navy-tinted
+ * tray around a pale core). Inline SVG rather than an image so the typing is
+ * real motion: while he answers, a laptop rises in front of him, his eyes drop
+ * to it and his hands tap in turn. The one
+ * character DESIGN.md allows (owner's call, 2026-09-25). Keyframes live in
+ * globals.css and stop under reduced motion.
  */
 export function BellhopAvatar({ size = 'sm', typing = false }: { size?: 'sm' | 'lg'; typing?: boolean }) {
   const lg = size === 'lg';
   return (
-    <span aria-hidden className="relative inline-flex shrink-0 self-start">
-      <span className={`inline-flex rounded-full bg-[#0b1c30]/[0.05] ring-1 ring-[#0b1c30]/[0.06] ${lg ? 'p-1' : 'p-0.5'}`}>
-        <span
-          className={`flex items-center justify-center rounded-full bg-white text-[#0b1c30] shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(11,28,48,0.08)] ${
-            lg ? 'h-11 w-11' : 'h-8 w-8'
-          }`}
-        >
-          <CallBellIcon weight="light" className={`${lg ? 'h-6 w-6' : 'h-[18px] w-[18px]'} ${typing ? 'bellhop-tap' : ''}`} />
-        </span>
+    <span aria-hidden className={`inline-flex shrink-0 self-start rounded-full bg-[#0b1c30]/[0.05] ring-1 ring-[#0b1c30]/[0.06] ${lg ? 'p-1' : 'p-0.5'}`}>
+      <span
+        className={`block overflow-hidden rounded-full bg-[#eef3ff] shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(11,28,48,0.08)] ${
+          lg ? 'h-11 w-11' : 'h-8 w-8'
+        }`}
+      >
+        <BellhopFigure typing={typing} />
       </span>
-      {typing && (
-        // Centred in front of the bell's lower half, so it reads as the bell sitting at the laptop.
-        <span className={`absolute inset-x-0 flex justify-center ${lg ? '-bottom-2.5' : '-bottom-2'}`}>
-          <span
-            className={`bellhop-laptop flex items-center justify-center rounded-full bg-white px-1 shadow-[0_2px_6px_-2px_rgba(11,28,48,0.3)] ring-1 ring-[#0b1c30]/[0.08] ${
-              lg ? 'h-7' : 'h-6'
-            }`}
-          >
-            <span className="relative flex">
-              <LaptopIcon weight="fill" className={`${lg ? 'h-6 w-6' : 'h-5 w-5'} text-[#0b1c30]`} />
-              {/* Three keys lighting in turn on the laptop's screen. */}
-              <span className={`absolute inset-x-0 flex justify-center gap-[2px] ${lg ? 'top-[8px]' : 'top-[6px]'}`}>
-                {[0, 1, 2].map((k) => (
-                  <span
-                    key={k}
-                    className="bellhop-key h-[2px] w-[2px] rounded-full bg-white"
-                    style={{ animationDelay: `${k * 150}ms` }}
-                  />
-                ))}
-              </span>
-            </span>
-          </span>
-        </span>
-      )}
     </span>
+  );
+}
+
+const SKIN = '#d9a07a';
+const NAVY = '#0b1c30';
+const COBALT = '#085ac0';
+
+function BellhopFigure({ typing }: { typing: boolean }) {
+  // Cropped in from the 64-unit drawing so the face carries at 32px; the laptop and hands stay in frame.
+  return (
+    <svg viewBox="6 5 52 52" className="h-full w-full">
+      {/* Jacket, shirt collar, buttons */}
+      <path d="M8 66 C8 50 18 43 32 43 C46 43 56 50 56 66 Z" fill={NAVY} />
+      <path d="M26.5 43.5 L32 51 L37.5 43.5 Z" fill="#fff" />
+      <path d="M26.5 43.5 L32 51 L29 52 Z M37.5 43.5 L32 51 L35 52 Z" fill="#1c3350" />
+      <circle cx="32" cy="55" r="1.1" fill="#adc6ff" />
+      <circle cx="32" cy="60" r="1.1" fill="#adc6ff" />
+
+      <g className={`bh-part ${typing ? 'bh-head' : ''}`}>
+        {/* Neck, ears, head */}
+        <rect x="29" y="36" width="6" height="8" rx="2" fill={SKIN} />
+        <circle cx="21.6" cy="29" r="2.2" fill={SKIN} />
+        <circle cx="42.4" cy="29" r="2.2" fill={SKIN} />
+        <circle cx="32" cy="28" r="10.5" fill={SKIN} />
+        {/* Hair under the cap */}
+        <path d="M21.8 25 C22.5 19.5 26.5 17 32 17 C37.5 17 41.5 19.5 42.2 25 C39 22.5 25 22.5 21.8 25 Z" fill="#3a2a22" />
+        {/* Eyes drop to the screen while typing; the smile stays */}
+        <circle cx="28" cy={typing ? 30.2 : 28.8} r="1.25" fill={NAVY} />
+        <circle cx="36" cy={typing ? 30.2 : 28.8} r="1.25" fill={NAVY} />
+        <path d="M28.8 33.2 Q32 35.8 35.2 33.2" stroke={NAVY} strokeWidth="1.3" strokeLinecap="round" fill="none" />
+        {/* Pillbox cap, tipped */}
+        <g transform="rotate(-9 32 16)">
+          <rect x="23" y="11" width="18" height="9" rx="2.2" fill={COBALT} />
+          <rect x="23" y="16.4" width="18" height="1.6" fill="#adc6ff" />
+          <ellipse cx="32" cy="11.2" rx="9" ry="1.6" fill="#1a6fd6" />
+        </g>
+      </g>
+
+      {typing && (
+        <g className="bh-part bh-laptop">
+          {/* Lid seen from behind, with the product's radar dot */}
+          <rect x="15" y="39.5" width="34" height="17" rx="2" fill="#e3e8f2" stroke="#c3ccdb" strokeWidth="0.8" />
+          <circle cx="32" cy="48" r="1.8" fill={COBALT} opacity="0.85" />
+          {/* Base */}
+          <path d="M11 56.5 L53 56.5 L56 61 L8 61 Z" fill="#c3ccdb" />
+          {/* Hands on the keys, tapping in turn */}
+          <circle className="bh-part bh-hand" cx="20" cy="55.7" r="3" fill={SKIN} />
+          <circle className="bh-part bh-hand bh-hand-r" cx="44" cy="55.7" r="3" fill={SKIN} />
+        </g>
+      )}
+    </svg>
   );
 }
 
