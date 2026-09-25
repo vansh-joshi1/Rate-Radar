@@ -257,8 +257,8 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
 
             <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-3">
               <Fact label="Plan" big>
-                Pro
-                <span className="mt-1 block text-[14px] font-normal tracking-normal text-[#44474d]">$29 a month</span>
+                One property
+                <span className="mt-1 block text-[14px] font-normal tracking-normal text-[#44474d]">$99 a month</span>
               </Fact>
               <Fact label="Next invoice" big>
                 <span className="text-[#44474d]">None</span>

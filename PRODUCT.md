@@ -85,9 +85,6 @@ Competitor and parity prices come from a third-party rate-data API (SerpApi's Go
 
 **Known placeholders currently rendering in the codebase, which future work must not harden into claims:**
 
-- The in-app billing mock still shows the retired $29 plan: `frontend/components/SettingsView.tsx` and the invoice rows in `backend/lib/demo.ts`. It predates the owner's pricing decision above and must be updated to match it or removed.
-- "Acceptance rate 71%", "+$1,420 estimated impact", "$4.20 avg. parity gap" — hardcoded in `frontend/app/(app)/analytics/page.tsx`.
-- "Sunrise Suites — Cookeville, TN" — a demo second property hardcoded in `frontend/components/shell/AppShell.tsx`. Not a customer.
 - Anything sourced from `backend/lib/demo.ts`.
 
 Illustrative figures on public surfaces: **the landing page no longer labels them "sample data", by the owner's decision (2026-09-23).** Every figure on it still comes from the invented demo world (`backend/lib/demo.ts`): an invented hotel, town, competitors and events, so no real business's numbers are shown. The demo app keeps its own sample-data badge.

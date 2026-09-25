@@ -55,7 +55,6 @@ export interface ShellProperty {
 /** The real deployment's switcher. A demo passes its own invented list instead. */
 const DEFAULT_PROPERTIES: ShellProperty[] = [
   { id: 'rri-franklin', label: 'Red Roof Inn', sub: 'Franklin, TN' },
-  { id: 'sunrise-cookeville', label: 'Sunrise Suites', sub: 'Cookeville, TN (demo)' },
 ];
 
 /* The search box is a page jumper rather than a decorative input — it matches
