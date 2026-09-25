@@ -49,6 +49,8 @@ function Conversation() {
     setBusy(true);
     try {
       const res = await fetch('/api/bellhop', {
+        // A stalled model stream would otherwise leave the chat busy forever; the abort also ends the body read.
+        signal: AbortSignal.timeout(60_000),
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -132,7 +134,20 @@ function Conversation() {
         </ol>
       )}
 
-      <div className={DIVIDER} />
+      {turns.length > 0 && !busy ? (
+        <div className="flex items-center gap-4">
+          <div className={`${DIVIDER} flex-1`} />
+          <button
+            type="button"
+            onClick={() => setTurns([])}
+            className={`rounded-full text-[13.5px] font-medium text-[#44474d] transition-colors duration-150 hover:text-[#1a1b20] ${FOCUS}`}
+          >
+            Start over
+          </button>
+        </div>
+      ) : (
+        <div className={DIVIDER} />
+      )}
 
       <form onSubmit={submit} className="flex items-center gap-2">
         <label htmlFor="bellhop-q" className="sr-only">
@@ -140,7 +155,7 @@ function Conversation() {
         </label>
         <input
           id="bellhop-q"
-          className={`${FIELD} h-11`}
+          className={`${FIELD} h-12`}
           placeholder="Ask Bellhop"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -230,13 +245,25 @@ function TonightReading({ totalRooms, initial }: { totalRooms: number; initial: 
               required
               aria-invalid={!!error}
               aria-describedby={error ? 'bellhop-rooms-error' : undefined}
-              className={`${FIELD} ${NUMBER} w-28 tabular-nums ${error ? FIELD_BAD : ''}`}
+              className={`${FIELD} ${NUMBER} h-9 w-28 tabular-nums ${error ? FIELD_BAD : ''}`}
               value={rooms}
               onChange={(e) => setRooms(e.target.value)}
             />
             <PillButton type="submit" size="sm" disabled={saving || rooms === ''}>
               {saving ? 'Saving' : 'Save'}
             </PillButton>
+            {latest && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setError('');
+                }}
+                className={`rounded-full px-2 text-[13.5px] font-medium text-[#44474d] transition-colors duration-150 hover:text-[#1a1b20] ${FOCUS}`}
+              >
+                Cancel
+              </button>
+            )}
           </div>
           <div id="bellhop-rooms-error">
             <StatusLine status={error ? { tone: 'bad', text: error } : null} />
