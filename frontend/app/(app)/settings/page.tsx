@@ -41,7 +41,7 @@ export default async function Settings() {
         (snapshot.sources.find((s) => s.source === 'rates')?.data as { budget?: SearchBudget } | undefined)?.budget
       }
       thresholds={ALERT_THRESHOLDS}
-      invoices={demoInvoices}
+      invoices={isDemo ? demoInvoices : []}
       isDemo={isDemo}
     />
     </div>

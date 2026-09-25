@@ -296,6 +296,6 @@ export const demoPortfolio = [
 ];
 
 export const demoInvoices = [
-  { date: 'Jul 1, 2026', amount: '$29.00', status: 'Paid' },
-  { date: 'Jun 1, 2026', amount: '$29.00', status: 'Paid' },
+  { date: 'Jul 1, 2026', amount: '$99.00', status: 'Paid' },
+  { date: 'Jun 1, 2026', amount: '$99.00', status: 'Paid' },
 ];
