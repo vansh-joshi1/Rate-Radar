@@ -50,7 +50,8 @@ type Sent = { email: string } | null;
 function readNextParam(): string {
   if (typeof window === 'undefined') return '';
   const next = new URLSearchParams(window.location.search).get('next');
-  return next && /^\/(?!\/)/.test(next) ? next : '';
+  // Browsers read `/\host` as `//host`, so both slashes must be refused.
+  return next && /^\/(?![/\\])/.test(next) ? next : '';
 }
 
 const ring =

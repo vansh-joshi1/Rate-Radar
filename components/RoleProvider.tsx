@@ -18,10 +18,6 @@ export function RoleProvider({ role, children }: { role: Role; children: React.R
   return <RoleContext.Provider value={role}>{children}</RoleContext.Provider>;
 }
 
-export function useRole(): Role {
-  return useContext(RoleContext);
-}
-
 /** True when the member meets `required` — same policy the server applies. */
 export function useCanWrite(required: Role = 'manager'): boolean {
   return roleAtLeast(useContext(RoleContext), required);

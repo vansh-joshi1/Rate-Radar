@@ -25,8 +25,6 @@ import { noonUTC, todayIn } from './date';
  * described honestly in the README; the demo describes only itself.
  */
 
-export { DEMO_PROPERTY } from './properties';
-
 /**
  * Invented hotels near the invented property, used for the watchlist's
  * "add a competitor" autocomplete. In a demo the autocomplete searches this
@@ -307,6 +305,3 @@ export const demoInvoices = [
   { date: 'Jul 1, 2026', amount: '$29.00', status: 'Paid' },
   { date: 'Jun 1, 2026', amount: '$29.00', status: 'Paid' },
 ];
-
-/** 30-day parity-gap sparkline heights (%), deterministic to avoid hydration mismatch. */
-export const demoSparkline = [10, 15, 80, 20, 10, 5, 15, 30, 60, 10, 10, 15, 10, 5, 15, 10, 10, 15, 10, 5, 15, 10, 10, 15, 10, 5, 15, 100, 10, 10];

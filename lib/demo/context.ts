@@ -37,10 +37,6 @@ export function demoSid(): string | null {
   return isValidDemoSid(raw) ? raw : null;
 }
 
-export function isDemoRequest(): boolean {
-  return demoSid() !== null;
-}
-
 /**
  * The store this request may touch. A demo request gets a view namespaced to
  * its own sandbox, with every write given a rolling 24h expiry so an abandoned

@@ -118,6 +118,8 @@ describe('weather + holiday triggers', () => {
     expect(first.triggers.some((t) => t.type === 'holiday')).toBe(true);
     const second = evaluateAlerts(base({ holidays: h, fingerprints: first.newFingerprints }));
     expect(second.triggers).toHaveLength(0);
+    const nextDay = evaluateAlerts(base({ holidays: h, fingerprints: first.newFingerprints, now: '2026-07-13T12:00:00-05:00' }));
+    expect(nextDay.triggers).toHaveLength(0);
   });
   it('holiday 20 days out does not fire yet', () => {
     const h = [{ name: 'Labor Day weekend', date: '2026-08-01', drawProfile: 'meaningful' }];

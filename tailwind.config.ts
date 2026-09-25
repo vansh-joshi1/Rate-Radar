@@ -59,16 +59,8 @@ const config: Config = {
         'geist-mono': ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
         display: ['Sora', 'Inter', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        inter: ['Inter', 'system-ui', 'sans-serif'],
         // ---- design-system aliases (match the Figma token names 1:1) ----
-        'headline-xl': ['Sora', 'Inter', 'sans-serif'],
-        'headline-lg': ['Sora', 'Inter', 'sans-serif'],
-        'headline-lg-mobile': ['Sora', 'Inter', 'sans-serif'],
-        'headline-md': ['Sora', 'Inter', 'sans-serif'],
-        'body-lg': ['Inter', 'system-ui', 'sans-serif'],
         'body-md': ['Inter', 'system-ui', 'sans-serif'],
-        'label-md': ['Inter', 'system-ui', 'sans-serif'],
-        'data-mono': ['Inter', 'system-ui', 'sans-serif'],
       },
       // Named steps from the design system. Additive — the numeric scale is
       // untouched, so nothing existing shifts.
