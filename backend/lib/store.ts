@@ -1,5 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname } from 'node:path';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { supabaseAdmin, supabaseConfigured } from './supabase';
 
 export interface Store {
   get<T>(key: string): Promise<T | null>;
@@ -15,58 +17,60 @@ export interface Store {
   expire(key: string, ttlSeconds: number): Promise<void>;
 }
 
-/** Upstash Redis via REST (Vercel Marketplace injects KV_REST_API_URL / KV_REST_API_TOKEN). */
-class UpstashStore implements Store {
-  constructor(private url: string, private token: string) {}
+/** Supabase Postgres: one `kv` table plus RPCs for the atomic ops (supabase/migrations/0001_kv.sql). */
+export class SupabaseStore implements Store {
+  constructor(private db: SupabaseClient) {}
 
-  private async cmd<T>(parts: (string | number)[]): Promise<T> {
-    const res = await fetch(this.url, {
-      method: 'POST',
-      // no-store is load-bearing: Next.js data-caches fetches made inside
-      // server components, which froze an early empty read of snapshot:latest
-      // and made the dashboard show "No data yet" forever. Never cache store I/O.
-      cache: 'no-store',
-      headers: { Authorization: `Bearer ${this.token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(parts),
-    });
-    if (!res.ok) throw new Error(`Upstash ${res.status}: ${await res.text()}`);
-    const json = (await res.json()) as { result: T };
-    return json.result;
+  private static expiry(ttlSeconds?: number): string | null {
+    return ttlSeconds ? new Date(Date.now() + ttlSeconds * 1000).toISOString() : null;
+  }
+
+  private async rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
+    const { data, error } = await this.db.rpc(fn, args);
+    if (error) throw new Error(`Supabase ${fn}: ${error.message}`);
+    return data as T;
+  }
+
+  private static check(op: string, error: { message: string } | null): void {
+    if (error) throw new Error(`Supabase ${op}: ${error.message}`);
   }
 
   async get<T>(key: string): Promise<T | null> {
-    const raw = await this.cmd<string | null>(['GET', key]);
-    return raw == null ? null : (JSON.parse(raw) as T);
+    const { data, error } = await this.db
+      .from('kv')
+      .select('value')
+      .eq('key', key)
+      .or(`expires_at.is.null,expires_at.gt."${new Date().toISOString()}"`)
+      .maybeSingle();
+    SupabaseStore.check('get', error);
+    return (data?.value as T) ?? null;
   }
   async set(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
-    const parts: (string | number)[] = ['SET', key, JSON.stringify(value)];
-    if (ttlSeconds) parts.push('EX', ttlSeconds);
-    await this.cmd(parts);
+    const { error } = await this.db.from('kv').upsert({ key, value, expires_at: SupabaseStore.expiry(ttlSeconds) });
+    SupabaseStore.check('set', error);
   }
   async hget<T>(key: string, field: string): Promise<T | null> {
-    const raw = await this.cmd<string | null>(['HGET', key, field]);
-    return raw == null ? null : (JSON.parse(raw) as T);
+    return (await this.rpc<T | null>('kv_hget', { k: key, f: field })) ?? null;
   }
   async hset(key: string, field: string, value: unknown): Promise<void> {
-    await this.cmd(['HSET', key, field, JSON.stringify(value)]);
+    await this.rpc('kv_hset', { k: key, f: field, v: value });
   }
   async lpush(key: string, value: unknown): Promise<void> {
-    await this.cmd(['LPUSH', key, JSON.stringify(value)]);
+    await this.rpc('kv_lpush', { k: key, v: value });
   }
   async lrange<T>(key: string, start: number, stop: number): Promise<T[]> {
-    const raw = await this.cmd<string[]>(['LRANGE', key, start, stop]);
-    return raw.map((r) => JSON.parse(r) as T);
+    return this.rpc<T[]>('kv_lrange', { k: key, start, stop });
   }
   async incr(key: string, ttlSeconds: number): Promise<number> {
-    const n = await this.cmd<number>(['INCR', key]);
-    if (n === 1) await this.cmd(['EXPIRE', key, ttlSeconds]);
-    return n;
+    return Number(await this.rpc('kv_incr', { k: key, ttl: ttlSeconds }));
   }
   async del(key: string): Promise<void> {
-    await this.cmd(['DEL', key]);
+    const { error } = await this.db.from('kv').delete().eq('key', key);
+    SupabaseStore.check('del', error);
   }
   async expire(key: string, ttlSeconds: number): Promise<void> {
-    await this.cmd(['EXPIRE', key, ttlSeconds]);
+    const { error } = await this.db.from('kv').update({ expires_at: SupabaseStore.expiry(ttlSeconds) }).eq('key', key);
+    SupabaseStore.check('expire', error);
   }
 }
 
@@ -76,7 +80,7 @@ interface FileData {
   lists: Record<string, unknown[]>;
 }
 
-/** Local JSON-file store. Used automatically when Upstash env vars are absent (dev / demo mode). */
+/** Local JSON-file store. Used automatically when Supabase env vars are absent (dev / demo mode). */
 export class FileStore implements Store {
   constructor(public path: string) {}
 
@@ -138,13 +142,9 @@ export class FileStore implements Store {
 let cached: Store | null = null;
 
 export function getStore(): Store {
-  if (cached) return cached;
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  cached =
-    url && token
-      ? new UpstashStore(url, token)
-      : new FileStore(process.env.FILE_STORE_PATH ?? '.data/store.json');
+  cached ??= supabaseConfigured()
+    ? new SupabaseStore(supabaseAdmin())
+    : new FileStore(process.env.FILE_STORE_PATH ?? '.data/store.json');
   return cached;
 }
 

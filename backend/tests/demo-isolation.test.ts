@@ -154,6 +154,8 @@ describe('no browser-facing handler touches the production store directly', () =
     'api/recompute/route.ts': 'branches to the sandbox first; the raw store is the non-demo path',
     'api/onboarding/discover/route.ts': 'only a SerpApi spend counter, deliberately global so a demo sandbox cannot bypass the cap',
     'demo/route.ts': 'builds the namespaced view itself — this is where the prefix comes from',
+    'api/auth/magic-link/route.ts': 'sign-in to the REAL property: must read the real Team list; a sandbox has no invites',
+    'api/auth/password/route.ts': 'sign-in to the REAL property: its throttle is global so a demo cookie cannot reset it',
   };
 
   function sourceFiles(dir: string): string[] {

@@ -2,7 +2,6 @@
 import { useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import { EnvelopeSimpleIcon } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
@@ -262,9 +261,9 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
     setLinkError('');
     setLinkBusy(true);
     const email = String(new FormData(e.currentTarget).get('email') ?? '');
-    const res = await signIn('resend', { email, redirect: false, callbackUrl: redirectTo });
+    const res = await fetch('/api/auth/magic-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, next: redirectTo }) }).catch(() => null);
     setLinkBusy(false);
-    if (res?.error) {
+    if (!res?.ok) {
       setLinkError('We could not send a link to that address. If you are not on the team yet, ask the owner for an invite.');
     } else {
       setLinkSent({ email });
@@ -276,8 +275,8 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
     setPwBusy(true);
     setPwError('');
     const password = new FormData(e.currentTarget).get('password');
-    const res = await signIn('site-password', { password, redirect: false });
-    if (res?.error) {
+    const res = await fetch('/api/auth/password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) }).catch(() => null);
+    if (!res?.ok) {
       setPwError('That password is not right. Check with the property owner.');
       setPwBusy(false);
     } else {

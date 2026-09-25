@@ -26,7 +26,7 @@ export type RoleGate = { ok: true; role: Role } | { ok: false; response: NextRes
  *   if (!gate.ok) return gate.response;
  *
  * The session import is deferred so this module stays importable from route
- * files without hoisting NextAuth's whole graph into every one of them.
+ * files without hoisting the Supabase client graph into every one of them.
  */
 export async function requireRole(required: Role): Promise<RoleGate> {
   // A demo visitor is an owner OF THEIR OWN SANDBOX. Granting the top role here
@@ -43,7 +43,7 @@ export async function requireRole(required: Role): Promise<RoleGate> {
     return { ok: false, response: NextResponse.json({ error: 'unauthorized' }, { status: 401 }) };
   }
 
-  const role = ((session.user as { role?: string }).role ?? 'viewer') as Role;
+  const role = session.user.role;
   if (!roleAtLeast(role, required)) {
     return {
       ok: false,

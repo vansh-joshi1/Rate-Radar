@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import { ListIcon } from '@phosphor-icons/react/dist/ssr/List';
@@ -260,7 +259,7 @@ export default function AppShell({
                 Exit demo
               </a>
             ) : (
-              <button onClick={() => signOut({ callbackUrl: '/login' })} className={navLink(false)}>
+              <button onClick={() => fetch('/api/auth/signout', { method: 'POST' }).finally(() => (window.location.href = '/login'))} className={navLink(false)}>
                 <SignOutIcon weight="light" className="h-5 w-5 shrink-0" aria-hidden />
                 Sign out
               </button>

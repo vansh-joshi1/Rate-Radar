@@ -41,7 +41,9 @@ describe('every mutating API route is role-guarded', () => {
   /** Routes authenticated by something other than a user session — each with the reason. */
   const NON_SESSION_ROUTES: Record<string, string> = {
     'ingest/route.ts': 'INGEST_SECRET bearer token (collector)',
-    'auth/[...nextauth]/route.ts': "NextAuth's own handler",
+    'auth/magic-link/route.ts': 'sign-in: invite-gated, per-email throttle',
+    'auth/password/route.ts': 'sign-in: SITE_PASSWORD, per-IP throttle',
+    'auth/signout/route.ts': 'ends whatever session the caller has',
     'cron/heartbeat/route.ts': 'Vercel cron secret',
     'onboarding/discover/route.ts': 'public, read-only onboarding discovery behind a daily SerpApi cap',
   };
