@@ -156,6 +156,8 @@ describe('no browser-facing handler touches the production store directly', () =
     'demo/route.ts': 'builds the namespaced view itself — this is where the prefix comes from',
     'api/auth/magic-link/route.ts': 'sign-in to the REAL property: must read the real Team list; a sandbox has no invites',
     'api/auth/password/route.ts': 'sign-in to the REAL property: its throttle is global so a demo cookie cannot reset it',
+    'api/auth/sign-in/route.ts': 'sign-in to the REAL property: must read the real Team list and access requests',
+    'api/onboarding/request/route.ts': 'access requests must land where the team reviews them, not in a sandbox that expires',
   };
 
   function sourceFiles(dir: string): string[] {

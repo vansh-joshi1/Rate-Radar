@@ -27,12 +27,11 @@ import { DOT_FIELD, Grain, HeroRadar } from './landing/Backdrop';
  * pages.signIn config all keep working. History is rewritten in place instead
  * of navigating so a half-typed email survives a tab switch.
  *
- * Only the auth that actually exists is on screen. There are exactly two ways
- * in (auth.ts): an invite-gated Resend magic link, and the shared site
- * password. No OAuth, no per-user password, no self-serve account creation,
- * so there is deliberately no Google button, no "forgot password", and no
- * "create password" field here. Get access takes the hotel email and hands
- * off to the /onboarding walkthrough, which creates nothing yet.
+ * Only the auth that actually exists is on screen (auth.ts): email + password
+ * (the account an /onboarding access request creates), an invite-gated Resend
+ * magic link, and the shared site password. No OAuth, so no Google button.
+ * Get access takes the hotel email and hands off to /onboarding, which sets
+ * the password at its last step.
  *
  * Refusals (not on the team, wrong password) are honest states, not breakage,
  * so they take State Warn, never State Bad (The Warn-Not-Fail Rule).
@@ -257,11 +256,40 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
     window.history.replaceState(null, '', next === 'signin' ? signinPath : '/signup');
   }
 
-  async function submitMagicLink(e: React.FormEvent<HTMLFormElement>) {
+  async function submitAccount(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLinkError('');
     setLinkBusy(true);
-    const email = String(new FormData(e.currentTarget).get('email') ?? '');
+    const form = new FormData(e.currentTarget);
+    const res = await fetch('/api/auth/sign-in', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.get('email'), password: form.get('password') }),
+    }).catch(() => null);
+    if (res?.ok) {
+      track('password_sign_in_succeeded');
+      window.location.href = redirectTo;
+      return;
+    }
+    const { error } = ((await res?.json().catch(() => null)) ?? {}) as { error?: string };
+    setLinkBusy(false);
+    setLinkError(
+      res?.status === 429
+        ? 'Too many attempts. Wait a minute and try again.'
+        : error === 'pending'
+          ? 'We are still reviewing your property. You will get an email once it is verified.'
+          : error === 'not invited'
+            ? 'This account does not have access yet. Ask the property owner for an invite.'
+            : 'That email and password do not match.',
+    );
+  }
+
+  async function submitMagicLink() {
+    const input = document.getElementById(ids.linkEmail) as HTMLInputElement | null;
+    if (!input?.reportValidity()) return;
+    setLinkError('');
+    setLinkBusy(true);
+    const email = input.value;
     const res = await fetch('/api/auth/magic-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, next: redirectTo }) }).catch(() => null);
     setLinkBusy(false);
     if (!res?.ok) {
@@ -288,7 +316,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
   }
 
   // The hotel email rides to /onboarding in sessionStorage, not the URL, so it
-  // stays out of history and server logs. Onboarding still persists nothing.
+  // stays out of history and server logs.
   function startOnboarding(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const email = String(new FormData(e.currentTarget).get('email') ?? '');
@@ -301,6 +329,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
   const ids = {
     linkEmail: `${uid}-link-email`,
     linkNote: `${uid}-link-note`,
+    accountPw: `${uid}-account-pw`,
     pw: `${uid}-pw`,
     pwNote: `${uid}-pw-note`,
     joinEmail: `${uid}-join-email`,
@@ -331,13 +360,13 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
             {tab === 'signin' ? (
               <div key="signin" id="pane-signin" role="tabpanel" aria-labelledby="tab-signin" className="auth-settle mt-8">
                 <Heading title="Welcome back">
-                  Get a one-time link by email, or use your property&rsquo;s shared password.
+                  Sign in with your email and password, or get a one-time link by email.
                 </Heading>
 
                 {linkSent ? (
                   <Inbox email={linkSent.email} onReset={() => setLinkSent(null)} />
                 ) : (
-                  <form onSubmit={submitMagicLink} className="mt-7">
+                  <form onSubmit={submitAccount} className="mt-7">
                     <label className={LABEL} htmlFor={ids.linkEmail}>
                       Email
                     </label>
@@ -354,15 +383,33 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
                       aria-invalid={linkError ? true : undefined}
                       aria-describedby={linkError ? ids.linkNote : undefined}
                     />
-                    <div aria-live="polite">{linkError && <FieldNote id={ids.linkNote}>{linkError}</FieldNote>}</div>
-                    <PillButton
-                      type="submit"
-                      className="mt-4 w-full"
+                    <label className={`${LABEL} mt-5`} htmlFor={ids.accountPw}>
+                      Password
+                    </label>
+                    <input
+                      id={ids.accountPw}
+                      name="password"
+                      type="password"
+                      required
+                      autoComplete="current-password"
+                      className={FIELD}
                       disabled={linkBusy}
-                      icon={<EnvelopeSimpleIcon weight="light" className="h-4 w-4" />}
-                    >
-                      {linkBusy ? 'Sending link…' : 'Email me a link'}
+                      aria-invalid={linkError ? true : undefined}
+                      aria-describedby={linkError ? ids.linkNote : undefined}
+                    />
+                    <div aria-live="polite">{linkError && <FieldNote id={ids.linkNote}>{linkError}</FieldNote>}</div>
+                    <PillButton type="submit" className="mt-4 w-full" disabled={linkBusy}>
+                      {linkBusy ? 'Signing in…' : 'Sign in'}
                     </PillButton>
+                    <button
+                      type="button"
+                      onClick={() => void submitMagicLink()}
+                      disabled={linkBusy}
+                      className={`mt-4 inline-flex items-center gap-2 text-[14px] ${textLink}`}
+                    >
+                      <EnvelopeSimpleIcon weight="light" aria-hidden className="h-4 w-4" />
+                      Email me a sign-in link instead
+                    </button>
                   </form>
                 )}
 

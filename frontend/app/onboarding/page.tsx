@@ -8,6 +8,11 @@ import { GeistMono } from 'geist/font/mono';
 import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { CheckIcon } from '@phosphor-icons/react/dist/ssr/Check';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
+import { EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
+import { EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
+import { CircleIcon } from '@phosphor-icons/react/dist/ssr/Circle';
+import { PASSWORD_RULES, passwordOk } from '../../../backend/lib/password';
 import { RadarIcon } from '../../components/RadarMark';
 import { Bezel, PillButton, SPRING } from '../../components/landing/Machined';
 import { DOT_FIELD, Grain, HeroRadar } from '../../components/landing/Backdrop';
@@ -26,10 +31,12 @@ import { assignTiers, nearbyHotels, type Candidate, type Nearby, type RoomTier, 
  * metered and capped, so every step falls back to manual entry, said plainly
  * in State Warn (The Warn-Not-Fail Rule), never as an error.
  *
- * Still persists nothing, and says so on screen.
+ * The last step sets the account's password; Request access saves it all
+ * (app/api/onboarding/request) for a person to review and set up by hand.
+ * Nothing is stored before that, and the readback says so.
  */
 
-const STEPS = ['Property', 'Listings', 'Rooms', 'Competitors'] as const;
+const STEPS = ['Property', 'Listings', 'Rooms', 'Competitors', 'Account'] as const;
 const TYPES = ['Hotel', 'Motel', 'Inn'] as const;
 const TIERS: { id: RoomTier; label: string }[] = [
   { id: 'standard', label: 'Standard' },
@@ -43,6 +50,9 @@ type Prefetched = { token: string; channels: Omit<Channel, 'on'>[]; rooms: RoomT
 
 type Answers = {
   email: string;
+  password: string;
+  confirm: string;
+  phone: string;
   name: string;
   address: string;
   rooms: string;
@@ -58,6 +68,7 @@ const HEADINGS = [
   { title: 'Is this you?', lead: 'We looked you up. Confirm the match and we will pull in your listings.' },
   { title: 'Your room types', lead: 'We sorted your rooms into two pricing tiers. Tap any we got wrong.' },
   { title: 'Pick your compset', lead: 'The hotels nearest you, priced against you on quiet nights. Add or remove any.' },
+  { title: 'Your account', lead: 'This email and password are how you will sign in once your property is set up.' },
 ];
 
 async function discover<T>(body: object): Promise<T> {
@@ -299,6 +310,7 @@ function Readback({ a, channels, rooms }: { a: Answers; channels: Channel[]; roo
   const rows: { label: string; value: string }[] = [
     { label: 'Hotel email', value: a.email },
     { label: 'Property', value: a.name },
+    { label: 'Phone', value: a.phone },
     { label: 'Type', value: a.name ? a.type : '' },
     { label: 'Rooms', value: a.rooms },
     { label: 'Listings', value: on ? `${on} channels` : manual ? `${manual} added by hand` : '' },
@@ -311,7 +323,7 @@ function Readback({ a, channels, rooms }: { a: Answers; channels: Channel[]; roo
         <div className="flex items-baseline justify-between gap-4">
           <span className="text-[22px] font-semibold tracking-tight text-[#0b1c30]">Setup</span>
           <span className="rounded-full bg-[#0b1c30]/[0.05] px-2.5 py-0.5 text-[12px] font-medium text-[#44474d]">
-            Not saved
+            Not sent yet
           </span>
         </div>
         <dl className="mt-5 divide-y divide-[#0b1c30]/[0.06]">
@@ -330,7 +342,7 @@ function Readback({ a, channels, rooms }: { a: Answers; channels: Channel[]; roo
         </dl>
       </Bezel>
       <p className="mt-8 max-w-[40ch] text-pretty pl-2 text-[15px] leading-relaxed text-[#44474d]">
-        Our team connects your property with you. Nothing on this page is stored yet.
+        Our team reviews what you send and sets up your property with you. Nothing is saved until you request access.
       </p>
     </div>
   );
@@ -341,6 +353,9 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [a, setA] = useState<Answers>({
     email: '',
+    password: '',
+    confirm: '',
+    phone: '',
     name: '',
     address: '',
     rooms: '',
@@ -366,6 +381,10 @@ export default function Onboarding() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [nearby, setNearby] = useState<Nearby[]>([]);
   const [extra, setExtra] = useState('');
+  const [pwShown, setPwShown] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const sent = useRef<HTMLDialogElement>(null);
 
   // Left by /signup's Start onboarding (components/AuthPanes.tsx). Read after
   // mount so server and client render the same first frame.
@@ -450,18 +469,58 @@ export default function Onboarding() {
   const busy = search === 'loading' || details === 'loading';
   const listingsReady = manual ? a.direct !== '' : details === 'done' && channels.some((c) => c.on);
 
+  async function requestAccess() {
+    setSubmitError('');
+    setSubmitting(true);
+    const res = await fetch('/api/onboarding/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: a.email,
+        password: a.password,
+        phone: a.phone,
+        name: a.name,
+        address: a.address,
+        rooms: a.rooms,
+        type: a.type,
+        token: manual ? null : chosen?.token ?? null,
+        channels: manual ? [] : channels.filter((c) => c.on).map((c) => c.source),
+        listings: manual
+          ? { direct: a.direct, expedia: a.expedia, booking: a.booking }
+          : { direct: '', expedia: '', booking: '' },
+        roomTypes: rooms.map((r) => ({ name: r.name, tier: r.tier, price: r.price })),
+        competitors: a.competitors,
+      }),
+    }).catch(() => null);
+    setSubmitting(false);
+    if (res?.ok) {
+      track('onboarding_completed');
+      sent.current?.showModal();
+      return;
+    }
+    setSubmitError(
+      res?.status === 409
+        ? 'That email already has an account. Sign in instead, or use a different email.'
+        : res?.status === 429
+          ? 'Too many requests from here. Try again in an hour.'
+          : res?.status === 400
+            ? 'Something in the form is not right. Check each step and try again.'
+            : 'We could not send your request right now. Try again in a minute.',
+    );
+  }
+
   function next(e: React.FormEvent) {
     e.preventDefault();
     if (step === 0) void runSearch();
     if (step < STEPS.length - 1) setStep(step + 1);
-    else {
-      track('onboarding_completed');
-      router.push('/overview');
-    }
+    else void requestAccess();
   }
 
   const last = step === STEPS.length - 1;
-  const blocked = (step === 1 && (busy || !listingsReady)) || (last && a.competitors.length === 0);
+  const blocked =
+    (step === 1 && (busy || !listingsReady)) ||
+    (step === 3 && a.competitors.length === 0) ||
+    (last && (submitting || !passwordOk(a.password) || a.confirm !== a.password));
 
   return (
     <main
@@ -502,6 +561,7 @@ export default function Onboarding() {
                   <>
                     <Field id="name" label="Property name" value={a.name} onChange={set('name')} required minLength={2} autoComplete="organization" placeholder="Red Roof Inn Franklin" />
                     <AddressField value={a.address} onChange={set('address')} />
+                    <Field id="phone" label="Hotel phone number" value={a.phone} onChange={set('phone')} required type="tel" inputMode="tel" autoComplete="tel" pattern="\D*(\d\D*){10,}" title="At least 10 digits" placeholder="(615) 555-0142" className={`${FIELD} tabular-nums`} />
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,1fr)_auto]">
                       <Field id="rooms" label="Number of rooms" value={a.rooms} onChange={set('rooms')} required type="number" inputMode="numeric" min={1} step={1} placeholder="55" className={`${FIELD} tabular-nums`} />
                       <fieldset>
@@ -701,6 +761,102 @@ export default function Onboarding() {
                     <p className="mt-3 pl-5 text-[13.5px] tabular-nums text-[#44474d]">{a.competitors.length} selected</p>
                   </fieldset>
                 )}
+
+                {step === 4 && (
+                  <>
+                    <Field id="email" label="Email" value={a.email} onChange={set('email')} required type="email" inputMode="email" autoComplete="email" placeholder="gm@yourhotel.com" />
+                    <div>
+                      <label className={LABEL} htmlFor="password">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="password"
+                          name="password"
+                          type={pwShown ? 'text' : 'password'}
+                          value={a.password}
+                          onChange={(e) => set('password')(e.target.value)}
+                          required
+                          maxLength={72}
+                          autoComplete="new-password"
+                          aria-describedby="password-rules"
+                          aria-invalid={a.password !== '' && !passwordOk(a.password) ? true : undefined}
+                          className={`${FIELD} pr-14`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPwShown((s) => !s)}
+                          aria-label={pwShown ? 'Hide password' : 'Show password'}
+                          aria-pressed={pwShown}
+                          className={`absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[#44474d] transition-colors duration-300 hover:bg-[#0b1c30]/[0.05] hover:text-[#0b1c30] ${ring}`}
+                        >
+                          {pwShown ? (
+                            <EyeSlashIcon weight="light" className="h-[18px] w-[18px]" aria-hidden />
+                          ) : (
+                            <EyeIcon weight="light" className="h-[18px] w-[18px]" aria-hidden />
+                          )}
+                        </button>
+                      </div>
+                      <ul id="password-rules" className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 pl-5">
+                        {PASSWORD_RULES.map((r) => {
+                          const ok = r.test(a.password);
+                          return (
+                            <li
+                              key={r.label}
+                              className={`flex items-center gap-1.5 text-[13.5px] transition-colors duration-300 ${ok ? 'text-[#029768]' : 'text-[#44474d]'}`}
+                            >
+                              {ok ? (
+                                <CheckCircleIcon weight="fill" aria-hidden className="h-4 w-4 shrink-0" />
+                              ) : (
+                                <CircleIcon weight="light" aria-hidden className="h-4 w-4 shrink-0" />
+                              )}
+                              {r.label}
+                              <span className="sr-only">{ok ? ', done' : ', not yet'}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                    <div>
+                      <label className={LABEL} htmlFor="confirm">
+                        Confirm password
+                      </label>
+                      <input
+                        id="confirm"
+                        name="confirm"
+                        type={pwShown ? 'text' : 'password'}
+                        value={a.confirm}
+                        onChange={(e) => set('confirm')(e.target.value)}
+                        required
+                        maxLength={72}
+                        autoComplete="new-password"
+                        aria-describedby={a.confirm ? 'confirm-note' : undefined}
+                        aria-invalid={a.confirm !== '' && a.confirm !== a.password ? true : undefined}
+                        className={FIELD}
+                      />
+                      <div aria-live="polite">
+                        {a.confirm !== '' && (
+                          <p
+                            id="confirm-note"
+                            className={`mt-2.5 flex items-center gap-1.5 pl-5 text-[13.5px] font-medium ${
+                              a.confirm === a.password ? 'text-[#029768]' : 'text-[#b45309]'
+                            }`}
+                          >
+                            {a.confirm === a.password ? (
+                              <>
+                                <CheckCircleIcon weight="fill" aria-hidden className="h-4 w-4" />
+                                Passwords match
+                              </>
+                            ) : (
+                              'Passwords do not match yet'
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {submitError && <Note>{submitError}</Note>}
+                  </>
+                )}
               </div>
             </div>
 
@@ -718,7 +874,7 @@ export default function Onboarding() {
                 <span />
               )}
               <PillButton type="submit" disabled={blocked}>
-                {last ? 'Open the dashboard' : 'Continue'}
+                {last ? (submitting ? 'Sending…' : 'Request access') : 'Continue'}
               </PillButton>
             </div>
           </form>
@@ -726,6 +882,30 @@ export default function Onboarding() {
 
         <p className="text-[13px] text-[#44474d]">Recommendation only. Rate Radar never changes a price anywhere.</p>
       </section>
+
+      <dialog
+        ref={sent}
+        aria-labelledby="sent-title"
+        onClose={() => router.push('/')}
+        className="w-[calc(100%-2rem)] max-w-[440px] rounded-[1.75rem] bg-transparent p-0 backdrop:bg-[#0b1c30]/40 backdrop:backdrop-blur-sm"
+      >
+        <Bezel core="p-7">
+          <CheckCircleIcon weight="fill" aria-hidden className="h-8 w-8 text-[#029768]" />
+          <h2 id="sent-title" className="mt-4 text-[24px] font-semibold tracking-tight text-[#0b1c30]">
+            We&rsquo;re reviewing your information
+          </h2>
+          <p className="mt-3 text-pretty text-[15px] leading-relaxed text-[#44474d]">
+            We&rsquo;re getting {a.name || 'your property'} set up. You will receive an email at{' '}
+            <span className="break-all font-medium text-[#1a1b20]">{a.email}</span> once your property is verified.
+            Then sign in with this email and the password you just set.
+          </p>
+          <form method="dialog" className="mt-6">
+            <PillButton type="submit" className="w-full">
+              Back to home
+            </PillButton>
+          </form>
+        </Bezel>
+      </dialog>
 
       <aside className="relative isolate hidden min-w-0 items-center justify-center overflow-hidden px-12 lg:sticky lg:top-0 lg:flex lg:h-[100dvh] lg:self-start">
         <HeroRadar variant="auth" />

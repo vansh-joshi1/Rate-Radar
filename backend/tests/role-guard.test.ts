@@ -43,6 +43,8 @@ describe('every mutating API route is role-guarded', () => {
     'ingest/route.ts': 'INGEST_SECRET bearer token (collector)',
     'auth/magic-link/route.ts': 'sign-in: invite-gated, per-email throttle',
     'auth/password/route.ts': 'sign-in: SITE_PASSWORD, per-IP throttle',
+    'auth/sign-in/route.ts': 'sign-in: email + password, Team list gate, per-IP throttle',
+    'onboarding/request/route.ts': 'public access request: creates a gated account, per-IP throttle',
     'auth/signout/route.ts': 'ends whatever session the caller has',
     'cron/heartbeat/route.ts': 'Vercel cron secret',
     'onboarding/discover/route.ts': 'public, read-only onboarding discovery behind a daily SerpApi cap',
