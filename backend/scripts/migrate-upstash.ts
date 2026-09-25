@@ -2,8 +2,8 @@
  * One-off: copy every live key from the old Upstash Redis into Supabase's kv
  * table, keeping TTLs. Safe to re-run: rows are upserted by key.
  *
- *   KV_REST_API_URL=… KV_REST_API_TOKEN=… SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… \
- *     npx tsx backend/scripts/migrate-upstash.ts [--dry-run]
+ *   npx vercel env pull .env.upstash --environment=production   # has KV_REST_API_*
+ *   npx tsx --env-file=.env.upstash --env-file=frontend/.env.local backend/scripts/migrate-upstash.ts [--dry-run]
  *
  * Auth.js's own keys (auth:users, auth:email-index, auth:vt:*) are skipped —
  * Supabase Auth owns users now. The Team list (auth:members) is copied.
