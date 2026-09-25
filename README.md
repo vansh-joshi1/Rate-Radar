@@ -64,11 +64,11 @@ Full derivation: [`docs/design/specs/2026-07-12-rate-radar-design.md`](docs/desi
 
 ## Worth a look, if you're reviewing this
 
-- **[`tests/role-guard.test.ts`](tests/role-guard.test.ts)** — a test that reads the route tree and fails the build if a new mutating endpoint ships without a role check. Routes authenticated by something other than a session are listed by name with the reason. The gap can't quietly reopen.
-- **[`collector/budget.ts`](collector/budget.ts)** — prices are metered (250 SerpApi searches/month). Before each run the collector reads its live balance and picks a tier: full, reduced, or minimal. It degrades instead of erroring and recovers on its own.
+- **[`backend/tests/role-guard.test.ts`](backend/tests/role-guard.test.ts)** — a test that reads the route tree and fails the build if a new mutating endpoint ships without a role check. Routes authenticated by something other than a session are listed by name with the reason. The gap can't quietly reopen.
+- **[`backend/collector/budget.ts`](backend/collector/budget.ts)** — prices are metered (250 SerpApi searches/month). Before each run the collector reads its live balance and picks a tier: full, reduced, or minimal. It degrades instead of erroring and recovers on its own.
 - **[`.github/workflows/collect.yml`](.github/workflows/collect.yml)** — GitHub's cron is UTC and DST-unaware, and its scheduler drifts. The workflow fires at both candidate UTC hours and gates on *data freshness* rather than wall-clock hour, so it's correct in CST and CDT and immune to drift. It fails open: if the health check is unreachable, it collects rather than silently starving.
-- **[`lib/demo/context.ts`](lib/demo/context.ts)** — the public demo is a key-namespaced sandbox in the same Redis, so demo visitors exercise the real route handlers and the real role guard while reaching none of the live property's keys. Endpoints with effects outside the store (metered searches, email) refuse demo callers at their own door.
-- **[`lib/scoring/reason.ts`](lib/scoring/reason.ts)** — the reasoning strings the UI shows are generated from the same values that produced the number, so the explanation can't drift from the arithmetic.
+- **[`backend/lib/demo/context.ts`](backend/lib/demo/context.ts)** — the public demo is a key-namespaced sandbox in the same Redis, so demo visitors exercise the real route handlers and the real role guard while reaching none of the live property's keys. Endpoints with effects outside the store (metered searches, email) refuse demo callers at their own door.
+- **[`backend/lib/scoring/reason.ts`](backend/lib/scoring/reason.ts)** — the reasoning strings the UI shows are generated from the same values that produced the number, so the explanation can't drift from the arithmetic.
 
 ## Roles
 
@@ -82,7 +82,7 @@ Three roles, assigned per teammate in **Settings → Team**:
 | Invite/remove teammates | | | ✓ |
 
 Enforcement is **server-side**, in the route handler — `requireRole()` in
-[`lib/auth/guard.ts`](lib/auth/guard.ts), one two-line prelude per mutating endpoint.
+[`backend/lib/auth/guard.ts`](backend/lib/auth/guard.ts), one two-line prelude per mutating endpoint.
 Being signed in is not permission to write; a viewer's `POST` gets a 403 naming the
 role it would need. The UI hides those controls too, but that's courtesy — the check
 that matters is the one on the server.
@@ -93,7 +93,7 @@ that matters is the one on the server.
 npm install && npm run dev
 ```
 
-No Upstash needed — the store falls back to a local JSON file (`.data/store.json`),
+No Upstash needed — the store falls back to a local JSON file (`frontend/.data/store.json`),
 and every page renders sample data when the store is empty. Visit `/demo` for the
 seeded sandbox.
 
@@ -120,11 +120,12 @@ TypeScript, 18 API routes.
 
 | | |
 |---|---|
-| `app/` | dashboard pages + API routes (incl. versioned `/api/v1`) |
-| `lib/` | scoring, alerts, ingest, store, auth, demo sandbox |
-| `collector/` | GitHub Actions data collection + search budget |
-| `config/` | baseline rates, holidays, compset whitelist (user-editable) |
-| `tests/` | vitest unit + fixture parser tests |
+| `frontend/` | the Next.js app: pages, API routes (incl. versioned `/api/v1`), components, public assets. Vercel root directory. |
+| `frontend/app/` | dashboard pages + API routes |
+| `backend/lib/` | scoring, alerts, ingest, store, auth, demo sandbox |
+| `backend/collector/` | GitHub Actions data collection + search budget |
+| `backend/config/` | baseline rates, holidays, compset whitelist (user-editable) |
+| `backend/tests/` | vitest unit + fixture parser tests |
 | `docs/design/` | design specs and implementation plans, including superseded ones |
 
 ## Docs

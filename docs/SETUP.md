@@ -11,7 +11,7 @@ personal throwaway — this needs to keep running long-term.
 ### 1. GitHub
 
 1. Create a GitHub account/org for the business, create a **private** repo `rate-radar`, push this code.
-2. Repo → Settings → Secrets and variables → Actions → add the secrets listed in `.env.example` under "collector vars": `TICKETMASTER_API_KEY`, `CFBD_API_KEY`, `NWS_USER_AGENT`, `DASHBOARD_URL`, `INGEST_SECRET`, `SERPAPI_KEY`.
+2. Repo → Settings → Secrets and variables → Actions → add the secrets listed in `frontend/.env.example` under "collector vars": `TICKETMASTER_API_KEY`, `CFBD_API_KEY`, `NWS_USER_AGENT`, `DASHBOARD_URL`, `INGEST_SECRET`, `SERPAPI_KEY`.
 
 ### 2. Vercel
 
@@ -24,12 +24,12 @@ personal throwaway — this needs to keep running long-term.
 
 - **Ticketmaster**: developer.ticketmaster.com → create app → copy the **Consumer Key** (the secret is not needed).
 - **CFBD**: collegefootballdata.com → API Keys → key arrives by email.
-- **SerpApi**: serpapi.com → sign up → copy the private API key. This is where competitor and parity prices come from. The free plan allows **250 searches/month**, which is the whole reason the collector runs 3×/day instead of 7 — see "Search budget" below. Then set `serpapi.query` and `serpapi.propertyToken` for the property in `config/properties.json`: the query is `hotels near <street address>`, and the token comes from any search response's `properties[].property_token` for your own hotel.
+- **SerpApi**: serpapi.com → sign up → copy the private API key. This is where competitor and parity prices come from. The free plan allows **250 searches/month**, which is the whole reason the collector runs 3×/day instead of 7 — see "Search budget" below. Then set `serpapi.query` and `serpapi.propertyToken` for the property in `backend/config/properties.json`: the query is `hotels near <street address>`, and the token comes from any search response's `properties[].property_token` for your own hotel.
 
 ### 4. Resend (email)
 
 1. resend.com → **create the account with the email address that should receive alerts** (see caveat below) → API Keys → create key.
-2. ⚠️ **Free-tier caveat:** without a verified domain, Resend only delivers to the account owner's own address, from `onboarding@resend.dev`. That's fine for this use — just create the account with the target address. If you later buy/control a domain: Resend → Domains → verify via DNS, then change `from` in `lib/alerts/email.ts` and set `ALERT_EMAIL_TO` to any list of addresses.
+2. ⚠️ **Free-tier caveat:** without a verified domain, Resend only delivers to the account owner's own address, from `onboarding@resend.dev`. That's fine for this use — just create the account with the target address. If you later buy/control a domain: Resend → Domains → verify via DNS, then change `from` in `backend/lib/alerts/email.ts` and set `ALERT_EMAIL_TO` to any list of addresses.
 
 ### 5. Site password
 
@@ -43,8 +43,8 @@ engines.
 1. GitHub → Actions → **collect** → Run workflow (manual runs bypass the hour gate).
 2. Watch the job log: the collection summary lists each source as ✓ ok / ✗ failed / awaiting-key, then the ingest summary shows nights scored, triggers, email status.
 3. Open the dashboard → tonight's recommendation + reasoning should render; the parity panel shows every channel Google Hotels lists for us, our own direct rate first (some may say "needs manual check" — that's a truthful state, not a bug).
-4. To test an email: temporarily lower a threshold in `lib/alerts/rules.ts` (e.g. `RATE_DELTA_USD = 0`), push, run the workflow, restore. Or wait — the first real event/holiday/rate move will send one.
-5. Local dev: `npm install && npm run dev` (uses `.data/store.json`, no Upstash needed). Collector locally: `npm run collect -- --dry-run --skip-rates`.
+4. To test an email: temporarily lower a threshold in `backend/lib/alerts/rules.ts` (e.g. `RATE_DELTA_USD = 0`), push, run the workflow, restore. Or wait — the first real event/holiday/rate move will send one.
+5. Local dev: `npm install && npm run dev` (uses `frontend/.data/store.json`, no Upstash needed). Collector locally: `npm run collect -- --dry-run --skip-rates`.
 
 ## Schedule
 
@@ -53,7 +53,7 @@ workflow fires at both possible UTC hours and a data-freshness gate dedupes —
 correct in both CST and CDT. GitHub Actions scheduling can drift by a few minutes
 at busy times; that's normal, and the gate is drift-immune by design.
 
-Keep these hours in step with `RUN_SLOTS_CT` in `collector/budget.ts` — the
+Keep these hours in step with `RUN_SLOTS_CT` in `backend/collector/budget.ts` — the
 collector decides what to fetch based on which slot it thinks it's in.
 
 ## Search budget
@@ -89,10 +89,10 @@ same whether you track 3 competitors or 15. **"Collect now" is throttled to once
 
 ## Maintenance (the honest list)
 
-- **Holiday table** (`config/holidays.json`): extend once a year (~10 min). CMA Fest dates are estimates until announced — correct them when Nashville publishes dates.
-- **Scrapers rot.** University calendar pages change structure roughly yearly. When a source shows "parse failed / structure may have changed" on the dashboard, the selectors in `collector/sources/calendars.ts` need a 15-minute refresh. A broken scrape only skips that source — the rest of the run continues. Prices are no longer scraped at all, so they are not exposed to this.
+- **Holiday table** (`backend/config/holidays.json`): extend once a year (~10 min). CMA Fest dates are estimates until announced — correct them when Nashville publishes dates.
+- **Scrapers rot.** University calendar pages change structure roughly yearly. When a source shows "parse failed / structure may have changed" on the dashboard, the selectors in `backend/collector/sources/calendars.ts` need a 15-minute refresh. A broken scrape only skips that source — the rest of the run continues. Prices are no longer scraped at all, so they are not exposed to this.
 - **Music City Center** calendar is JavaScript-rendered; the plain fetch may consistently return nothing. If it stays empty, rely on the manual note field for known conventions.
 - **Not every hotel is in Google Hotels.** As of 2026-08-23, 8 of the 10 watchlist hotels are carried; Super 8 and Motel 6 are not, on either results page. They show under "not carried" in the budget panel rather than silently reading as $0. No number of searches will find them — either drop them from the watchlist or accept the gap.
-- **Compset** (`config/compset.json`): the competitor whitelist is editable — add/remove hotels as the market changes. Names only need to match once; the collector then pins each hotel by its stable `property_token`. Compset is a sanity bound on quiet nights only; event nights are never capped.
+- **Compset** (`backend/config/compset.json`): the competitor whitelist is editable — add/remove hotels as the market changes. Names only need to match once; the collector then pins each hotel by its stable `property_token`. Compset is a sanity bound on quiet nights only; event nights are never capped.
 - **Parity is Google's view of the market**, which can lag a channel by hours, and it covers ~25 channels including resellers. Expect to see resellers below your direct rate — that is the point of the panel, not a bug in it.
 - **Corporate events** at Nissan NA / CHS campuses aren't published anywhere — that's what the dashboard's manual note field is for.
