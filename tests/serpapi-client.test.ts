@@ -106,3 +106,12 @@ describe('accountQuota', () => {
     await expect(client.accountQuota()).rejects.toThrow(/temporarily unavailable/);
   });
 });
+
+describe('searchProperties on a query naming one hotel', () => {
+  it('returns that hotel page as a one-item list', async () => {
+    const page = { name: 'Red Roof Inn Nashville - Franklin', property_token: 'tok', featured_prices: [] };
+    const { impl } = stubFetch(page);
+    const client = createSerpApiClient('KEY123', impl);
+    expect(await client.searchProperties('Red Roof Inn Franklin', '2026-08-02', '2026-08-03')).toEqual([page]);
+  });
+});

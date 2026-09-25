@@ -1,6 +1,7 @@
 'use client';
 import { useId, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
@@ -30,7 +31,8 @@ import { DOT_FIELD, Grain, HeroRadar } from './landing/Backdrop';
  * in (auth.ts): an invite-gated Resend magic link, and the shared site
  * password. No OAuth, no per-user password, no self-serve account creation,
  * so there is deliberately no Google button, no "forgot password", and no
- * "create password" field here.
+ * "create password" field here. Get access takes the hotel email and hands
+ * off to the /onboarding walkthrough, which creates nothing yet.
  *
  * Refusals (not on the team, wrong password) are honest states, not breakage,
  * so they take State Warn, never State Bad (The Warn-Not-Fail Rule).
@@ -54,12 +56,12 @@ function readNextParam(): string {
   return next && /^\/(?![/\\])/.test(next) ? next : '';
 }
 
-const ring =
+export const ring =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f9ff]';
 
-const FIELD = `h-12 w-full rounded-full bg-white px-5 text-[15px] text-[#1a1b20] shadow-[inset_0_1px_2px_rgba(11,28,48,0.06)] ring-1 ring-[#0b1c30]/[0.12] outline-none transition-shadow duration-300 placeholder:text-[#6b6e75] hover:ring-[#0b1c30]/20 focus:ring-2 focus:ring-[#085ac0]/60 disabled:opacity-60 aria-[invalid=true]:ring-[#b45309]/60`;
+export const FIELD = `h-12 w-full rounded-full bg-white px-5 text-[15px] text-[#1a1b20] shadow-[inset_0_1px_2px_rgba(11,28,48,0.06)] ring-1 ring-[#0b1c30]/[0.12] outline-none transition-shadow duration-300 placeholder:text-[#6b6e75] hover:ring-[#0b1c30]/20 focus:ring-2 focus:ring-[#085ac0]/60 disabled:opacity-60 aria-[invalid=true]:ring-[#b45309]/60`;
 
-const LABEL = 'mb-2 block pl-5 text-[14px] font-medium text-[#0b1c30]';
+export const LABEL = 'mb-2 block pl-5 text-[14px] font-medium text-[#0b1c30]';
 
 const textLink = `rounded-full font-medium text-[#0b1c30] underline decoration-[#0b1c30]/20 underline-offset-4 transition-colors duration-300 hover:decoration-[#0b1c30]/60 ${ring}`;
 
@@ -232,6 +234,7 @@ function Tabs({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {
 
 export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
   const uid = useId();
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>(initialTab);
   const [nextPath] = useState(readNextParam);
   const redirectTo = nextPath || '/overview';
@@ -244,9 +247,6 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
   const [pwError, setPwError] = useState('');
   const [pwShown, setPwShown] = useState(false);
 
-  const [joinBusy, setJoinBusy] = useState(false);
-  const [joinSent, setJoinSent] = useState<Sent>(null);
-  const [joinDenied, setJoinDenied] = useState(false);
 
   function selectTab(next: Tab) {
     setTab(next);
@@ -285,15 +285,15 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
     }
   }
 
-  async function submitJoin(e: React.FormEvent<HTMLFormElement>) {
+  // The hotel email rides to /onboarding in sessionStorage, not the URL, so it
+  // stays out of history and server logs. Onboarding still persists nothing.
+  function startOnboarding(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setJoinDenied(false);
-    setJoinBusy(true);
     const email = String(new FormData(e.currentTarget).get('email') ?? '');
-    const res = await signIn('resend', { email, redirect: false, callbackUrl: '/overview' });
-    setJoinBusy(false);
-    if (res?.error) setJoinDenied(true);
-    else setJoinSent({ email });
+    try {
+      sessionStorage.setItem('onboarding-email', email);
+    } catch {}
+    router.push('/onboarding');
   }
 
   const ids = {
@@ -302,7 +302,6 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
     pw: `${uid}-pw`,
     pwNote: `${uid}-pw-note`,
     joinEmail: `${uid}-join-email`,
-    joinNote: `${uid}-join-note`,
   };
 
   return (
@@ -409,55 +408,32 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
               </div>
             ) : (
               <div key="signup" id="pane-signup" role="tabpanel" aria-labelledby="tab-signup" className="auth-settle mt-8">
-                <Heading title="Get access">
-                  Rate Radar is invite-only because it holds a real property&rsquo;s revenue data. The owner adds
-                  teammates from the Team page in Settings.
+                <Heading title="Set up your hotel">
+                  Start with your hotel&rsquo;s email. We&rsquo;ll walk you through the property, your listings and
+                  your compset.
                 </Heading>
 
-                {joinSent ? (
-                  <Inbox email={joinSent.email} onReset={() => setJoinSent(null)} />
-                ) : (
-                  <form onSubmit={submitJoin} className="mt-7">
-                    <label className={LABEL} htmlFor={ids.joinEmail}>
-                      Work email
-                    </label>
-                    <input
-                      id={ids.joinEmail}
-                      name="email"
-                      type="email"
-                      required
-                      autoComplete="email"
-                      inputMode="email"
-                      placeholder="you@yourhotel.com"
-                      className={FIELD}
-                      disabled={joinBusy}
-                      aria-invalid={joinDenied ? true : undefined}
-                      aria-describedby={joinDenied ? ids.joinNote : `${ids.joinNote}-help`}
-                    />
-                    <div aria-live="polite">
-                      {joinDenied ? (
-                        <FieldNote id={ids.joinNote}>
-                          That email is not on the team yet. Ask the property owner to invite you, then try again.
-                        </FieldNote>
-                      ) : (
-                        <p id={`${ids.joinNote}-help`} className="mt-2.5 pl-5 text-[13.5px] leading-relaxed text-[#44474d]">
-                          Already invited? We&rsquo;ll email you a link to sign in.
-                        </p>
-                      )}
-                    </div>
-                    <PillButton
-                      type="submit"
-                      className="mt-4 w-full"
-                      disabled={joinBusy}
-                      icon={<EnvelopeSimpleIcon weight="light" className="h-4 w-4" />}
-                    >
-                      {joinBusy ? 'Checking the team…' : 'Send my link'}
-                    </PillButton>
-                  </form>
-                )}
+                <form onSubmit={startOnboarding} className="mt-7">
+                  <label className={LABEL} htmlFor={ids.joinEmail}>
+                    Hotel email
+                  </label>
+                  <input
+                    id={ids.joinEmail}
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    inputMode="email"
+                    placeholder="gm@yourhotel.com"
+                    className={FIELD}
+                  />
+                  <PillButton type="submit" className="mt-4 w-full">
+                    Start onboarding
+                  </PillButton>
+                </form>
 
                 <p className="mt-8 text-[14px] text-[#44474d]">
-                  Not invited yet?{' '}
+                  Just looking?{' '}
                   <Link href="/demo" className={textLink}>
                     Open the demo
                   </Link>

@@ -152,6 +152,7 @@ describe('no browser-facing handler touches the production store directly', () =
     'api/v1/properties/route.ts': 'API-key clients, scoped by key — demo sandboxes are not exposed there',
     'api/collect-now/route.ts': 'refuses demo callers before it touches the store',
     'api/recompute/route.ts': 'branches to the sandbox first; the raw store is the non-demo path',
+    'api/onboarding/discover/route.ts': 'only a SerpApi spend counter, deliberately global so a demo sandbox cannot bypass the cap',
     'demo/route.ts': 'builds the namespaced view itself — this is where the prefix comes from',
   };
 

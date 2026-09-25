@@ -82,8 +82,12 @@ export function createSerpApiClient(apiKey: string, fetchImpl: typeof fetch = fe
 
   return {
     async searchProperties(q, checkIn, checkOut) {
-      const body = await get<{ properties?: SerpProperty[] }>('/search', hotelParams(q, checkIn, checkOut));
-      return body.properties ?? [];
+      const body = await get<{ properties?: SerpProperty[] } & SerpProperty>('/search', hotelParams(q, checkIn, checkOut));
+      if (body.properties) return body.properties;
+      // A query naming one hotel returns that hotel's own page, not a list. The
+      // object also carries its details (featured_prices, prices), which
+      // onboarding reads so confirming the match costs no second search.
+      return body.property_token ? [body] : [];
     },
 
     async propertyDetails(token, q, checkIn, checkOut) {
