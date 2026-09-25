@@ -17,7 +17,7 @@ personal throwaway — this needs to keep running long-term.
 
 1. vercel.com → sign up with the same business account → Add New Project → import the GitHub repo. Framework auto-detects as Next.js; no build config needed.
 2. **Storage:** Project → Storage → Create Database → **Upstash (Redis)** from the Marketplace (this replaced the old "Vercel KV" — same thing, same free tier). Link it to the project; it auto-injects `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
-3. **Env vars:** Project → Settings → Environment Variables → add `SITE_PASSWORD`, `SESSION_SECRET`, `INGEST_SECRET` (same value as the GitHub secret), `RESEND_API_KEY`, `ALERT_EMAIL_TO`, `DASHBOARD_URL`.
+3. **Env vars:** Project → Settings → Environment Variables → add `SITE_PASSWORD`, `SESSION_SECRET`, `INGEST_SECRET` (same value as the GitHub secret), `RESEND_API_KEY`, `ALERT_EMAIL_TO`, `DASHBOARD_URL`, `GEMINI_API_KEY` (Bellhop; free key from aistudio.google.com).
 4. Deploy. Note the production URL — that's `DASHBOARD_URL` (set it in both Vercel and GitHub secrets).
 
 ### 3. API keys (all free, ~5 min each)

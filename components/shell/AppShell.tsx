@@ -11,7 +11,7 @@ import { BellIcon } from '@phosphor-icons/react/dist/ssr/Bell';
 import { SquaresFourIcon } from '@phosphor-icons/react/dist/ssr/SquaresFour';
 import { ChartLineUpIcon } from '@phosphor-icons/react/dist/ssr/ChartLineUp';
 import { CalendarDotsIcon } from '@phosphor-icons/react/dist/ssr/CalendarDots';
-import { LightbulbIcon } from '@phosphor-icons/react/dist/ssr/Lightbulb';
+import { CallBellIcon } from '@phosphor-icons/react/dist/ssr/CallBell';
 import { GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { SignOutIcon } from '@phosphor-icons/react/dist/ssr/SignOut';
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr/Buildings';
@@ -37,7 +37,7 @@ const NAV = [
   { href: '/overview', label: 'Dashboard', icon: SquaresFourIcon },
   { href: '/competitors', label: 'Competitor insights', icon: ChartLineUpIcon },
   { href: '/calendar', label: 'Market intelligence', icon: CalendarDotsIcon },
-  { href: '/analytics', label: 'AI strategy', icon: LightbulbIcon },
+  { href: '/analytics', label: 'Bellhop', icon: CallBellIcon },
 ];
 
 const TOP_NAV = [
