@@ -66,6 +66,11 @@ $$;
 revoke execute on function public.kv_hset, public.kv_hget, public.kv_lpush, public.kv_lrange, public.kv_incr
   from public, anon, authenticated;
 
+-- Newer projects don't auto-grant the Data API roles either, so the service role gets explicit access.
+grant select, insert, update, delete on public.kv to service_role;
+grant execute on function public.kv_hset, public.kv_hget, public.kv_lpush, public.kv_lrange, public.kv_incr
+  to service_role;
+
 -- Hourly sweep of expired keys (demo sandboxes, rate-limit counters).
 create extension if not exists pg_cron;
 select cron.schedule('kv-sweep', '17 * * * *', $$delete from public.kv where expires_at <= now()$$);
