@@ -3,6 +3,7 @@ import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowC
 import { PillCta } from '../../components/landing/Machined';
 import AppShell from '../../components/shell/AppShell';
 import { RoleProvider } from '../../components/RoleProvider';
+import { redirect } from 'next/navigation';
 import { auth } from '../../../backend/auth';
 import { loadSnapshot } from '../../../backend/lib/dashboard-data';
 import { demoSid } from '../../../backend/lib/demo/context';
@@ -21,6 +22,8 @@ const DEMO_SWITCHER: ShellProperty[] = [
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const inDemo = demoSid() !== null;
   const [{ snapshot, isDemo }, session] = await Promise.all([loadSnapshot(), inDemo ? null : auth()]);
+  // Signed in to Supabase but no longer on the team: the middleware can't know that, auth() does.
+  if (!inDemo && !session) redirect('/login');
   const mins = Math.max(0, Math.round((Date.now() - new Date(snapshot.runAt).getTime()) / 60_000));
   const freshness = isDemo
     ? 'Sample data. Run the collector to go live'
@@ -29,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // them — that is the point of the demo. The role is real; its reach is not.
   const role = inDemo
     ? ('owner' as Role)
-    : (((session?.user as { role?: string } | undefined)?.role ?? 'viewer') as Role);
+    : (session?.user.role ?? 'viewer');
   const user = inDemo
     ? { name: 'Demo visitor', email: undefined, role: 'owner' }
     : session?.user

@@ -7,8 +7,8 @@ import type { Store } from '../store';
  * Keys look like `rr_<40 hex>`. Only the SHA-256 hash is stored (hash field of
  * the `apikeys` store hash), so a leaked store dump never reveals usable keys.
  * Rate limiting is a fixed one-minute window counter per key, kept in the same
- * store — one INCR per request, which stays comfortably inside Upstash's free
- * tier and works identically against the local file store.
+ * store — one atomic increment per request (a single Postgres upsert), which
+ * works identically against the local file store.
  */
 
 export interface ApiKeyRecord {

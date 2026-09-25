@@ -60,7 +60,7 @@ Competitor and parity prices come from a third-party rate-data API (SerpApi's Go
 - Compset acts as a sanity bound on quiet nights only. **Event nights are never capped by compset.**
 - Google Hotels' rate for the property's own listing is informational only and is excluded from parity alerts, by owner request.
 - Every page currently sets `robots.txt` disallow and `noindex` headers. This conflicts with shipping a public marketing surface and is an unresolved decision, not a settled one.
-- Free-tier infrastructure throughout: Vercel Hobby, GitHub Actions, Upstash Redis, Resend. Without a verified sending domain, Resend delivers only to the account owner's own address.
+- Free-tier infrastructure throughout: Vercel Hobby, GitHub Actions, Supabase, Resend. Without a verified sending domain, Resend delivers only to the account owner's own address.
 - OTA listing URLs still use pre-rebrand "Days Inn" slugs for the Franklin property; they resolve today but are a known fragility.
 
 **Terminology the product owns:** compset, parity, uplift, baseline, room tier (Standard / Superior), demand signal, overflow-likelihood score, actuals, watchlist, "needs manual check", "too small to matter".

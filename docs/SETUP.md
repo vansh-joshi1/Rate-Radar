@@ -16,8 +16,8 @@ personal throwaway — this needs to keep running long-term.
 ### 2. Vercel
 
 1. vercel.com → sign up with the same business account → Add New Project → import the GitHub repo. Framework auto-detects as Next.js; no build config needed.
-2. **Storage:** Project → Storage → Create Database → **Upstash (Redis)** from the Marketplace (this replaced the old "Vercel KV" — same thing, same free tier). Link it to the project; it auto-injects `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
-3. **Env vars:** Project → Settings → Environment Variables → add `SITE_PASSWORD`, `SESSION_SECRET`, `INGEST_SECRET` (same value as the GitHub secret), `RESEND_API_KEY`, `ALERT_EMAIL_TO`, `DASHBOARD_URL`, `GEMINI_API_KEY` (Bellhop; free key from aistudio.google.com).
+2. **Storage + auth:** supabase.com → New project (free tier) → SQL editor → paste and run `supabase/migrations/0001_kv.sql`. Then Project Settings → API → copy the URL, the `anon` key and the `service_role` key into Vercel as `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY`. In Authentication → Providers → Email, leave email enabled. Rate Radar mints and sends its own sign-in links, so Supabase's email templates and SMTP go unused.
+3. **Env vars:** Project → Settings → Environment Variables → add `SITE_PASSWORD`, `OWNER_EMAIL`, `INGEST_SECRET` (same value as the GitHub secret), `RESEND_API_KEY`, `ALERT_EMAIL_TO`, `DASHBOARD_URL`, `GEMINI_API_KEY` (Bellhop; free key from aistudio.google.com).
 4. Deploy. Note the production URL — that's `DASHBOARD_URL` (set it in both Vercel and GitHub secrets).
 
 ### 3. API keys (all free, ~5 min each)
@@ -33,8 +33,8 @@ personal throwaway — this needs to keep running long-term.
 
 ### 5. Site password
 
-`SITE_PASSWORD` is whatever you choose; share it with the family. `SESSION_SECRET`
-and `INGEST_SECRET`: generate each with `openssl rand -hex 32`. The site also sets
+`SITE_PASSWORD` is whatever you choose; share it with the family. `INGEST_SECRET`:
+generate with `openssl rand -hex 32`. The site also sets
 `robots.txt` disallow + `noindex` headers on every page — it won't appear in search
 engines.
 
@@ -44,7 +44,7 @@ engines.
 2. Watch the job log: the collection summary lists each source as ✓ ok / ✗ failed / awaiting-key, then the ingest summary shows nights scored, triggers, email status.
 3. Open the dashboard → tonight's recommendation + reasoning should render; the parity panel shows every channel Google Hotels lists for us, our own direct rate first (some may say "needs manual check" — that's a truthful state, not a bug).
 4. To test an email: temporarily lower a threshold in `backend/lib/alerts/rules.ts` (e.g. `RATE_DELTA_USD = 0`), push, run the workflow, restore. Or wait — the first real event/holiday/rate move will send one.
-5. Local dev: `npm install && npm run dev` (uses `frontend/.data/store.json`, no Upstash needed). Collector locally: `npm run collect -- --dry-run --skip-rates`.
+5. Local dev: `npm install && npm run dev` (with the Supabase vars unset, data goes to `frontend/.data/store.json`; signing in still needs a Supabase project). Collector locally: `npm run collect -- --dry-run --skip-rates`.
 
 ## Schedule
 

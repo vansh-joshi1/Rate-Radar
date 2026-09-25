@@ -46,7 +46,7 @@ GitHub Actions (2x/day CT, free)          Vercel (Hobby, free)
 │  ├ FAA (BNA status)          │          │  ├ store snapshot            │
 │  ├ Univ/MCC calendars        │          │  └ alert rules → Resend email│
 │  └ SerpApi (Google Hotels)   │          │ Dashboard (session-gated)    │
-│    compset + parity, metered │          │ Upstash Redis (Marketplace)  │
+│    compset + parity, metered │          │ Supabase (Postgres + Auth)   │
 └─────────────────────────────┘          └──────────────────────────────┘
 ```
 
@@ -93,7 +93,7 @@ that matters is the one on the server.
 npm install && npm run dev
 ```
 
-No Upstash needed — the store falls back to a local JSON file (`frontend/.data/store.json`),
+No Supabase needed to browse — the store falls back to a local JSON file (`frontend/.data/store.json`),
 and every page renders sample data when the store is empty. Visit `/demo` for the
 seeded sandbox.
 
@@ -112,8 +112,8 @@ Runs the collector without POSTing and without spending any metered searches.
 
 ## Stack
 
-Next.js 14 (App Router) · TypeScript · Tailwind · NextAuth v5 (magic link + shared
-password) · Upstash Redis · Vitest · GitHub Actions · Vercel. ~13,400 lines of
+Next.js 14 (App Router) · TypeScript · Tailwind · Supabase Auth (magic link + shared
+password) · Supabase Postgres · Vitest · GitHub Actions · Vercel. ~13,400 lines of
 TypeScript, 18 API routes.
 
 ## Repo layout

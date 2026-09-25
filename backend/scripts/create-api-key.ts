@@ -4,7 +4,7 @@
  *   npm run apikey -- --name "partner-x"                 # all properties, 60 rpm
  *   npm run apikey -- --name "cli" --properties rri-franklin --rpm 30
  *
- * Runs against Upstash when KV_REST_API_URL/KV_REST_API_TOKEN are set (e.g.
+ * Runs against Supabase when SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY are set (e.g.
  * `vercel env pull` first), otherwise against the local .data/store.json.
  * The plaintext key is printed ONCE and never stored.
  */
@@ -30,7 +30,7 @@ async function main() {
   await getStore().hset(APIKEYS_HASH, hashApiKey(key), record);
 
   console.log(`\nAPI key created for "${name}" (${propertyIds.join(', ')} @ ${rpm} rpm)`);
-  console.log('Store target:', process.env.KV_REST_API_URL ? 'Upstash (production)' : 'local file store');
+  console.log('Store target:', process.env.SUPABASE_URL ? 'Supabase (production)' : 'local file store');
   console.log('\n  ' + key + '\n');
   console.log('Save it now — only its hash is stored, it cannot be shown again.');
 }
