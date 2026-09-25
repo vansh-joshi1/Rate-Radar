@@ -1,10 +1,11 @@
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import { requestProperty, requestStore } from '../../../lib/demo/context';
 import { todayIn } from '../../../lib/date';
 import { BOOKINGS_KEY, type Bookings } from '../../../lib/bookings';
 import type { HistoryRecord } from '../../../lib/scoring/types';
 import HistoryTable from '../../../components/HistoryTable';
 import Bellhop from '../../../components/Bellhop';
-import { SectionTitle } from '../../../components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,17 +23,23 @@ export default async function BellhopPage() {
   }
 
   return (
-    <div>
-      <SectionTitle>Bellhop</SectionTitle>
-      <div className="mb-8">
-        <Bellhop totalRooms={property.totalRooms} tonight={tonight} />
-      </div>
+    <div className={`${GeistSans.variable} ${GeistMono.variable} font-geist text-[#1a1b20] antialiased`}>
+      <header className="mb-6 flex flex-col gap-1.5">
+        <h1 className="text-[28px] font-semibold tracking-tight">Bellhop</h1>
+        <p className="max-w-[60ch] text-pretty text-[15px] leading-relaxed text-[#44474d]">
+          Questions about {property.name}&apos;s rates, answered from Rate Radar&apos;s own numbers.
+        </p>
+      </header>
 
-      <h3 className="mb-1 text-lg font-bold tracking-tight">History — recommended vs. actually charged</h3>
-      <p className="mb-3 text-sm text-muted">
-        Enter what you actually charged so you can judge over time whether this thing is useful.
-      </p>
-      <HistoryTable history={history} actuals={actuals} />
+      <Bellhop totalRooms={property.totalRooms} tonight={tonight} />
+
+      <section className="mt-12">
+        <h2 className="text-[22px] font-semibold tracking-tight">Recommended vs. actually charged</h2>
+        <p className="mb-4 mt-1.5 max-w-[60ch] text-[15px] leading-relaxed text-[#44474d]">
+          Enter what you actually charged so you can judge over time whether this thing is useful.
+        </p>
+        <HistoryTable history={history} actuals={actuals} />
+      </section>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildSystemPrompt } from '../lib/bellhop/context';
 import { demoSnapshot } from '../lib/demo';
 import { DEMO_PROPERTY } from '../lib/properties';
+import { fmtDowDay } from '../lib/date';
 
 describe('buildSystemPrompt', () => {
   const snapshot = demoSnapshot();
@@ -21,6 +22,7 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain(`"recommended":${tonight.tiers[0].recommended}`);
     for (const line of tonight.reasoning) expect(prompt).toContain(JSON.stringify(line).slice(1, -1));
     expect(prompt).toContain(`${DEMO_PROPERTY.totalRooms} rooms`);
+    expect(prompt).toContain(`"day":"${fmtDowDay(tonight.date)}"`);
   });
 
   it('keeps raw source payloads out of the prompt', () => {
