@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { CallBellIcon } from '@phosphor-icons/react/dist/ssr/CallBell';
+import { LaptopIcon } from '@phosphor-icons/react/dist/ssr/Laptop';
 import { Bezel, PillButton } from './landing/Machined';
 import { DIVIDER, FIELD, FIELD_BAD, FOCUS, MONO_LABEL, NUMBER, StatusLine } from './settings/parts';
 import type { ChatTurn } from '../lib/bellhop/gemini';
@@ -13,32 +14,38 @@ const STARTERS = [
   'What if I charged $10 less tonight?',
 ];
 
+const TEXT = 'text-pretty text-[15px] leading-relaxed text-[#1a1b20]';
+const LINK = `rounded-full font-medium text-[#44474d] underline decoration-[#0b1c30]/20 underline-offset-4 transition-colors duration-150 hover:text-[#1a1b20] ${FOCUS}`;
+
 /** An answer Bellhop could not give. Shown in warn, never sent back to the model as history. */
 type Turn = ChatTurn & { failed?: boolean };
 
 /*
- * Bellhop, on the Machined Instrument language (DESIGN.md). Two enclosures on
- * the 12-column grid: the conversation (8) and tonight's rooms-booked reading
- * (4). On a phone the reading comes first, because the front desk opens this
- * page to answer that one question.
+ * Bellhop, on the Machined Instrument language (DESIGN.md): one enclosure that
+ * fills the page, a header row, the conversation, and the composer pinned to
+ * the bottom. Tonight's rooms-booked count is Bellhop's own first question in
+ * the thread; it saves straight to /api/bookings and never passes through the
+ * model, which reads it back from the store on the next question.
  */
-export default function Bellhop({ totalRooms, tonight }: { totalRooms: number; tonight: BookingReading | null }) {
-  return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
-      <Bezel className="lg:order-2 lg:col-span-4 lg:self-start" core="p-6">
-        <TonightReading totalRooms={totalRooms} initial={tonight} />
-      </Bezel>
-      <Bezel className="lg:order-1 lg:col-span-8" core="p-6 md:p-8">
-        <Conversation />
-      </Bezel>
-    </div>
-  );
-}
-
-function Conversation() {
+export default function Bellhop({
+  propertyName,
+  totalRooms,
+  tonight,
+}: {
+  propertyName: string;
+  totalRooms: number;
+  tonight: BookingReading | null;
+}) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  const end = useRef<HTMLLIElement>(null);
+
+  // Keep the newest words in view above the pinned composer as an answer streams in (the marker's
+  // scroll margin clears the composer). ponytail: also pulls a reader who scrolled up back down mid-answer.
+  useEffect(() => {
+    if (turns.length) end.current?.scrollIntoView({ block: 'end', behavior: 'instant' });
+  }, [turns]);
 
   async function ask(question: string) {
     const q = question.trim();
@@ -84,147 +91,104 @@ function Conversation() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {turns.length === 0 ? (
-        <div className="flex flex-col gap-4">
+    <Bezel core="flex min-h-[calc(100dvh-9rem)] flex-col">
+      <header className="flex items-center gap-4 px-6 pb-5 pt-6 md:px-8">
+        <BellhopAvatar size="lg" typing={busy} />
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-semibold leading-tight tracking-tight">Bellhop</h1>
+          <p className="text-pretty text-[14px] leading-relaxed text-[#44474d]">
+            Questions about {propertyName}&apos;s rates, answered from Rate Radar&apos;s own numbers.
+          </p>
+        </div>
+      </header>
+      <div className={DIVIDER} />
+
+      <ol className="flex flex-1 flex-col gap-6 px-6 py-6 md:px-8" aria-live="polite">
+        <li>
           <BellhopSays>
-            <p className="text-pretty text-[15px] leading-relaxed text-[#1a1b20]">
+            <p className={TEXT}>
               Ask me about any night Rate Radar has priced. I answer from the same numbers and reasoning as the
               calendar, and I never change a price.
             </p>
           </BellhopSays>
-          {/* Full width on a phone so each pill stays on one line; aligned under the message from sm up. */}
-          <div className="flex flex-wrap gap-2 sm:pl-12">
+        </li>
+        <RoomsBooked totalRooms={totalRooms} initial={tonight} />
+
+        {turns.length === 0 && (
+          // Full width on a phone so each pill stays on one line; aligned under the messages from sm up.
+          <li className="flex flex-wrap gap-2 sm:pl-12">
             {STARTERS.map((s) => (
               <button
                 key={s}
                 type="button"
-                disabled={busy}
                 onClick={() => ask(s)}
                 className={`rounded-full bg-white px-4 py-2 text-left text-[13.5px] font-medium text-[#0b1c30] ring-1 ring-[#0b1c30]/[0.08] transition-colors duration-150 hover:bg-[#f3f5fc] active:scale-[0.98] motion-reduce:transition-none ${FOCUS}`}
               >
                 {s}
               </button>
             ))}
-          </div>
-        </div>
-      ) : (
-        <ol className="flex flex-col gap-6" aria-live="polite">
-          {turns.map((t, i) =>
-            t.role === 'user' ? (
-              <li
-                key={i}
-                className="animate-fade-in-up max-w-[85%] self-end whitespace-pre-wrap rounded-[1.25rem] bg-[#0b1c30]/[0.05] px-4 py-2.5 text-[15px] leading-relaxed text-[#1a1b20]"
-              >
-                {t.text}
-              </li>
-            ) : (
-              <li key={i} className="animate-fade-in-up">
-                <BellhopSays>
-                  {t.text ? (
-                    <p
-                      className={`whitespace-pre-wrap text-pretty text-[15px] leading-relaxed ${
-                        t.failed ? 'text-[#b45309]' : 'text-[#1a1b20]'
-                      }`}
-                    >
-                      {t.text}
-                    </p>
-                  ) : (
-                    <Reading />
-                  )}
-                </BellhopSays>
-              </li>
-            )
-          )}
-        </ol>
-      )}
+          </li>
+        )}
 
-      {turns.length > 0 && !busy ? (
-        <div className="flex items-center gap-4">
-          <div className={`${DIVIDER} flex-1`} />
-          <button
-            type="button"
-            onClick={() => setTurns([])}
-            className={`rounded-full text-[13.5px] font-medium text-[#44474d] transition-colors duration-150 hover:text-[#1a1b20] ${FOCUS}`}
-          >
+        {turns.map((t, i) =>
+          t.role === 'user' ? (
+            <UserSays key={i}>{t.text}</UserSays>
+          ) : (
+            <li key={i} className="animate-fade-in-up">
+              <BellhopSays typing={busy && i === turns.length - 1}>
+                {t.text ? (
+                  <p className={`whitespace-pre-wrap ${TEXT} ${t.failed ? '!text-[#b45309]' : ''}`}>{t.text}</p>
+                ) : (
+                  <p className="text-[15px] text-[#44474d]" role="status">
+                    Looking at the numbers
+                  </p>
+                )}
+              </BellhopSays>
+            </li>
+          )
+        )}
+        <li ref={end} aria-hidden className="scroll-mb-32" />
+      </ol>
+
+      {/* Pinned while the page scrolls, so a long answer never pushes the composer out of reach. */}
+      <div className="sticky bottom-0 rounded-b-[calc(2rem-0.375rem)] bg-white px-6 pb-6 md:px-8">
+        <div className={`${DIVIDER} mb-4`} />
+        <div className="flex items-center gap-2">
+          <form onSubmit={submit} className="flex flex-1 items-center gap-2">
+            <label htmlFor="bellhop-q" className="sr-only">
+              Ask Bellhop
+            </label>
+            <input
+              id="bellhop-q"
+              className={`${FIELD} h-12`}
+              placeholder="Ask Bellhop"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              maxLength={4000}
+            />
+            <PillButton type="submit" disabled={busy || !draft.trim()}>
+              Ask
+            </PillButton>
+          </form>
+        </div>
+        {turns.length > 0 && !busy && (
+          <button type="button" onClick={() => setTurns([])} className={`mt-3 text-[13px] ${LINK}`}>
             Start over
           </button>
-        </div>
-      ) : (
-        <div className={DIVIDER} />
-      )}
-
-      <form onSubmit={submit} className="flex items-center gap-2">
-        <label htmlFor="bellhop-q" className="sr-only">
-          Ask Bellhop
-        </label>
-        <input
-          id="bellhop-q"
-          className={`${FIELD} h-12`}
-          placeholder="Ask Bellhop"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          maxLength={4000}
-        />
-        <PillButton type="submit" disabled={busy || !draft.trim()}>
-          Ask
-        </PillButton>
-      </form>
-    </div>
+        )}
+      </div>
+    </Bezel>
   );
 }
 
 /**
- * Bellhop's mark: the front-desk call bell in a tiny double bezel (a navy-tinted
- * tray around a white core), the enclosure language shrunk to a circle. Navy on
- * white rather than cobalt, so it never reads as the user's own avatar or
- * property badge, which are cobalt wash.
+ * Bellhop's first question in every thread: tonight's rooms on the books. With
+ * no reading yet it asks, with the number box inside its own message; once
+ * answered, the answer sits in the thread as the user's reply.
  */
-export function BellhopAvatar({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
-  const lg = size === 'lg';
-  return (
-    <span
-      aria-hidden
-      className={`inline-flex shrink-0 self-start rounded-full bg-[#0b1c30]/[0.05] ring-1 ring-[#0b1c30]/[0.06] ${lg ? 'p-1' : 'p-0.5'}`}
-    >
-      <span
-        className={`flex items-center justify-center rounded-full bg-white text-[#0b1c30] shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(11,28,48,0.08)] ${
-          lg ? 'h-11 w-11' : 'h-8 w-8'
-        }`}
-      >
-        <CallBellIcon weight="light" className={lg ? 'h-6 w-6' : 'h-[18px] w-[18px]'} />
-      </span>
-    </span>
-  );
-}
-
-/** One thing Bellhop says: the avatar, its name, and the content beside them. */
-function BellhopSays({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex max-w-[70ch] gap-3">
-      <BellhopAvatar />
-      <div className="min-w-0 flex-1 pt-1">
-        <span className={`mb-1 block ${MONO_LABEL}`}>Bellhop</span>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/** Placeholder bars in the shape of an answer while the first words arrive. */
-function Reading() {
-  return (
-    <div className="flex flex-col gap-2 py-1" role="status" aria-label="Bellhop is answering">
-      {['w-11/12', 'w-4/5', 'w-2/3'].map((w) => (
-        <span key={w} className={`h-3 ${w} animate-pulse rounded-full bg-[#0b1c30]/[0.06] motion-reduce:animate-none`} />
-      ))}
-    </div>
-  );
-}
-
-/** Tonight's rooms on the books: a reading, saved straight to /api/bookings and never through the model. */
-function TonightReading({ totalRooms, initial }: { totalRooms: number; initial: BookingReading | null }) {
+function RoomsBooked({ totalRooms, initial }: { totalRooms: number; initial: BookingReading | null }) {
   const [latest, setLatest] = useState(initial);
+  const [justSaved, setJustSaved] = useState(false);
   const [editing, setEditing] = useState(!initial);
   const [rooms, setRooms] = useState('');
   const [error, setError] = useState('');
@@ -243,78 +207,168 @@ function TonightReading({ totalRooms, initial }: { totalRooms: number; initial: 
     setSaving(false);
     if (!res?.ok) return setError(json?.error ?? 'Could not save. Try again.');
     setLatest(json.reading);
+    setJustSaved(true);
     setEditing(false);
     setRooms('');
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      <span className={MONO_LABEL}>Rooms booked tonight</span>
+  const at = latest && new Date(latest.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const pct = latest && Math.round((latest.rooms / totalRooms) * 100);
+  const update = (
+    <button type="button" onClick={() => setEditing(true)} className={LINK}>
+      Update
+    </button>
+  );
 
-      {latest && !editing ? (
-        <>
-          <div>
-            <p className="text-[40px] font-semibold leading-none tracking-tight tabular-nums text-[#1a1b20]">
-              {latest.rooms}
-              <span className="text-[20px] font-medium text-[#44474d]"> of {totalRooms}</span>
+  if (editing) {
+    return (
+      <li className="animate-fade-in-up">
+        <BellhopSays>
+          <form onSubmit={save} className="flex flex-col gap-3">
+            <label htmlFor="bellhop-rooms" className={TEXT}>
+              How many of your {totalRooms} rooms are booked for tonight?
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                id="bellhop-rooms"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={totalRooms}
+                step={1}
+                required
+                autoFocus={!!latest}
+                aria-invalid={!!error}
+                aria-describedby={error ? 'bellhop-rooms-error' : 'bellhop-rooms-help'}
+                className={`${FIELD} ${NUMBER} h-9 !w-28 tabular-nums ${error ? FIELD_BAD : ''}`}
+                value={rooms}
+                onChange={(e) => setRooms(e.target.value)}
+              />
+              <PillButton type="submit" size="sm" disabled={saving || rooms === ''}>
+                {saving ? 'Saving' : 'Save'}
+              </PillButton>
+              {latest && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(false);
+                    setError('');
+                  }}
+                  className={`px-2 text-[13.5px] ${LINK} no-underline`}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+            <div id="bellhop-rooms-error">
+              <StatusLine status={error ? { tone: 'bad', text: error } : null} />
+            </div>
+            <p id="bellhop-rooms-help" className="text-[13px] leading-relaxed text-[#44474d]">
+              Saved with the time, so later answers show how tonight filled.
             </p>
-            <p className="mt-2 text-[13.5px] text-[#44474d]">
-              {Math.round((latest.rooms / totalRooms) * 100)}% full as of{' '}
-              {new Date(latest.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className={`self-start rounded-full text-[13.5px] font-medium text-[#44474d] underline decoration-[#0b1c30]/20 underline-offset-4 transition-colors duration-150 hover:text-[#1a1b20] ${FOCUS}`}
-          >
-            Update the count
-          </button>
-        </>
-      ) : (
-        <form onSubmit={save} className="flex flex-col gap-3">
-          <label htmlFor="bellhop-rooms" className="text-[15px] leading-relaxed text-[#1a1b20]">
-            How many of your {totalRooms} rooms are booked for tonight?
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              id="bellhop-rooms"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={totalRooms}
-              step={1}
-              required
-              aria-invalid={!!error}
-              aria-describedby={error ? 'bellhop-rooms-error' : undefined}
-              className={`${FIELD} ${NUMBER} h-9 w-28 tabular-nums ${error ? FIELD_BAD : ''}`}
-              value={rooms}
-              onChange={(e) => setRooms(e.target.value)}
-            />
-            <PillButton type="submit" size="sm" disabled={saving || rooms === ''}>
-              {saving ? 'Saving' : 'Save'}
-            </PillButton>
-            {latest && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditing(false);
-                  setError('');
-                }}
-                className={`rounded-full px-2 text-[13.5px] font-medium text-[#44474d] transition-colors duration-150 hover:text-[#1a1b20] ${FOCUS}`}
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-          <div id="bellhop-rooms-error">
-            <StatusLine status={error ? { tone: 'bad', text: error } : null} />
-          </div>
-          <p className="text-[13px] leading-relaxed text-[#44474d]">
-            Recorded with the time, so later readings show how tonight filled.
+          </form>
+        </BellhopSays>
+      </li>
+    );
+  }
+
+  if (!latest) return null;
+
+  // Answered in this visit: show the exchange. Answered earlier: one line from Bellhop.
+  return justSaved ? (
+    <>
+      <UserSays>
+        {latest.rooms} of {totalRooms} booked
+      </UserSays>
+      <li className="animate-fade-in-up">
+        <BellhopSays>
+          <p className={TEXT}>
+            Saved at {at}. That&apos;s {pct}% full. {update}
           </p>
-        </form>
+        </BellhopSays>
+      </li>
+    </>
+  ) : (
+    <li>
+      <BellhopSays>
+        <p className={TEXT}>
+          Tonight you have <span className="font-semibold tabular-nums">{latest.rooms} of {totalRooms}</span> rooms
+          booked ({pct}%), as of {at}. {update}
+        </p>
+      </BellhopSays>
+    </li>
+  );
+}
+
+function UserSays({ children }: { children: ReactNode }) {
+  return (
+    <li className="animate-fade-in-up max-w-[85%] self-end whitespace-pre-wrap rounded-[1.25rem] bg-[#0b1c30]/[0.05] px-4 py-2.5 text-[15px] leading-relaxed text-[#1a1b20]">
+      {children}
+    </li>
+  );
+}
+
+/**
+ * Bellhop's mark: the front-desk call bell in a tiny double bezel (a navy-tinted
+ * tray around a white core). Navy on white rather than cobalt, so it never reads
+ * as the user's own avatar or property badge, which are cobalt wash.
+ *
+ * While Bellhop answers, a small laptop slides up in front of it: keys light up
+ * across the screen and the bell dips with each keystroke. Built from Phosphor
+ * glyphs rather than a drawn character; DESIGN.md rules out mascots, and this
+ * is the least illustration that still reads as "typing". Still under reduced
+ * motion (globals.css).
+ */
+export function BellhopAvatar({ size = 'sm', typing = false }: { size?: 'sm' | 'lg'; typing?: boolean }) {
+  const lg = size === 'lg';
+  return (
+    <span aria-hidden className="relative inline-flex shrink-0 self-start">
+      <span className={`inline-flex rounded-full bg-[#0b1c30]/[0.05] ring-1 ring-[#0b1c30]/[0.06] ${lg ? 'p-1' : 'p-0.5'}`}>
+        <span
+          className={`flex items-center justify-center rounded-full bg-white text-[#0b1c30] shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(11,28,48,0.08)] ${
+            lg ? 'h-11 w-11' : 'h-8 w-8'
+          }`}
+        >
+          <CallBellIcon weight="light" className={`${lg ? 'h-6 w-6' : 'h-[18px] w-[18px]'} ${typing ? 'bellhop-tap' : ''}`} />
+        </span>
+      </span>
+      {typing && (
+        // Centred in front of the bell's lower half, so it reads as the bell sitting at the laptop.
+        <span className={`absolute inset-x-0 flex justify-center ${lg ? '-bottom-2.5' : '-bottom-2'}`}>
+          <span
+            className={`bellhop-laptop flex items-center justify-center rounded-full bg-white px-1 shadow-[0_2px_6px_-2px_rgba(11,28,48,0.3)] ring-1 ring-[#0b1c30]/[0.08] ${
+              lg ? 'h-7' : 'h-6'
+            }`}
+          >
+            <span className="relative flex">
+              <LaptopIcon weight="fill" className={`${lg ? 'h-6 w-6' : 'h-5 w-5'} text-[#0b1c30]`} />
+              {/* Three keys lighting in turn on the laptop's screen. */}
+              <span className={`absolute inset-x-0 flex justify-center gap-[2px] ${lg ? 'top-[8px]' : 'top-[6px]'}`}>
+                {[0, 1, 2].map((k) => (
+                  <span
+                    key={k}
+                    className="bellhop-key h-[2px] w-[2px] rounded-full bg-white"
+                    style={{ animationDelay: `${k * 150}ms` }}
+                  />
+                ))}
+              </span>
+            </span>
+          </span>
+        </span>
       )}
+    </span>
+  );
+}
+
+/** One thing Bellhop says: the avatar, its name, and the content beside them. */
+function BellhopSays({ children, typing = false }: { children: ReactNode; typing?: boolean }) {
+  return (
+    <div className="flex max-w-[70ch] gap-3">
+      <BellhopAvatar typing={typing} />
+      <div className="min-w-0 flex-1 pt-1">
+        <span className={`mb-1 block ${MONO_LABEL}`}>Bellhop</span>
+        {children}
+      </div>
     </div>
   );
 }
