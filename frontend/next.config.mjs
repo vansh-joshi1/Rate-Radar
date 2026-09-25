@@ -1,4 +1,4 @@
-// PostHog ingestion host, e.g. https://us.i.posthog.com. Same value PostHogInit reads.
+// PostHog ingestion host, e.g. https://us.i.posthog.com.
 const phHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 const phAssets = phHost.replace('.i.posthog.com', '-assets.i.posthog.com');
 

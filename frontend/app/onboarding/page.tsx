@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import posthog from 'posthog-js';
+import { track } from '../../components/PostHogInit';
 import { useRouter } from 'next/navigation';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
@@ -455,7 +455,7 @@ export default function Onboarding() {
     if (step === 0) void runSearch();
     if (step < STEPS.length - 1) setStep(step + 1);
     else {
-      if (posthog.__loaded) posthog.capture('onboarding_completed');
+      track('onboarding_completed');
       router.push('/overview');
     }
   }

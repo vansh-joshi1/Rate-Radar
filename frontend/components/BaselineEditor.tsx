@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import posthog from 'posthog-js';
+import { track } from './PostHogInit';
 import type { DayRange, RatesConfig } from '../../backend/lib/rates-config';
 import { ReadOnlyNote, useCanWrite } from './RoleProvider';
 import { CheckIcon } from '@phosphor-icons/react/dist/ssr/Check';
@@ -100,7 +100,7 @@ export default function BaselineEditor({ propertyId }: { propertyId: string }) {
           ? { tone: 'ok', text: 'Saved and applied. Recommendations were recomputed from the latest collected data.' }
           : { tone: 'ok', text: 'Saved. It applies on the next collection run, as there is no collected data to recompute yet.' },
       );
-      if (posthog.__loaded) posthog.capture('baseline_rates_saved', { tier_count: config.tiers.length, recommendations_recomputed: !!re?.ok });
+      track('baseline_rates_saved', { tier_count: config.tiers.length, recommendations_recomputed: !!re?.ok });
     } catch {
       setStatus({ tone: 'bad', text: 'Could not reach the server, so nothing was saved. Check your connection.' });
     } finally {

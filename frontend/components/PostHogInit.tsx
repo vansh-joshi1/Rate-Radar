@@ -46,5 +46,10 @@ export default function PostHogInit({
 
 /** Call before sign-out so the next person on this browser isn't merged into the last. */
 export function resetAnalytics() {
-  if (PROJECT_TOKEN && posthog.__loaded) posthog.reset();
+  if (posthog.__loaded) posthog.reset();
+}
+
+/** Capture a product event. A no-op while PostHog is off. */
+export function track(event: string, properties?: Record<string, unknown>) {
+  if (posthog.__loaded) posthog.capture(event, properties);
 }

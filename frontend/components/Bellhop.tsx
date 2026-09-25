@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import posthog from 'posthog-js';
+import { track } from './PostHogInit';
 import { Bezel, PillButton, SPRING } from './landing/Machined';
 import { DIVIDER, FIELD, FIELD_BAD, FOCUS, MONO_LABEL, NUMBER, StatusLine } from './settings/parts';
 import type { ChatTurn } from '../../backend/lib/bellhop/gemini';
@@ -53,7 +53,7 @@ export default function Bellhop({
     const show = (text: string, failed = false) => setTurns([...sent, { role: 'assistant', text, failed }]);
     setTurns([...sent, { role: 'assistant', text: '' }]);
     setDraft('');
-    if (posthog.__loaded) posthog.capture('bellhop_question_asked');
+    track('bellhop_question_asked');
     setBusy(true);
     try {
       const res = await fetch('/api/bellhop', {
@@ -206,7 +206,7 @@ function RoomsBooked({ totalRooms, initial }: { totalRooms: number; initial: Boo
     const json = await res?.json().catch(() => null);
     setSaving(false);
     if (!res?.ok) return setError(json?.error ?? 'Could not save. Try again.');
-    if (posthog.__loaded) posthog.capture('booking_reading_saved');
+    track('booking_reading_saved');
     setLatest(json.reading);
     setJustSaved(true);
     setEditing(false);

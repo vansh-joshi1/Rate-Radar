@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import posthog from 'posthog-js';
+import { track } from './PostHogInit';
 import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import { PaperPlaneTiltIcon } from '@phosphor-icons/react/dist/ssr/PaperPlaneTilt';
 import { ReadOnlyNote, useCanWrite } from './RoleProvider';
@@ -68,7 +68,7 @@ export default function TeamManager() {
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (res.ok) {
-        if (posthog.__loaded) posthog.capture('team_member_invited', { role });
+        track('team_member_invited', { role });
         setNotice({ tone: 'ok', text: `${email} can now sign in with a magic link from the sign-in page.` });
         setEmail('');
       } else {
@@ -92,7 +92,7 @@ export default function TeamManager() {
         body: JSON.stringify({ email: target }),
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (res.ok && posthog.__loaded) posthog.capture('team_member_removed');
+      if (res.ok) track('team_member_removed');
       setNotice(
         res.ok
           ? { tone: 'ok', text: `${target} was removed and can no longer sign in.` }
