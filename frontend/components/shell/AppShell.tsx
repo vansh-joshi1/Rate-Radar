@@ -18,6 +18,7 @@ import { CaretUpDownIcon } from '@phosphor-icons/react/dist/ssr/CaretUpDown';
 import { CheckIcon } from '@phosphor-icons/react/dist/ssr/Check';
 import { RadarIcon } from '../RadarMark';
 import { PillCta, SPRING } from '../landing/Machined';
+import { resetAnalytics } from '../PostHogInit';
 
 const FOCUS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f9ff]';
@@ -259,7 +260,7 @@ export default function AppShell({
                 Exit demo
               </a>
             ) : (
-              <button onClick={() => fetch('/api/auth/signout', { method: 'POST' }).finally(() => (window.location.href = '/login'))} className={navLink(false)}>
+              <button onClick={() => { resetAnalytics(); fetch('/api/auth/signout', { method: 'POST' }).finally(() => (window.location.href = '/login')); }} className={navLink(false)}>
                 <SignOutIcon weight="light" className="h-5 w-5 shrink-0" aria-hidden />
                 Sign out
               </button>

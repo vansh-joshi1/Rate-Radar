@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import PostHogInit from '../components/PostHogInit';
 
 export const metadata: Metadata = {
   title: 'Rate Radar — Know what to charge tonight',
@@ -26,7 +27,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <PostHogInit />
+        {children}
+      </body>
     </html>
   );
 }
