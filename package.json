@@ -14,11 +14,6 @@
     "collect": "tsx backend/collector/index.ts",
     "apikey": "cd frontend && tsx ../backend/scripts/create-api-key.ts"
   },
-  "dependencies": {
-    "@google/genai": "^2.24.0",
-    "resend": "^4.0.0",
-    "zod": "^3.23.8"
-  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "cheerio": "^1.0.0",
