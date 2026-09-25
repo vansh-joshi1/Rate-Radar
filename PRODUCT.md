@@ -41,11 +41,11 @@ Competitor and parity prices come from a third-party rate-data API (SerpApi's Go
 
 ## Operating Context
 
-- **Collection runs 2×/day Central** (7:00, 13:00) via GitHub Actions, POSTing a bundle to `/api/ingest`. Down from 7×/day: prices are now metered, and the schedule is sized to the search budget (`RUN_SLOTS_CT` in `collector/budget.ts`). The compset horizon is a rolling five nights starting tonight.
+- **Collection runs 2×/day Central** (7:00, 13:00) via GitHub Actions, POSTing a bundle to `/api/ingest`. Down from 7×/day: prices are now metered, and the schedule is sized to the search budget (`RUN_SLOTS_CT` in `backend/collector/budget.ts`). The compset horizon is a rolling five nights starting tonight.
 - **Sources:** Ticketmaster (3 venues), College Football Data (Vanderbilt), NWS alerts (2 counties), FAA (BNA airport status), university and Music City Center calendars, and SerpApi's Google Hotels engine for competitor and parity prices.
 - **Alerts** go out by email (Resend) only when rules fire against the last-emailed state — not on every run.
 - **A manual note field exists for what no feed knows** — corporate events at nearby campuses (Nissan NA, CHS) are published nowhere. Human-entered context is a designed part of the pipeline, not a fallback.
-- **Onboarding is sales-assisted and permanently so.** A new hotel is configured by a person: an entry in `config/properties.json`, a row in `lib/properties.ts`, listing URLs into secrets, and a deploy. `/signup` is a request-access surface, not account creation; uninvited emails get an honest explanation rather than an account. Existing users arrive by invite and magic link.
+- **Onboarding is sales-assisted and permanently so.** A new hotel is configured by a person: an entry in `backend/config/properties.json`, a row in `backend/lib/properties.ts`, listing URLs into secrets, and a deploy. `/signup` is a request-access surface, not account creation; uninvited emails get an honest explanation rather than an account. Existing users arrive by invite and magic link.
 - **Scrapers rot as a matter of course.** University calendar pages change structure roughly yearly; the holiday table needs extending annually. A broken source skips that source and the run continues. Maintenance is a scheduled reality of operating this product, not an incident.
 
 ## Capabilities and Constraints
@@ -55,7 +55,7 @@ Competitor and parity prices come from a third-party rate-data API (SerpApi's Go
 **Hard constraints future work must preserve:**
 
 - The product never writes a price to any external system. No surface may imply it does.
-- Role enforcement is server-side in the route handler (`requireRole()` in `lib/auth/guard.ts`). Hiding a control in the UI is courtesy; `tests/role-guard.test.ts` fails the build if a mutating route ships without a check.
+- Role enforcement is server-side in the route handler (`requireRole()` in `backend/lib/auth/guard.ts`). Hiding a control in the UI is courtesy; `backend/tests/role-guard.test.ts` fails the build if a mutating route ships without a check.
 - **Parity checks are best-effort against bot-protected pages.** "Needs manual check" is expected behavior and a truthful state — never styled or worded as an error.
 - Compset acts as a sanity bound on quiet nights only. **Event nights are never capped by compset.**
 - Google Hotels' rate for the property's own listing is informational only and is excluded from parity alerts, by owner request.
@@ -85,12 +85,12 @@ Competitor and parity prices come from a third-party rate-data API (SerpApi's Go
 
 **Known placeholders currently rendering in the codebase, which future work must not harden into claims:**
 
-- The in-app billing mock still shows the retired $29 plan: `components/SettingsView.tsx` and the invoice rows in `lib/demo.ts`. It predates the owner's pricing decision above and must be updated to match it or removed.
-- "Acceptance rate 71%", "+$1,420 estimated impact", "$4.20 avg. parity gap" — hardcoded in `app/(app)/analytics/page.tsx`.
-- "Sunrise Suites — Cookeville, TN" — a demo second property hardcoded in `components/shell/AppShell.tsx`. Not a customer.
-- Anything sourced from `lib/demo.ts`.
+- The in-app billing mock still shows the retired $29 plan: `frontend/components/SettingsView.tsx` and the invoice rows in `backend/lib/demo.ts`. It predates the owner's pricing decision above and must be updated to match it or removed.
+- "Acceptance rate 71%", "+$1,420 estimated impact", "$4.20 avg. parity gap" — hardcoded in `frontend/app/(app)/analytics/page.tsx`.
+- "Sunrise Suites — Cookeville, TN" — a demo second property hardcoded in `frontend/components/shell/AppShell.tsx`. Not a customer.
+- Anything sourced from `backend/lib/demo.ts`.
 
-Illustrative figures on public surfaces: **the landing page no longer labels them "sample data", by the owner's decision (2026-09-23).** Every figure on it still comes from the invented demo world (`lib/demo.ts`): an invented hotel, town, competitors and events, so no real business's numbers are shown. The demo app keeps its own sample-data badge.
+Illustrative figures on public surfaces: **the landing page no longer labels them "sample data", by the owner's decision (2026-09-23).** Every figure on it still comes from the invented demo world (`backend/lib/demo.ts`): an invented hotel, town, competitors and events, so no real business's numbers are shown. The demo app keeps its own sample-data badge.
 
 ## Product Principles
 

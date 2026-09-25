@@ -221,7 +221,7 @@ The same screen must survive a ten-second glance and a two-minute audit. It is r
 
 ### Migration status
 
-The marketing surface (`app/page.tsx`, `app/not-found.tsx` and `components/landing/*`) the sign-in / get-access screens (`components/AuthPanes.tsx`), onboarding (`app/onboarding/page.tsx`) and the dashboard's content (`app/(app)/overview/page.tsx`), competitor insights (`app/(app)/competitors/page.tsx`, `components/CompetitorInsights.tsx`, `components/ParityGrid.tsx`), market intelligence (`app/(app)/calendar/page.tsx`, `components/MarketIntelligence.tsx`, `components/EventMap.tsx`, `components/DemandCalendar.tsx`, `components/ReasoningCard.tsx`), settings (`app/(app)/settings/page.tsx`, `components/SettingsView.tsx`, `components/settings/parts.tsx`, `components/BaselineEditor.tsx`, `components/CurrentRates.tsx`, `components/TeamManager.tsx`), Bellhop (`app/(app)/analytics/page.tsx`, `components/Bellhop.tsx`), the app shell (rail and top bar, `components/shell/AppShell.tsx`) and the demo sandbox notice (`app/(app)/layout.tsx`) are on this language today. The other logged-in pages still render the previous "Instrument Panel" treatment: Sora + Inter, 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
+The marketing surface (`frontend/app/page.tsx`, `frontend/app/not-found.tsx` and `frontend/components/landing/*`) the sign-in / get-access screens (`frontend/components/AuthPanes.tsx`), onboarding (`frontend/app/onboarding/page.tsx`) and the dashboard's content (`frontend/app/(app)/overview/page.tsx`), competitor insights (`frontend/app/(app)/competitors/page.tsx`, `frontend/components/CompetitorInsights.tsx`, `frontend/components/ParityGrid.tsx`), market intelligence (`frontend/app/(app)/calendar/page.tsx`, `frontend/components/MarketIntelligence.tsx`, `frontend/components/EventMap.tsx`, `frontend/components/DemandCalendar.tsx`, `frontend/components/ReasoningCard.tsx`), settings (`frontend/app/(app)/settings/page.tsx`, `frontend/components/SettingsView.tsx`, `frontend/components/settings/parts.tsx`, `frontend/components/BaselineEditor.tsx`, `frontend/components/CurrentRates.tsx`, `frontend/components/TeamManager.tsx`), Bellhop (`frontend/app/(app)/analytics/page.tsx`, `frontend/components/Bellhop.tsx`), the app shell (rail and top bar, `frontend/components/shell/AppShell.tsx`) and the demo sandbox notice (`frontend/app/(app)/layout.tsx`) are on this language today. The other logged-in pages still render the previous "Instrument Panel" treatment: Sora + Inter, 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
 
 ## Colors
 
@@ -319,7 +319,7 @@ Tables scroll horizontally inside their own container and never cause the page t
 
 ## Elevation & Depth
 
-**Surfaces have depth at rest, and it is machined, not floated.** Every major panel is a double-bezel enclosure (`Bezel` in `components/landing/Machined.tsx`):
+**Surfaces have depth at rest, and it is machined, not floated.** Every major panel is a double-bezel enclosure (`Bezel` in `frontend/components/landing/Machined.tsx`):
 
 - **Outer shell:** Instrument Navy at 3.5% as a tray, a navy ring at 5%, `p-1.5`, radius 2rem, and one ambient shadow `0 32px 64px -32px rgba(11, 28, 48, 0.22)`.
 - **Inner core:** white (or Instrument Navy for data), radius `calc(2rem - 0.375rem)` so the curves stay concentric, with an inner top highlight: `inset 0 1px 1px rgba(255, 255, 255, 1)` on white and `… 0.12)` on navy.
@@ -340,7 +340,7 @@ Tables scroll horizontally inside their own container and never cause the page t
 
 **The Blur-Is-Fixed Rule.** `backdrop-blur` belongs to fixed layers only (the island nav, the phone menu). Scrolling content never blurs its backdrop.
 
-**The Background-Is-Instrument Rule.** The marketing canvas is not plain white and not decoration either. It carries the radar panel's own dot grid at ~7% navy, a fixed 3.5% grain layer (fixed only, never on a scrolling element), and, behind the hero, concentric range rings with one slow sweep in navy at 5 to 14%, echoed by a smaller, still set of rings behind the closing call to action so the page ends the way it began. Never cobalt, never a blob or gradient wash: the background concludes nothing. Components: `components/landing/Backdrop.tsx`.
+**The Background-Is-Instrument Rule.** The marketing canvas is not plain white and not decoration either. It carries the radar panel's own dot grid at ~7% navy, a fixed 3.5% grain layer (fixed only, never on a scrolling element), and, behind the hero, concentric range rings with one slow sweep in navy at 5 to 14%, echoed by a smaller, still set of rings behind the closing call to action so the page ends the way it began. Never cobalt, never a blob or gradient wash: the background concludes nothing. Components: `frontend/components/landing/Backdrop.tsx`.
 
 ## Shapes
 
@@ -365,7 +365,7 @@ Components are **quietly tactile**: restrained but responsive. They acknowledge 
 
 ### Buttons
 
-- **Shape:** a pill, `py-1.5 pl-6 pr-1.5`, 15px Geist weight 500 (`PillCta` in `components/landing/Machined.tsx`).
+- **Shape:** a pill, `py-1.5 pl-6 pr-1.5`, 15px Geist weight 500 (`PillCta` in `frontend/components/landing/Machined.tsx`).
 - **Button-in-button:** the trailing arrow (Phosphor `ArrowUpRight`, light weight) never sits naked beside the label. It lives in its own 36px circle, flush with the right padding: white at 15% on primary, navy at 5% on secondary.
 - **Primary:** Signal Cobalt fill, white text; hovers to Signal Cobalt Deep.
 - **Secondary:** white, navy ring at 8%, navy text; hovers to a cool tint.
@@ -405,7 +405,7 @@ Components are **quietly tactile**: restrained but responsive. They acknowledge 
 
 - **One curve:** `cubic-bezier(0.32, 0.72, 0, 1)`, fast out of the gate with a long settle. No `ease-in-out`, no bounce, and no `linear` except for constant motion: the hero radar sweep (one turn every 18s) is linear because any ease would read as a stutter once per turn.
 - **Durations:** 500ms for hover and press, 700–900ms for arrivals.
-- **Scroll arrivals:** 4rem of rise, 12px of blur resolving to sharp, opacity 0 to 1, over 900ms (`.reveal` in globals.css, driven by `components/Reveal.tsx`). Children stagger by 30–120ms.
+- **Scroll arrivals:** 4rem of rise, 12px of blur resolving to sharp, opacity 0 to 1, over 900ms (`.reveal` in globals.css, driven by `frontend/components/Reveal.tsx`). Children stagger by 30–120ms.
 - **Only transform, opacity and a one-shot filter** animate. Never width, height, top or left.
 - **Reduced motion:** every arrival lands instantly and fully visible; the radar sweep stops; drag stays 1:1 because that motion is the user's own.
 
@@ -451,7 +451,7 @@ A radar sweep drawn as inline SVG on a 24px viewbox: two concentric arcs opening
 - **Don't** use black shadows, gradient text, glowing cards, neon, or purple-to-blue washes.
 - **Don't** blur the backdrop of anything that scrolls.
 - **Don't** build toward dense BI/analyst tooling: no wall of widgets, no chart junk, no configuration surfaced as interface. This is for an operator, not an analyst.
-- **Don't** adopt consumer-fintech playfulness: no confetti, streaks or celebratory microcopy. Someone's revenue is on the line. The one character is Bellhop, the assistant (`components/Bellhop.tsx`), unbanned by the owner 2026-09-25: it stays in the palette and stays in its avatar circle.
+- **Don't** adopt consumer-fintech playfulness: no confetti, streaks or celebratory microcopy. Someone's revenue is on the line. The one character is Bellhop, the assistant (`frontend/components/Bellhop.tsx`), unbanned by the owner 2026-09-25: it stays in the palette and stays in its avatar circle.
 - **Don't** import an external design system's `borderRadius` scale. It redefines `full` and would turn every avatar, pill and chip into a squircle app-wide. Radii are set at the call site.
 - **Don't** wire dark mode to `prefers-color-scheme`. Night mode is opt-in via a `dark` class on `<html>`.
 
