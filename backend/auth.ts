@@ -25,6 +25,7 @@ export const SHARED_LOGIN_EMAIL = 'front-desk@rate-radar.invalid';
 const SHARED_NAME = 'Front desk (shared password)';
 
 export interface SessionUser {
+  id: string;
   name: string | null;
   email: string | null;
   role: Role;
@@ -63,11 +64,11 @@ export async function auth(): Promise<{ user: SessionUser } | null> {
     data: { user },
   } = await supabaseAuth().auth.getUser();
   const email = user?.email?.toLowerCase();
-  if (!email) return null;
-  if (email === SHARED_LOGIN_EMAIL) return { user: { name: SHARED_NAME, email: null, role: 'owner' } };
+  if (!user || !email) return null;
+  if (email === SHARED_LOGIN_EMAIL) return { user: { id: user.id, name: SHARED_NAME, email: null, role: 'owner' } };
   const role = await roleFor(getStore(), email);
   if (!role) return null;
-  return { user: { name: (user?.user_metadata?.name as string | undefined) ?? null, email, role } };
+  return { user: { id: user.id, name: (user.user_metadata?.name as string | undefined) ?? null, email, role } };
 }
 
 /** One-time magic-link token hash for `email`, creating the Supabase user on first use. */

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import posthog from 'posthog-js';
 import { ReadOnlyNote, useCanWrite } from './RoleProvider';
 
 export default function NoteBox({ date, initial }: { date: string; initial: string }) {
@@ -14,6 +15,7 @@ export default function NoteBox({ date, initial }: { date: string; initial: stri
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ date, text }),
     });
+    if (res.ok && posthog.__loaded) posthog.capture('manual_note_saved');
     setStatus(res.ok ? 'saved' : 'failed');
   }
 

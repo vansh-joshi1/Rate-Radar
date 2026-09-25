@@ -3,37 +3,48 @@ import { useEffect } from 'react';
 import posthog from 'posthog-js';
 
 /**
- * PostHog product analytics. Mounted once in the root layout; renders nothing
- * and stays OFF until NEXT_PUBLIC_POSTHOG_KEY is set (a phc_ project key,
- * browser-visible by design).
+ * PostHog product analytics. Mounted in the root layout (anonymous) and again
+ * in the app layout with the Supabase user ID. Stays OFF until
+ * NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN is set (browser-visible by design).
  *
- * Events go through our own /ingest rewrite (next.config.mjs) so ad blockers
- * don't drop them. The `defaults` date opts into PostHog's recommended config
- * for that release, which includes pageviews on App Router navigations.
- *
- * `email` identifies a personal account. The shared site password and demo
- * visitors stay anonymous: pass nothing.
+ * Events go through our own /ingest rewrite (next.config.mjs, which also reads
+ * NEXT_PUBLIC_POSTHOG_HOST) so ad blockers don't drop them. The `defaults`
+ * date opts into PostHog's recommended config for that release, including
+ * pageviews on App Router navigations. Demo visitors are never identified.
  */
-const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-const REGION = process.env.NEXT_PUBLIC_POSTHOG_REGION === 'eu' ? 'eu' : 'us';
+const PROJECT_TOKEN = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
 
-export default function PostHogInit({ email }: { email?: string }) {
+export default function PostHogInit({
+  distinctId,
+  email,
+  name,
+  role,
+}: {
+  distinctId?: string;
+  email?: string;
+  name?: string;
+  role?: string;
+}) {
   useEffect(() => {
-    if (!KEY) return;
+    if (!PROJECT_TOKEN) return;
     if (!posthog.__loaded) {
-      posthog.init(KEY, {
+      posthog.init(PROJECT_TOKEN, {
         api_host: '/ingest',
-        ui_host: `https://${REGION}.posthog.com`,
         defaults: '2026-08-30',
+        capture_exceptions: {
+          capture_unhandled_errors: true,
+          capture_unhandled_rejections: true,
+          capture_console_errors: false,
+        },
         person_profiles: 'identified_only',
       });
     }
-    if (email) posthog.identify(email, { email });
-  }, [email]);
+    if (distinctId) posthog.identify(distinctId, { email, name, role });
+  }, [distinctId, email, name, role]);
   return null;
 }
 
 /** Call before sign-out so the next person on this browser isn't merged into the last. */
 export function resetAnalytics() {
-  if (KEY && posthog.__loaded) posthog.reset();
+  if (PROJECT_TOKEN && posthog.__loaded) posthog.reset();
 }

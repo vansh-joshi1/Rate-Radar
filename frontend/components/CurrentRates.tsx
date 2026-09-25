@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import posthog from 'posthog-js';
 import { CheckIcon } from '@phosphor-icons/react/dist/ssr/Check';
 import type { CurrentRates } from '../../backend/lib/current-rates';
 import { ReadOnlyNote, useCanWrite } from './RoleProvider';
@@ -63,6 +64,7 @@ export default function CurrentRatesCard({ propertyId, tiers }: Props) {
       if (res.ok && json.rates) {
         setUpdatedAt(json.rates.updatedAt);
         setSaved(values);
+        if (posthog.__loaded) posthog.capture('current_rates_saved', { configured_tier_count: Object.keys(tiersBody).length });
         setStatus({ tone: 'ok', text: 'Saved. Competitor comparisons now use these as your rates.' });
       } else {
         setStatus({ tone: 'bad', text: json.error ?? 'Your rates were not saved. Try again.' });

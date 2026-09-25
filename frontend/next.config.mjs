@@ -1,5 +1,6 @@
-// PostHog cloud region, 'us' or 'eu'. Same value PostHogInit reads.
-const phRegion = process.env.NEXT_PUBLIC_POSTHOG_REGION === 'eu' ? 'eu' : 'us';
+// PostHog ingestion host, e.g. https://us.i.posthog.com. Same value PostHogInit reads.
+const phHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+const phAssets = phHost.replace('.i.posthog.com', '-assets.i.posthog.com');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -9,8 +10,9 @@ const nextConfig = {
   skipTrailingSlashRedirect: true,
   async rewrites() {
     return [
-      { source: '/ingest/static/:path*', destination: `https://${phRegion}-assets.i.posthog.com/static/:path*` },
-      { source: '/ingest/:path*', destination: `https://${phRegion}.i.posthog.com/:path*` },
+      { source: '/ingest/static/:path*', destination: `${phAssets}/static/:path*` },
+      { source: '/ingest/array/:path*', destination: `${phAssets}/array/:path*` },
+      { source: '/ingest/:path*', destination: `${phHost}/:path*` },
     ];
   },
   async headers() {
