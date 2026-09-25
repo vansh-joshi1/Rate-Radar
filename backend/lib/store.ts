@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { unstable_noStore as noStore } from 'next/cache';
 import { supabaseAdmin, supabaseConfigured } from './supabase';
 
 export interface Store {
@@ -142,6 +143,10 @@ export class FileStore implements Store {
 let cached: Store | null = null;
 
 export function getStore(): Store {
+  // Store reads are live data: mark the calling route dynamic so Next never
+  // prerenders it at build. supabase-js swallows the signal Next throws from
+  // an uncached fetch, so this has to happen here, outside the client.
+  noStore();
   cached ??= supabaseConfigured()
     ? new SupabaseStore(supabaseAdmin())
     : new FileStore(process.env.FILE_STORE_PATH ?? '.data/store.json');
