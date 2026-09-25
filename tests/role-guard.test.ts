@@ -43,6 +43,7 @@ describe('every mutating API route is role-guarded', () => {
     'ingest/route.ts': 'INGEST_SECRET bearer token (collector)',
     'auth/[...nextauth]/route.ts': "NextAuth's own handler",
     'cron/heartbeat/route.ts': 'Vercel cron secret',
+    'onboarding/discover/route.ts': 'public, read-only onboarding discovery behind a daily SerpApi cap',
   };
 
   function routeFiles(dir: string): string[] {
