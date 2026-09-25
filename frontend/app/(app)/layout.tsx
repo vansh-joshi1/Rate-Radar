@@ -3,6 +3,7 @@ import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowC
 import { PillCta } from '../../components/landing/Machined';
 import AppShell from '../../components/shell/AppShell';
 import { RoleProvider } from '../../components/RoleProvider';
+import PostHogInit from '../../components/PostHogInit';
 import { redirect } from 'next/navigation';
 import { auth } from '../../../backend/auth';
 import { loadSnapshot } from '../../../backend/lib/dashboard-data';
@@ -46,6 +47,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const alerts = snapshot.sources.filter((s) => s.status !== 'ok').length;
   return (
     <RoleProvider role={role}>
+      {!inDemo && session && (
+        <PostHogInit
+          distinctId={session.user.id}
+          email={session.user.email ?? undefined}
+          name={session.user.name ?? undefined}
+          role={session.user.role}
+        />
+      )}
       <AppShell
         freshness={freshness}
         user={user}

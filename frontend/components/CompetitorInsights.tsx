@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { track } from './PostHogInit';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { XIcon } from '@phosphor-icons/react/dist/ssr/X';
@@ -204,6 +205,7 @@ export default function CompetitorInsights({
         setNotice({ text: json.error ?? 'Could not add that hotel.', tone: 'warn' });
         return;
       }
+      track('watchlist_hotel_added', { watchlist_count: tracked + 1 });
       // A new hotel has no harvested prices yet, so try to kick off a real run.
       const kicked = await settle('/api/collect-now');
       setNotice({
@@ -229,6 +231,7 @@ export default function CompetitorInsights({
         setNotice({ text: json.error ?? 'Could not remove that hotel.', tone: 'warn' });
         return;
       }
+      track('watchlist_hotel_removed', { watchlist_count: Math.max(tracked - 1, 0) });
       // Removal only refilters already-collected data, so it applies immediately.
       const applied = await settle(`/api/recompute?propertyId=${propertyId}`);
       setNotice({ tone: 'ok', text: `Removed ${name}.${applied ? ' Applied to the current data.' : ''}` });
@@ -369,6 +372,7 @@ export default function CompetitorInsights({
   }, [tonight, median, yourRate]);
 
   function exportCsv() {
+    track('competitor_csv_exported', { visible_night_count: visibleNights.length, watchlist_count: tracked });
     const header = ['Hotel', ...visibleNights.map((n) => n.date)];
     const rows = [
       [propertyName, ...visibleNights.map((n) => String(n.recommended))],

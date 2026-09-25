@@ -1,6 +1,7 @@
 'use client';
 import { useId, useRef, useState } from 'react';
 import Link from 'next/link';
+import { track } from './PostHogInit';
 import { useRouter } from 'next/navigation';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
@@ -266,6 +267,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
     if (!res?.ok) {
       setLinkError('We could not send a link to that address. If you are not on the team yet, ask the owner for an invite.');
     } else {
+      track('magic_link_requested');
       setLinkSent({ email });
     }
   }
@@ -280,6 +282,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
       setPwError(res?.status === 429 ? 'Too many attempts. Wait a minute and try again.' : 'That password is not right. Check with the property owner.');
       setPwBusy(false);
     } else {
+      track('shared_password_sign_in_succeeded');
       window.location.href = redirectTo;
     }
   }

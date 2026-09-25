@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { track } from '../../components/PostHogInit';
 import { useRouter } from 'next/navigation';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
@@ -453,7 +454,10 @@ export default function Onboarding() {
     e.preventDefault();
     if (step === 0) void runSearch();
     if (step < STEPS.length - 1) setStep(step + 1);
-    else router.push('/overview');
+    else {
+      track('onboarding_completed');
+      router.push('/overview');
+    }
   }
 
   const last = step === STEPS.length - 1;
