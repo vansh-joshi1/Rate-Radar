@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
+import { CallBellIcon } from '@phosphor-icons/react/dist/ssr/CallBell';
 import { Bezel, PillButton } from './landing/Machined';
 import { DIVIDER, FIELD, FIELD_BAD, FOCUS, MONO_LABEL, NUMBER, StatusLine } from './settings/parts';
 import type { ChatTurn } from '../lib/bellhop/gemini';
@@ -86,11 +87,14 @@ function Conversation() {
     <div className="flex flex-col gap-6">
       {turns.length === 0 ? (
         <div className="flex flex-col gap-4">
-          <p className="max-w-[60ch] text-pretty text-[15px] leading-relaxed text-[#44474d]">
-            Ask about any night Rate Radar has priced. Bellhop answers from the same numbers and reasoning as the
-            calendar, and it never changes a price.
-          </p>
-          <div className="flex flex-wrap gap-2">
+          <BellhopSays>
+            <p className="text-pretty text-[15px] leading-relaxed text-[#1a1b20]">
+              Ask me about any night Rate Radar has priced. I answer from the same numbers and reasoning as the
+              calendar, and I never change a price.
+            </p>
+          </BellhopSays>
+          {/* Full width on a phone so each pill stays on one line; aligned under the message from sm up. */}
+          <div className="flex flex-wrap gap-2 sm:pl-12">
             {STARTERS.map((s) => (
               <button
                 key={s}
@@ -110,24 +114,25 @@ function Conversation() {
             t.role === 'user' ? (
               <li
                 key={i}
-                className="max-w-[85%] self-end whitespace-pre-wrap rounded-[1.25rem] bg-[#0b1c30]/[0.05] px-4 py-2.5 text-[15px] leading-relaxed text-[#1a1b20]"
+                className="animate-fade-in-up max-w-[85%] self-end whitespace-pre-wrap rounded-[1.25rem] bg-[#0b1c30]/[0.05] px-4 py-2.5 text-[15px] leading-relaxed text-[#1a1b20]"
               >
                 {t.text}
               </li>
             ) : (
-              <li key={i} className="flex max-w-[65ch] flex-col gap-1.5">
-                <span className={MONO_LABEL}>Bellhop</span>
-                {t.text ? (
-                  <p
-                    className={`whitespace-pre-wrap text-pretty text-[15px] leading-relaxed ${
-                      t.failed ? 'text-[#b45309]' : 'text-[#1a1b20]'
-                    }`}
-                  >
-                    {t.text}
-                  </p>
-                ) : (
-                  <Reading />
-                )}
+              <li key={i} className="animate-fade-in-up">
+                <BellhopSays>
+                  {t.text ? (
+                    <p
+                      className={`whitespace-pre-wrap text-pretty text-[15px] leading-relaxed ${
+                        t.failed ? 'text-[#b45309]' : 'text-[#1a1b20]'
+                      }`}
+                    >
+                      {t.text}
+                    </p>
+                  ) : (
+                    <Reading />
+                  )}
+                </BellhopSays>
               </li>
             )
           )}
@@ -165,6 +170,43 @@ function Conversation() {
           Ask
         </PillButton>
       </form>
+    </div>
+  );
+}
+
+/**
+ * Bellhop's mark: the front-desk call bell in a tiny double bezel (a navy-tinted
+ * tray around a white core), the enclosure language shrunk to a circle. Navy on
+ * white rather than cobalt, so it never reads as the user's own avatar or
+ * property badge, which are cobalt wash.
+ */
+export function BellhopAvatar({ size = 'sm' }: { size?: 'sm' | 'lg' }) {
+  const lg = size === 'lg';
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex shrink-0 self-start rounded-full bg-[#0b1c30]/[0.05] ring-1 ring-[#0b1c30]/[0.06] ${lg ? 'p-1' : 'p-0.5'}`}
+    >
+      <span
+        className={`flex items-center justify-center rounded-full bg-white text-[#0b1c30] shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(11,28,48,0.08)] ${
+          lg ? 'h-11 w-11' : 'h-8 w-8'
+        }`}
+      >
+        <CallBellIcon weight="light" className={lg ? 'h-6 w-6' : 'h-[18px] w-[18px]'} />
+      </span>
+    </span>
+  );
+}
+
+/** One thing Bellhop says: the avatar, its name, and the content beside them. */
+function BellhopSays({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex max-w-[70ch] gap-3">
+      <BellhopAvatar />
+      <div className="min-w-0 flex-1 pt-1">
+        <span className={`mb-1 block ${MONO_LABEL}`}>Bellhop</span>
+        {children}
+      </div>
     </div>
   );
 }
