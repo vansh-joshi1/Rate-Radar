@@ -308,18 +308,20 @@ function UserSays({ children }: { children: ReactNode }) {
 
 /**
  * Bellhop himself, from two generated portraits in public/bellhop/: idle, and
- * typing on a laptop. Both are always mounted and crossfade, so the swap is
- * instant with no image request mid-answer; while typing, the frame bobs with
- * each keystroke (globals.css, still under reduced motion). Each image is
- * cropped for the circle: the idle one in on the face, the typing one wider
- * so the laptop stays in shot. The one character DESIGN.md allows (owner's
- * call, 2026-09-25), inside a small double bezel like every enclosure.
+ * typing on a laptop. Both are always mounted and crossfade (200ms), so the
+ * swap needs no image request mid-answer. The portrait itself holds still:
+ * at 32 to 44px any motion inside it is sub-pixel, and moving the whole image
+ * reads as jitter. "Typing" is carried by a three-dot bubble on the corner,
+ * the one typing signal that survives at avatar size (globals.css; under
+ * reduced motion the dots only pulse). Each image is cropped for the circle.
+ * The one character DESIGN.md allows (owner's call, 2026-09-25), inside a
+ * small double bezel like every enclosure.
  */
 export function BellhopAvatar({ size = 'sm', typing = false }: { size?: 'sm' | 'lg'; typing?: boolean }) {
   const lg = size === 'lg';
-  const frame = `absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${SPRING}`;
+  const frame = `absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${SPRING}`;
   return (
-    <span aria-hidden className={`inline-flex shrink-0 self-start rounded-full bg-[#0b1c30]/[0.05] ring-1 ring-[#0b1c30]/[0.06] ${lg ? 'p-1' : 'p-0.5'}`}>
+    <span aria-hidden className={`relative inline-flex shrink-0 self-start rounded-full bg-[#0b1c30]/[0.05] ring-1 ring-[#0b1c30]/[0.06] ${lg ? 'p-1' : 'p-0.5'}`}>
       <span
         className={`relative block overflow-hidden rounded-full bg-[#e4ecfb] shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(11,28,48,0.08)] ${
           lg ? 'h-11 w-11' : 'h-8 w-8'
@@ -332,15 +334,27 @@ export function BellhopAvatar({ size = 'sm', typing = false }: { size?: 'sm' | '
           className={`${frame} ${typing ? 'opacity-0' : 'opacity-100'}`}
           style={{ transform: 'scale(1.4)', transformOrigin: '50% 30%' }}
         />
-        <span className={`${frame} ${typing ? 'bh-typing opacity-100' : 'opacity-0'}`}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- as above */}
-          <img
-            src="/bellhop/typing.webp"
-            alt=""
-            className="h-full w-full object-cover"
-            style={{ transform: 'scale(1.2)', transformOrigin: '56% 48%' }}
+        {/* eslint-disable-next-line @next/next/no-img-element -- as above */}
+        <img
+          src="/bellhop/typing.webp"
+          alt=""
+          className={`${frame} ${typing ? 'opacity-100' : 'opacity-0'}`}
+          style={{ transform: 'scale(1.2)', transformOrigin: '56% 48%' }}
+        />
+      </span>
+      {/* Typing bubble: a transition in and out (it retargets if an answer ends fast), keyframes only on the dots. */}
+      <span
+        className={`absolute flex items-center gap-[2px] rounded-full bg-white shadow-[0_2px_6px_-2px_rgba(11,28,48,0.35)] ring-1 ring-[#0b1c30]/[0.08] transition-[opacity,transform] duration-200 ${SPRING} motion-reduce:transition-opacity ${
+          lg ? '-bottom-1 -right-2 px-1.5 py-1' : '-bottom-1 -right-1.5 px-1 py-[3px]'
+        } ${typing ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}
+      >
+        {[0, 1, 2].map((k) => (
+          <span
+            key={k}
+            className={`rounded-full bg-[#0b1c30] ${lg ? 'h-1 w-1' : 'h-[3px] w-[3px]'} ${typing ? 'bh-dot' : ''}`}
+            style={{ animationDelay: `${k * 160}ms` }}
           />
-        </span>
+        ))}
       </span>
     </span>
   );
