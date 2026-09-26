@@ -1,6 +1,8 @@
 import propertiesConfig from '../config/properties.json';
 import defaultCompset from '../config/compset.json';
 import type { CompsetConfig } from '../lib/scoring/compset';
+import type { Property } from '../lib/properties';
+import { OPEN_PRICE_SANITY } from '../lib/watchlist';
 
 /**
  * Collection config per property — resolved from config/properties.json.
@@ -35,6 +37,9 @@ export interface RatePropertyConfig {
   serpapi?: SerpApiPropertyConfig;
   compset: CompsetConfig;
   roomTierMap: RoomTierRule[];
+  /** Property-local timezone; the horizon starts at its tonight. */
+  timezone?: string;
+  market: Market;
   /** Live watchlist (name + resolved property token) fetched from the dashboard at run start. */
   watchlistHotels?: { name: string; propertyToken?: string }[];
 }
@@ -62,6 +67,33 @@ export function loadProperties(): RatePropertyConfig[] {
       ...(query ? { serpapi: { query, propertyToken: resolve(p.serpapi?.propertyToken) } } : {}),
       compset: p.compset ?? (defaultCompset as CompsetConfig),
       roomTierMap: p.roomTierMap ?? [],
+      market: { kind: 'nashville' as const },
     };
   });
+}
+
+/**
+ * Where a hotel's demand signals come from. The original property has the
+ * Nashville sources, built for its venues, counties and airport. Everyone else
+ * gets the ones that work from coordinates alone: Ticketmaster within a radius,
+ * NWS alerts for the exact point, and FAA status for the airport set at approval.
+ */
+export type Market = { kind: 'nashville' } | { kind: 'local'; lat: number; lng: number; airport?: string };
+
+/** Collection config for a hotel approved from onboarding (stored in the dashboard, not this file). */
+export function fromStoredProperty(p: Property & { collect: NonNullable<Property['collect']> }): RatePropertyConfig {
+  return {
+    id: p.id,
+    name: p.name,
+    timezone: p.timezone,
+    serpapi: { query: p.collect.serpQuery, propertyToken: p.collect.propertyToken },
+    // Competitors come from the hotel's own watchlist, fetched at run start. Never
+    // the config file's: that list is Franklin's rivals.
+    compset: { competitors: [], priceSanity: OPEN_PRICE_SANITY },
+    roomTierMap: [
+      ...p.collect.superiorRooms.map((match) => ({ match, tierId: 'superior' })),
+      { match: '*', tierId: 'standard' },
+    ],
+    market: { kind: 'local', lat: p.lat, lng: p.lng, airport: p.collect.airport },
+  };
 }

@@ -3,12 +3,15 @@ import { dirname } from 'node:path';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { unstable_noStore as noStore } from 'next/cache';
 import { supabaseAdmin, supabaseConfigured } from './supabase';
+import { DEFAULT_PROPERTY_ID } from './properties';
 
 export interface Store {
   get<T>(key: string): Promise<T | null>;
   set(key: string, value: unknown, ttlSeconds?: number): Promise<void>;
   hget<T>(key: string, field: string): Promise<T | null>;
   hset(key: string, field: string, value: unknown): Promise<void>;
+  /** Every field of a hash. For small hashes (access requests), not big ones. */
+  hgetall<T>(key: string): Promise<Record<string, T>>;
   lpush(key: string, value: unknown): Promise<void>;
   lrange<T>(key: string, start: number, stop: number): Promise<T[]>;
   /** Atomic counter with TTL set on first increment — used for rate limiting. */
@@ -55,6 +58,10 @@ export class SupabaseStore implements Store {
   }
   async hset(key: string, field: string, value: unknown): Promise<void> {
     await this.rpc('kv_hset', { k: key, f: field, v: value });
+  }
+  async hgetall<T>(key: string): Promise<Record<string, T>> {
+    // A hash is one jsonb object in its row, so a plain get returns all of it.
+    return (await this.get<Record<string, T>>(key)) ?? {};
   }
   async lpush(key: string, value: unknown): Promise<void> {
     await this.rpc('kv_lpush', { k: key, v: value });
@@ -111,6 +118,9 @@ export class FileStore implements Store {
     const d = this.read();
     (d.hashes[key] ??= {})[field] = value;
     this.write(d);
+  }
+  async hgetall<T>(key: string): Promise<Record<string, T>> {
+    return (this.read().hashes[key] ?? {}) as Record<string, T>;
   }
   async lpush(key: string, value: unknown): Promise<void> {
     const d = this.read();
@@ -196,6 +206,9 @@ export class PrefixedStore implements Store {
     await this.inner.hset(this.k(key), field, value);
     await this.touch(this.k(key));
   }
+  hgetall<T>(key: string): Promise<Record<string, T>> {
+    return this.inner.hgetall<T>(this.k(key));
+  }
   async lpush(key: string, value: unknown): Promise<void> {
     await this.inner.lpush(this.k(key), value);
     await this.touch(this.k(key));
@@ -217,4 +230,15 @@ export class PrefixedStore implements Store {
 /** Wrap a store so every key it sees is written under `prefix`. */
 export function prefixed(inner: Store, prefix: string, ttlSeconds?: number): Store {
   return new PrefixedStore(inner, prefix, ttlSeconds);
+}
+
+/**
+ * The store a hotel's data lives in. Tenancy reuses the demo's isolation
+ * trick: every hotel after the first reads and writes under `tenant:{id}:`,
+ * so snapshots, bookings, notes, history and alert state separate without any
+ * route knowing about it. The original property keeps the unprefixed keys it
+ * has always had, so none of its data moves.
+ */
+export function storeFor(propertyId: string): Store {
+  return propertyId === DEFAULT_PROPERTY_ID ? getStore() : prefixed(getStore(), `tenant:${propertyId}:`);
 }

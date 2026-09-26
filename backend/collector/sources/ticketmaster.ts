@@ -37,7 +37,17 @@ async function fetchWithRetry(url: string, label: string): Promise<Response> {
   throw new Error(`Ticketmaster HTTP ${last?.status} (${label})`);
 }
 
-export async function collect(): Promise<SourceResult> {
+/** How far out an area search reaches. A 25-mile drive is where a hotel still catches an event crowd. */
+const AREA_RADIUS_MILES = 25;
+
+/** Below scoring/venues.ts' 2,500-seat line, so travelDraw treats the crowd as local. */
+export const UNKNOWN_LOCAL_VENUE_CAPACITY = 1500;
+
+/**
+ * @param area a hotel outside Nashville: every event within AREA_RADIUS_MILES
+ *   of it, instead of the three venues the original property watches.
+ */
+export async function collect(area?: { lat: number; lng: number }): Promise<SourceResult> {
   const fetchedAt = new Date().toISOString();
   const key = process.env.TICKETMASTER_API_KEY;
   if (!key) return { source: 'ticketmaster', status: 'awaiting-key', fetchedAt };
@@ -49,21 +59,26 @@ export async function collect(): Promise<SourceResult> {
 
     const all: { tm: TmEvent; venueName: string }[] = [];
     const venueErrors: string[] = [];
-    for (const venue of VENUES) {
+    const queries = area
+      ? [{ name: 'area', param: `latlong=${area.lat.toFixed(4)},${area.lng.toFixed(4)}&radius=${AREA_RADIUS_MILES}&unit=miles` }]
+      : VENUES.map((v) => ({ name: v.name, param: `venueId=${v.id}` }));
+    for (const venue of queries) {
       try {
         let page = 0;
         let totalPages = 1;
         while (page < totalPages && page < 5) {
           const url =
             `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${key}` +
-            `&venueId=${venue.id}&size=100&page=${page}` +
+            `&${venue.param}&size=100&page=${page}` +
             `&startDateTime=${iso(start)}&endDateTime=${iso(end)}&sort=date,asc`;
           const res = await fetchWithRetry(url, venue.name);
           const json = (await res.json()) as {
             _embedded?: { events?: TmEvent[] };
             page?: { totalPages?: number };
           };
-          for (const e of json._embedded?.events ?? []) all.push({ tm: e, venueName: venue.name });
+          for (const e of json._embedded?.events ?? []) {
+            all.push({ tm: e, venueName: area ? e._embedded?.venues?.[0]?.name ?? 'Local venue' : venue.name });
+          }
           totalPages = json.page?.totalPages ?? 1;
           page += 1;
         }
@@ -103,7 +118,12 @@ export async function collect(): Promise<SourceResult> {
 
       const runKey = `${tm._embedded?.attractions?.[0]?.id ?? tm.name}@${venueName}`;
       const isMusic = tm.classifications?.[0]?.segment?.name === 'Music';
-      const cap = venueCapacity(venueName);
+      // An area search lists every club and bar gig within the radius. Scoring a
+      // venue it cannot size as a 2,000-seat touring stop made a dozen local shows
+      // compound into "major" demand every weekend, so unknown venues are sized as
+      // the local rooms they almost always are. Add a market's big venues to
+      // scoring/venues.ts and they score at their real size.
+      const cap = venueCapacity(venueName) ?? (area ? UNKNOWN_LOCAL_VENUE_CAPACITY : null);
       // Competitions (DCI, cheer/dance championships) draw traveling families but
       // don't fill a stadium like a headliner tour — observed live: DCI at Nissan.
       const isCompetition = tm.classifications?.some((c) => c.subType?.name === 'Competition');
@@ -139,5 +159,5 @@ interface TmEvent {
   name: string;
   dates: { start: { localDate?: string }; status?: { code?: string } };
   classifications?: { segment?: { name?: string }; type?: { name?: string }; subType?: { name?: string } }[];
-  _embedded?: { attractions?: { id?: string }[] };
+  _embedded?: { attractions?: { id?: string }[]; venues?: { name?: string }[] };
 }

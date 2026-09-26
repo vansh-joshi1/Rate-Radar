@@ -170,7 +170,12 @@ export interface RatesData {
 
 export async function collect(
   prop: RatePropertyConfig = loadProperties()[0],
-  deps: { client?: SerpApiClient; now?: Date } = {}
+  deps: {
+    client?: SerpApiClient;
+    now?: Date;
+    /** Hotels drawing on the same SerpApi quota this run; each plans against its share. */
+    share?: number;
+  } = {}
 ): Promise<SourceResult> {
   const fetchedAt = new Date().toISOString();
   const now = deps.now ?? new Date();
@@ -188,10 +193,11 @@ export async function collect(
   try {
     const quota = await client.accountQuota();
 
-    const today = todayIn('America/Chicago', now);
+    const today = todayIn(prop.timezone ?? 'America/Chicago', now);
     const dates = horizonDates(today);
     const plan = planSearches({
-      remaining: quota.remaining,
+      // ponytail: an even split of what is left, re-read per hotel; weight by hotel size if one needs more.
+      remaining: Math.floor(quota.remaining / Math.max(1, deps.share ?? 1)),
       renewalDate: quota.renewalDate,
       now,
       dates,

@@ -12,6 +12,6 @@ export async function POST(req: Request) {
 
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'invalid' }, { status: 400 });
-  await requestStore().hset('notes', parsed.data.date, parsed.data.text);
+  await (await requestStore()).hset('notes', parsed.data.date, parsed.data.text);
   return NextResponse.json({ ok: true });
 }

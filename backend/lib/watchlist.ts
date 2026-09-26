@@ -53,10 +53,20 @@ export function hasHotel(hotels: WatchlistHotel[], name: string): boolean {
   return hotels.some((h) => h.name.toLowerCase() === needle);
 }
 
-/** Watchlist as a compset whitelist (price sanity bounds stay config-defined). */
-export function watchlistCompsetConfig(hotels: WatchlistHotel[]): CompsetConfig {
+/**
+ * Price bounds for a hotel added through onboarding. The config file's bounds
+ * were set for one budget market; these are the ones Settings accepts for a
+ * baseline rate, so any hotel that can be configured can also be compared.
+ */
+export const OPEN_PRICE_SANITY = { min: 20, max: 1000 };
+
+/** Watchlist as a compset whitelist. Price bounds default to the config file's. */
+export function watchlistCompsetConfig(
+  hotels: WatchlistHotel[],
+  priceSanity: CompsetConfig['priceSanity'] = (defaultCompset as CompsetConfig).priceSanity
+): CompsetConfig {
   return {
     competitors: hotels.map((h) => h.name),
-    priceSanity: (defaultCompset as CompsetConfig).priceSanity,
+    priceSanity,
   };
 }

@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { auth } from '../../../../backend/auth';
-import { demoSid, requestStore } from '../../../../backend/lib/demo/context';
+import { demoSid } from '../../../../backend/lib/demo/context';
 import { DEMO_NEARBY_HOTELS } from '../../../../backend/lib/demo';
-import { propertyFromRequest, propertyIdFromRequest } from '../../../../backend/lib/api/property-request';
+import { isCollector, propertyFromRequest } from '../../../../backend/lib/api/property-request';
 import { hasHotel, loadWatchlist, normalizeName, saveWatchlist, type WatchlistHotel } from '../../../../backend/lib/watchlist';
 import { requireRole, type RoleGate } from '../../../../backend/lib/auth/guard';
 
@@ -23,11 +23,6 @@ export const dynamic = 'force-dynamic';
  * fails to geocode still joins the watchlist (it matches prices); it just has
  * no map pin until located.
  */
-
-function isCollector(req: NextRequest): boolean {
-  const bearer = req.headers.get('authorization');
-  return Boolean(process.env.INGEST_SECRET) && bearer === `Bearer ${process.env.INGEST_SECRET}`;
-}
 
 /** Read: the collector's secret, a demo sandbox, or any signed-in member. */
 async function authorizedRead(req: NextRequest): Promise<boolean> {
@@ -69,19 +64,19 @@ async function geocode(name: string, city: string): Promise<Pick<WatchlistHotel,
 
 export async function GET(req: NextRequest) {
   if (!(await authorizedRead(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  // Unvalidated on purpose — see propertyIdFromRequest.
-  const propertyId = propertyIdFromRequest(req);
-  const hotels = await loadWatchlist(requestStore(), propertyId);
-  return NextResponse.json({ propertyId, hotels });
+  const target = await propertyFromRequest(req);
+  if (!target.ok) return target.response;
+  const hotels = await loadWatchlist(target.store, target.propertyId);
+  return NextResponse.json({ propertyId: target.propertyId, hotels });
 }
 
 export async function POST(req: NextRequest) {
   const gate = await authorizedWrite();
   if (!gate.ok) return gate.response;
 
-  const target = propertyFromRequest(req);
+  const target = await propertyFromRequest(req);
   if (!target.ok) return target.response;
-  const { propertyId, property } = target;
+  const { propertyId, property, store } = target;
 
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;
@@ -94,7 +89,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'name must be 3–80 characters' }, { status: 400 });
   }
 
-  const store = requestStore();
   const hotels = await loadWatchlist(store, propertyId);
   if (hasHotel(hotels, clean)) return NextResponse.json({ error: 'already on the watchlist' }, { status: 409 });
   if (hotels.length >= 25) return NextResponse.json({ error: 'watchlist is capped at 25 hotels' }, { status: 400 });
@@ -114,12 +108,11 @@ export async function PATCH(req: NextRequest) {
   const gate = await authorizedWrite();
   if (!gate.ok) return gate.response;
 
-  const target = propertyFromRequest(req);
+  const target = await propertyFromRequest(req);
   if (!target.ok) return target.response;
-  const { propertyId, property } = target;
+  const { propertyId, property, store } = target;
 
   const { name } = (await req.json().catch(() => ({}))) as { name?: string };
-  const store = requestStore();
   const hotels = await loadWatchlist(store, propertyId);
   const idx = hotels.findIndex((h) => h.name.toLowerCase() === (name ?? '').toLowerCase());
   if (idx === -1) return NextResponse.json({ error: 'not on the watchlist' }, { status: 404 });
@@ -135,10 +128,10 @@ export async function DELETE(req: NextRequest) {
   const gate = await authorizedWrite();
   if (!gate.ok) return gate.response;
 
-  // Unvalidated, as GET is — removal from an unknown id is a no-op 404 below.
-  const propertyId = propertyIdFromRequest(req);
+  const target = await propertyFromRequest(req);
+  if (!target.ok) return target.response;
+  const { propertyId, store } = target;
   const { name } = (await req.json().catch(() => ({}))) as { name?: string };
-  const store = requestStore();
   const hotels = await loadWatchlist(store, propertyId);
   const remaining = hotels.filter((h) => h.name.toLowerCase() !== (name ?? '').toLowerCase());
   if (remaining.length === hotels.length) return NextResponse.json({ error: 'not on the watchlist' }, { status: 404 });

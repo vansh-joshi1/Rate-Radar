@@ -8,8 +8,8 @@ import Bellhop from '../../../components/Bellhop';
 export const dynamic = 'force-dynamic';
 
 export default async function BellhopPage() {
-  const property = requestProperty();
-  const bookings = (await requestStore().get<Bookings>(BOOKINGS_KEY)) ?? {};
+  const property = await requestProperty();
+  const bookings = (await (await requestStore()).get<Bookings>(BOOKINGS_KEY)) ?? {};
   const tonight = bookings[todayIn(property.timezone)]?.at(-1) ?? null;
 
   return (

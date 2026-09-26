@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Calendar() {
   const { snapshot, isDemo } = await loadSnapshot();
-  const property = requestProperty();
+  const property = await requestProperty();
   // The demo's venues are invented, so they are placed from the demo's own table.
   const locate = isDemo ? demoVenueCoords : venueCoords;
 

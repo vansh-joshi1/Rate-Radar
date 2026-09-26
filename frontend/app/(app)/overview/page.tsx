@@ -8,7 +8,7 @@ import { XCircleIcon } from '@phosphor-icons/react/dist/ssr/XCircle';
 import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowsClockwise';
 import { loadSnapshot } from '../../../../backend/lib/dashboard-data';
 import { loadCurrentRates } from '../../../../backend/lib/current-rates';
-import { requestPropertyId, requestStore } from '../../../../backend/lib/demo/context';
+import { requestProperty, requestStore } from '../../../../backend/lib/demo/context';
 import { Bezel } from '../../../components/landing/Machined';
 import { fmtWeekdayLong, fmtRange, fmtDow } from '../../../../backend/lib/date';
 import type { ScoredEvent, SourceResult } from '../../../../backend/lib/scoring/types';
@@ -116,7 +116,7 @@ function heat(score: number) {
   return 'bg-[#d3e4fe]/60 text-[#44474d]';
 }
 
-function LogRow({ source }: { source: SourceResult }) {
+function LogRow({ source, timeZone }: { source: SourceResult; timeZone: string }) {
   const { status, error } = source;
   const text =
     status === 'ok'
@@ -142,7 +142,7 @@ function LogRow({ source }: { source: SourceResult }) {
           {text}
         </p>
         <span className={`${MONO_LABEL} mt-0.5 block tabular-nums`}>
-          {new Date(source.fetchedAt).toLocaleString('en-US', { timeZone: 'America/Chicago' })} CT
+          {new Date(source.fetchedAt).toLocaleString('en-US', { timeZone, timeZoneName: 'short' })}
         </span>
       </div>
     </li>
@@ -177,7 +177,8 @@ export default async function Overview() {
   // Read unconditionally: outside a demo this is the owner's real entry, and
   // inside one it is whatever the visitor typed into their own sandbox. Both
   // are absent until somebody sets a rate, and the null path already handles that.
-  const ownerRates = await loadCurrentRates(requestStore(), requestPropertyId());
+  const property = await requestProperty();
+  const ownerRates = await loadCurrentRates(await requestStore(), property.id);
   const directRooms = snapshot.parity.find((p) => p.official && p.status === 'ok')?.rooms ?? [];
   const ownerStd = ownerRates?.tiers[std.tierId];
   const scraped = directRooms.filter((r) => r.tierId === std.tierId).map((r) => r.price);
@@ -440,7 +441,7 @@ export default async function Overview() {
         </div>
         <ul className="mt-2 divide-y divide-[#0b1c30]/[0.06]">
           {snapshot.sources.slice(0, 3).map((s) => (
-            <LogRow key={s.source} source={s} />
+            <LogRow key={s.source} source={s} timeZone={property.timezone} />
           ))}
         </ul>
         {snapshot.sources.length > 3 && (
@@ -452,7 +453,7 @@ export default async function Overview() {
             </summary>
             <ul className="mt-2 divide-y divide-[#0b1c30]/[0.06] border-t border-[#0b1c30]/[0.06]">
               {snapshot.sources.slice(3).map((s) => (
-                <LogRow key={s.source} source={s} />
+                <LogRow key={s.source} source={s} timeZone={property.timezone} />
               ))}
             </ul>
           </details>

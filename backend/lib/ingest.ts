@@ -8,8 +8,10 @@ import { buildReasoning } from './scoring/reason';
 import { evaluateAlerts, type HolidayEntry, type SourceHealth } from './alerts/rules';
 import { sendAlertEmail } from './alerts/email';
 import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compset';
-import { DEFAULT_PROPERTY_ID, propKey } from './properties';
-import { loadWatchlist, saveWatchlist, watchlistKey, watchlistCompsetConfig, type WatchlistHotel } from './watchlist';
+import { DEFAULT_PROPERTY_ID, getProperty, propKey, type Property } from './properties';
+import { getStore } from './store';
+import { listMembers, memberProperty } from './auth/members';
+import { loadWatchlist, saveWatchlist, watchlistKey, watchlistCompsetConfig, OPEN_PRICE_SANITY, type WatchlistHotel } from './watchlist';
 import { loadRatesConfig } from './rates-config';
 import type {
   CompsetEntry, CompsetInfo, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
@@ -76,9 +78,29 @@ export function chicagoToday(now = new Date()): string {
   return todayIn('America/Chicago', now);
 }
 
-export async function processBundle(bundle: Bundle, store: Store, now = new Date()) {
+/**
+ * Sources a property's market has, for confidence. The original property has
+ * every Nashville source; a hotel added through onboarding has the ones that
+ * work anywhere, plus airport status once an airport is set. Scoring a hotel
+ * against sources its market cannot have would read as a permanent outage.
+ */
+export function expectedSources(property: Property): string[] | undefined {
+  if (!property.collect) return undefined;
+  return ['rates', 'ticketmaster', 'nws', 'holidays', ...(property.collect.airport ? ['faa'] : [])];
+}
+
+/**
+ * @param store the property's own store (`storeFor`); everything written lands there.
+ * @param property the hotel the bundle is for. Defaults to the original property for older callers.
+ */
+export async function processBundle(
+  bundle: Bundle,
+  store: Store,
+  now = new Date(),
+  property: Property = getProperty(DEFAULT_PROPERTY_ID)!
+) {
   const bundlePropertyId = bundle.propertyId ?? DEFAULT_PROPERTY_ID;
-  const today = chicagoToday(now);
+  const today = todayIn(property.timezone, now);
   const window = dateRange(today, WINDOW_NIGHTS);
   const windowSet = new Set(window);
 
@@ -114,10 +136,16 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
     src('nws')?.status === 'ok' && Array.isArray(src('nws')!.data)
       ? (src('nws')!.data as WeatherAlert[])
       : [];
-  const faaData = src('faa')?.status === 'ok' ? (src('faa')!.data as { bnaDisrupted: boolean; detail?: string }) : null;
+  // `bnaDisrupted` is the shape collectors sent before airports were per property.
+  const faaRaw = src('faa')?.status === 'ok'
+    ? (src('faa')!.data as { disrupted?: boolean; bnaDisrupted?: boolean; airport?: string; detail?: string })
+    : null;
+  const faaData = faaRaw
+    ? { disrupted: Boolean(faaRaw.disrupted ?? faaRaw.bnaDisrupted), airport: faaRaw.airport ?? 'BNA', detail: faaRaw.detail }
+    : null;
 
   const ratesData = src('rates')?.status === 'ok' ? src('rates')!.data : null;
-  const { parity, compsets: rawCompsets } = parseRatesData(ratesData, addDays(chicagoToday(now), 1));
+  const { parity, compsets: rawCompsets } = parseRatesData(ratesData, addDays(today, 1));
 
   // Persist collector-resolved property tokens onto the watchlist so later runs
   // match those hotels exactly instead of by name substring.
@@ -139,7 +167,7 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   // Filter against the UI-editable watchlist when one exists (the collector
   // harvested with the same list); config/compset.json remains the fallback.
   const uiWatchlist = await store.get<WatchlistHotel[]>(watchlistKey(bundlePropertyId));
-  const compsetCfg = uiWatchlist && uiWatchlist.length > 0 ? watchlistCompsetConfig(uiWatchlist) : undefined;
+  const compsetCfg = uiWatchlist && uiWatchlist.length > 0 ? watchlistCompsetConfig(uiWatchlist, property.collect ? OPEN_PRICE_SANITY : undefined) : undefined;
   // Owner-editable baselines (Settings → Property); seeds from config/rates.json.
   const ratesCfg = await loadRatesConfig(store, bundlePropertyId);
   const compsets: CompsetInfo[] = rawCompsets.map((c) => {
@@ -174,13 +202,13 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
       holidayName,
       weatherNote:
         date === today && severeWinterToday
-          ? 'Severe winter weather alert active — this can INCREASE short-notice demand (stranded I-65 travelers), not just suppress leisure travel. A modest same-night uplift may be warranted; treat as speculative.'
+          ? `Severe winter weather alert active — this can INCREASE short-notice demand (stranded ${property.id === DEFAULT_PROPERTY_ID ? 'I-65 ' : ''}travelers), not just suppress leisure travel. A modest same-night uplift may be warranted; treat as speculative.`
           : date === today && weatherAlerts.length > 0
             ? `Weather alert active: ${weatherAlerts[0].headline}. Watch for short-notice cancellations or demand.`
             : undefined,
       bnaNote:
-        date === today && faaData?.bnaDisrupted
-          ? `BNA disruption: ${faaData.detail ?? 'delays/ground stop'} — mass disruption can spike last-minute overnight demand nearby.`
+        date === today && faaData?.disrupted
+          ? `${faaData.airport} disruption: ${faaData.detail ?? 'delays/ground stop'} — mass disruption can spike last-minute overnight demand nearby.`
           : undefined,
     };
     // Compset applies per checked night: caps quiet nights, informs event nights
@@ -200,7 +228,7 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
     ...bundle.sources,
     { source: 'holidays', status: 'ok', fetchedAt: bundle.runAt },
   ];
-  const conf = confidence(sourcesForConfidence);
+  const conf = confidence(sourcesForConfidence, expectedSources(property));
 
   // --- alerting state ---
   const prevEmailed = (await store.get<Record<string, number>>('emailed:state')) ?? {};
@@ -236,18 +264,16 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
     compsets,
     sources: bundle.sources,
   };
-  // Property-scoped keys are the durable layout (multi-hotel ready); the
-  // legacy unscoped keys are dual-written for the default property so the
-  // existing dashboard and older readers keep working unchanged.
+  // Property-scoped keys serve the v1 API; the unscoped keys are what the
+  // dashboard reads. `store` is already this property's own (storeFor), so
+  // writing the unscoped ones for every hotel keeps them apart.
   await store.set(propKey.snapshotLatest(bundlePropertyId), snapshot);
   await store.set(propKey.snapshotRun(bundlePropertyId, today, runId), snapshot, 30 * 86400);
   // Raw bundle kept for /api/recompute: config edits (baselines, watchlist)
   // re-run scoring on the same data without waiting for the next scrape.
   await store.set(propKey.bundleLatest(bundlePropertyId), bundle);
-  if (bundlePropertyId === DEFAULT_PROPERTY_ID) {
-    await store.set('snapshot:latest', snapshot);
-    await store.set(`snapshot:${today}:${runId}`, snapshot, 30 * 86400);
-  }
+  await store.set('snapshot:latest', snapshot);
+  await store.set(`snapshot:${today}:${runId}`, snapshot, 30 * 86400);
 
   const todayNight = nights[0];
   const std = todayNight.tiers.find((t) => t.tierId === 'standard');
@@ -274,7 +300,11 @@ export async function processBundle(bundle: Bundle, store: Store, now = new Date
   // un-delivered so the next run fires them again.
   let emailStatus: 'sent' | 'skipped' | 'none' | 'failed' = 'none';
   if (alertResult.triggers.length > 0) {
-    emailStatus = await sendAlertEmail(alertResult.triggers).catch((err) => {
+    // The original property mails ALERT_EMAIL_TO; an onboarded hotel mails its own owners.
+    const to = property.collect
+      ? (await listMembers(getStore())).filter((m) => m.role === 'owner' && memberProperty(m) === property.id).map((m) => m.email)
+      : undefined;
+    emailStatus = await sendAlertEmail(alertResult.triggers, to).catch((err) => {
       console.error('[ingest] alert email failed:', err);
       return 'failed' as const;
     });

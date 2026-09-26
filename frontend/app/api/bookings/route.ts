@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'invalid' }, { status: 400 });
-  const res = await recordTonight(requestStore(), requestProperty(), parsed.data.rooms);
+  const res = await recordTonight(await requestStore(), await requestProperty(), parsed.data.rooms);
   if (!res.ok) return NextResponse.json({ error: res.error }, { status: 400 });
   return NextResponse.json(res);
 }

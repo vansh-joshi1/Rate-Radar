@@ -147,6 +147,7 @@ describe('no browser-facing handler touches the production store directly', () =
   /** Handlers that are NOT browser-facing — each with the reason it may use getStore(). */
   const MACHINE_ROUTES: Record<string, string> = {
     'api/ingest/route.ts': 'collector push, INGEST_SECRET bearer — never a demo caller',
+    'api/ingest/properties/route.ts': 'collector pull of the approved-hotel list, INGEST_SECRET bearer — never a demo caller',
     'api/health/route.ts': 'uptime probe for the watchdog workflow; must report the real pipeline',
     'api/cron/heartbeat/route.ts': 'Vercel cron; must reach the real snapshot',
     'api/v1/properties/route.ts': 'API-key clients, scoped by key — demo sandboxes are not exposed there',
@@ -158,6 +159,9 @@ describe('no browser-facing handler touches the production store directly', () =
     'api/auth/password/route.ts': 'sign-in to the REAL property: its throttle is global so a demo cookie cannot reset it',
     'api/auth/sign-in/route.ts': 'sign-in to the REAL property: must read the real Team list and access requests',
     'api/onboarding/request/route.ts': 'access requests must land where the team reviews them, not in a sandbox that expires',
+    'api/members/route.ts': 'branches to the sandbox first; the global Team list (filtered to the caller\'s hotel) is the non-demo path',
+    '(app)/admin/page.tsx': 'OWNER_EMAIL only, and a demo visitor gets the sample portfolio before any store read',
+    'api/admin/approve/route.ts': 'OWNER_EMAIL only, refuses demo callers; approving writes the global property list and Team list',
   };
 
   function sourceFiles(dir: string): string[] {

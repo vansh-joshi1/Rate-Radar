@@ -52,10 +52,6 @@ export interface ShellProperty {
   sub: string;
 }
 
-/** The real deployment's switcher. A demo passes its own invented list instead. */
-const DEFAULT_PROPERTIES: ShellProperty[] = [
-  { id: 'rri-franklin', label: 'Red Roof Inn', sub: 'Franklin, TN' },
-];
 
 /* The search box is a page jumper rather than a decorative input — it matches
    the nav labels and routes on Enter. */
@@ -83,7 +79,8 @@ export default function AppShell({
   freshness,
   user,
   alerts = 0,
-  properties = DEFAULT_PROPERTIES,
+  properties,
+  showPortfolio = false,
   isDemo = false,
 }: {
   children: ReactNode;
@@ -91,9 +88,11 @@ export default function AppShell({
   user?: ShellUser | null;
   /** Unhealthy collector sources — drives the notification dot. */
   alerts?: number;
-  /** Switcher entries. A demo sandbox supplies invented ones so the real
+  /** Switcher entries: the member's own hotel, or invented ones in a demo so the real
    *  property is never named on a page a stranger can open. */
-  properties?: ShellProperty[];
+  properties: ShellProperty[];
+  /** The cross-hotel Portfolio page is OWNER_EMAIL's (and the demo's); nobody else gets the link. */
+  showPortfolio?: boolean;
   /** Swaps session-only chrome (sign out) for sandbox equivalents. */
   isDemo?: boolean;
 }) {
@@ -104,6 +103,7 @@ export default function AppShell({
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [query, setQuery] = useState('');
   const property = properties.find((p) => p.id === propertyId) ?? properties[0];
+  const topNav = TOP_NAV.filter((n) => showPortfolio || n.href !== '/admin');
   const switcherRef = useRef<HTMLDivElement>(null);
 
   // Escape closes whichever layer is open, innermost first; a click outside
@@ -130,7 +130,7 @@ export default function AppShell({
     e.preventDefault();
     const q = query.trim().toLowerCase();
     if (!q) return;
-    const hit = SEARCH_TARGETS.find((t) => t.label.toLowerCase().includes(q));
+    const hit = SEARCH_TARGETS.filter((t) => showPortfolio || t.href !== '/admin').find((t) => t.label.toLowerCase().includes(q));
     if (hit) {
       router.push(hit.href);
       setQuery('');
@@ -303,7 +303,7 @@ export default function AppShell({
 
             <nav aria-label="Sections" className="hidden lg:block">
               <ul className="flex items-center gap-0.5 rounded-full bg-white p-1 ring-1 ring-[#0b1c30]/[0.06]">
-                {TOP_NAV.map(({ href, label }) => {
+                {topNav.map(({ href, label }) => {
                   const active = pathname === href || pathname.startsWith(href + '/');
                   return (
                     <li key={label}>

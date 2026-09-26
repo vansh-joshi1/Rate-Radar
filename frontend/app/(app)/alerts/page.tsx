@@ -6,8 +6,8 @@ import { ShieldIcon } from '@phosphor-icons/react/dist/ssr/Shield';
 import { TrendUpIcon } from '@phosphor-icons/react/dist/ssr/TrendUp';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
 import NoteBox from '../../../components/NoteBox';
-import { requestStore } from '../../../../backend/lib/demo/context';
-import { chicagoToday } from '../../../../backend/lib/ingest';
+import { requestProperty, requestStore } from '../../../../backend/lib/demo/context';
+import { todayIn } from '../../../../backend/lib/date';
 import { loadSnapshot } from '../../../../backend/lib/dashboard-data';
 
 export const dynamic = 'force-dynamic';
@@ -20,8 +20,8 @@ export default async function Alerts() {
   // Nightly notes moved off the dashboard — they're the human counterpart to
   // the automated alerts on this page.
   const { isDemo } = await loadSnapshot();
-  const today = chicagoToday();
-  const note = (await requestStore().hget<string>('notes', today)) ?? '';
+  const today = todayIn((await requestProperty()).timezone);
+  const note = (await (await requestStore()).hget<string>('notes', today)) ?? '';
 
   return (
     <div>

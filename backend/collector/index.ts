@@ -4,7 +4,8 @@ import { collect as nws } from './sources/nws';
 import { collect as faa } from './sources/faa';
 import { collect as calendars } from './sources/calendars';
 import { collect as rates } from './sources/rates';
-import { loadProperties } from './properties';
+import { fromStoredProperty, loadProperties, type Market, type RatePropertyConfig } from './properties';
+import type { Property } from '../lib/properties';
 import type { SourceResult } from '../lib/scoring/types';
 
 /**
@@ -43,6 +44,41 @@ async function fetchWatchlist(propertyId: string): Promise<{ name: string; prope
   }
 }
 
+/**
+ * Hotels approved from onboarding live in the dashboard's store, so a new one
+ * is collected on the next run without a deploy. Unreachable dashboard →
+ * collect the config-file property alone rather than nothing.
+ */
+async function fetchStoredProperties(): Promise<RatePropertyConfig[]> {
+  const base = process.env.DASHBOARD_URL;
+  const secret = process.env.INGEST_SECRET;
+  if (!base || !secret) return [];
+  try {
+    const res = await fetch(`${base.replace(/\/$/, '')}/api/ingest/properties`, {
+      headers: { Authorization: `Bearer ${secret}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { properties } = (await res.json()) as { properties: Property[] };
+    return properties.filter(hasCollect).map(fromStoredProperty);
+  } catch (err) {
+    console.error('[properties] could not fetch onboarded hotels, collecting config-file properties only:', err);
+    return [];
+  }
+}
+
+const hasCollect = (p: Property): p is Property & { collect: NonNullable<Property['collect']> } => Boolean(p.collect);
+
+/** Run sources in parallel; a throw becomes that source's 'failed' result, never the run's. */
+async function settleAll(runs: Record<string, Promise<SourceResult>>): Promise<SourceResult[]> {
+  const names = Object.keys(runs);
+  const settled = await Promise.allSettled(Object.values(runs));
+  return settled.map((s, i) =>
+    s.status === 'fulfilled'
+      ? s.value
+      : { source: names[i], status: 'failed' as const, fetchedAt: new Date().toISOString(), error: String(s.reason).slice(0, 300) }
+  );
+}
+
 async function postBundle(bundle: unknown): Promise<unknown> {
   const base = process.env.DASHBOARD_URL;
   const secret = process.env.INGEST_SECRET;
@@ -60,27 +96,28 @@ async function postBundle(bundle: unknown): Promise<unknown> {
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const skipRates = process.argv.includes('--skip-rates');
-  const properties = loadProperties();
+  const properties = [...loadProperties(), ...(await fetchStoredProperties())];
 
-  // Stage 1: market sources (parallel, once). All free APIs.
-  const apiNames = ['ticketmaster', 'cfbd', 'nws', 'faa', 'calendars'];
-  const settled = await Promise.allSettled([ticketmaster(), cfbd(), nws(), faa(), calendars()]);
-  const marketSources: SourceResult[] = settled.map((s, i) =>
-    s.status === 'fulfilled'
-      ? s.value
-      : {
-          source: apiNames[i],
-          status: 'failed' as const,
-          fetchedAt: new Date().toISOString(),
-          error: String(s.reason).slice(0, 300),
-        }
-  );
+  // Stage 1: market sources. All free APIs. The Nashville set is fetched once
+  // and shared; any other hotel gets its own, by location (see Market).
+  let nashville: Promise<SourceResult[]> | null = null;
+  const marketSources = (market: Market): Promise<SourceResult[]> => {
+    if (market.kind === 'nashville') {
+      return (nashville ??= settleAll({ ticketmaster: ticketmaster(), cfbd: cfbd(), nws: nws(), faa: faa(), calendars: calendars() }));
+    }
+    const point = { lat: market.lat, lng: market.lng };
+    return settleAll({
+      ticketmaster: ticketmaster(point),
+      nws: nws(point),
+      ...(market.airport ? { faa: faa(market.airport) } : {}),
+    });
+  };
 
   // Stage 2: per-property rate checks + one bundle per property.
   let anyOk = false;
   let anyIngestFailed = false;
   for (const prop of properties) {
-    const sources: SourceResult[] = [...marketSources];
+    const sources: SourceResult[] = [...(await marketSources(prop.market))];
     if (!skipRates) {
       const liveWatchlist = await fetchWatchlist(prop.id);
       if (liveWatchlist) {
@@ -90,7 +127,7 @@ async function main() {
         prop.watchlistHotels = liveWatchlist;
       }
       try {
-        sources.push(await rates(prop));
+        sources.push(await rates(prop, { share: properties.length }));
       } catch (err) {
         sources.push({
           source: 'rates',

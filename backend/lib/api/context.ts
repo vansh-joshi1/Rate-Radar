@@ -1,11 +1,12 @@
-import { getStore } from '../store';
+import { getStore, storeFor } from '../store';
 import type { Store } from '../store';
 import type { Snapshot } from '../scoring/types';
-import { DEFAULT_PROPERTY_ID, getProperty, propKey, type Property } from '../properties';
+import { DEFAULT_PROPERTY_ID, loadProperty, propKey, type Property } from '../properties';
 import { authenticate, canReadProperty, apiError, type ApiKeyRecord } from './auth';
 
 /** Scoped snapshot with legacy-key fallback for the original property. */
-export async function loadPropertySnapshot(store: Store, propertyId: string): Promise<Snapshot | null> {
+export async function loadPropertySnapshot(propertyId: string): Promise<Snapshot | null> {
+  const store = storeFor(propertyId);
   const scoped = await store.get<Snapshot>(propKey.snapshotLatest(propertyId));
   if (scoped) return scoped;
   if (propertyId === DEFAULT_PROPERTY_ID) return store.get<Snapshot>('snapshot:latest');
@@ -30,13 +31,13 @@ export async function propertyContext(req: Request, propertyId: string): Promise
   const auth = await authenticate(req, store);
   if (!auth.ok) return apiError(auth.status, auth.code, auth.message);
 
-  const property = getProperty(propertyId);
+  const property = await loadProperty(store, propertyId);
   if (!property) return apiError(404, 'unknown_property', `No property "${propertyId}".`);
   if (!canReadProperty(auth.record, propertyId)) {
     return apiError(403, 'forbidden', 'This API key cannot read that property.');
   }
 
-  const snapshot = await loadPropertySnapshot(store, propertyId);
+  const snapshot = await loadPropertySnapshot(propertyId);
   if (!snapshot) return apiError(404, 'no_data', 'No collector data for this property yet.');
 
   const ageMinutes = Math.max(0, Math.round((Date.now() - new Date(snapshot.runAt).getTime()) / 60_000));

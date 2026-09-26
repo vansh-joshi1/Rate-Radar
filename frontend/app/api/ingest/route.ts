@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { BundleSchema, processBundle } from '../../../../backend/lib/ingest';
-import { getStore } from '../../../../backend/lib/store';
+import { getStore, storeFor } from '../../../../backend/lib/store';
+import { DEFAULT_PROPERTY_ID, loadProperty } from '../../../../backend/lib/properties';
 
 export const maxDuration = 60;
 
@@ -14,7 +15,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid bundle', detail: parsed.error.flatten() }, { status: 400 });
   }
   try {
-    const summary = await processBundle(parsed.data, getStore());
+    const property = await loadProperty(getStore(), parsed.data.propertyId ?? DEFAULT_PROPERTY_ID);
+    if (!property) return NextResponse.json({ error: `unknown property ${parsed.data.propertyId}` }, { status: 400 });
+    const summary = await processBundle(parsed.data, storeFor(property.id), new Date(), property);
     return NextResponse.json(summary);
   } catch (err) {
     console.error('[ingest] failed:', err);

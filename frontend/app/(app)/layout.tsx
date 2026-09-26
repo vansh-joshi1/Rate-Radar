@@ -2,12 +2,13 @@ import { FlaskIcon } from '@phosphor-icons/react/dist/ssr/Flask';
 import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr/ArrowCounterClockwise';
 import { PillCta } from '../../components/landing/Machined';
 import AppShell from '../../components/shell/AppShell';
+import AwaitingFirstRun from '../../components/AwaitingFirstRun';
 import { RoleProvider } from '../../components/RoleProvider';
 import PostHogInit from '../../components/PostHogInit';
 import { redirect } from 'next/navigation';
 import { auth } from '../../../backend/auth';
 import { loadSnapshot } from '../../../backend/lib/dashboard-data';
-import { demoSid } from '../../../backend/lib/demo/context';
+import { demoSid, requestProperty } from '../../../backend/lib/demo/context';
 import { DEMO_PROPERTY } from '../../../backend/lib/properties';
 import type { ShellProperty } from '../../components/shell/AppShell';
 import type { Role } from '../../../backend/lib/auth/roles';
@@ -22,13 +23,16 @@ const DEMO_SWITCHER: ShellProperty[] = [
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const inDemo = demoSid() !== null;
-  const [{ snapshot, isDemo }, session] = await Promise.all([loadSnapshot(), inDemo ? null : auth()]);
+  const [{ snapshot, isDemo, awaitingFirstRun }, session] = await Promise.all([loadSnapshot(), inDemo ? null : auth()]);
   // Signed in to Supabase but no longer on the team: the middleware can't know that, auth() does.
   if (!inDemo && !session) redirect('/login');
+  const property = inDemo ? null : await requestProperty();
   const mins = Math.max(0, Math.round((Date.now() - new Date(snapshot.runAt).getTime()) / 60_000));
-  const freshness = isDemo
-    ? 'Sample data. Run the collector to go live'
-    : `Data fresh as of ${mins < 60 ? `${mins}m` : `${Math.round(mins / 60)}h`} ago`;
+  const freshness = awaitingFirstRun
+    ? 'Waiting for the first collection'
+    : isDemo
+      ? 'Sample data. Run the collector to go live'
+      : `Data fresh as of ${mins < 60 ? `${mins}m` : `${Math.round(mins / 60)}h`} ago`;
   // A demo visitor owns their sandbox outright, so every control is live for
   // them — that is the point of the demo. The role is real; its reach is not.
   const role = inDemo
@@ -44,7 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         }
       : null;
   // Drives the notification dot in the top bar — real collector health, not decoration.
-  const alerts = snapshot.sources.filter((s) => s.status !== 'ok').length;
+  const alerts = awaitingFirstRun ? 0 : snapshot.sources.filter((s) => s.status !== 'ok').length;
   return (
     <RoleProvider role={role}>
       {!inDemo && session && (
@@ -59,11 +63,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         freshness={freshness}
         user={user}
         alerts={alerts}
-        properties={inDemo ? DEMO_SWITCHER : undefined}
+        properties={property ? [{ id: property.id, label: property.name, sub: property.city }] : DEMO_SWITCHER}
+        showPortfolio={inDemo || Boolean(session?.user.isAdmin)}
         isDemo={inDemo}
       >
         {inDemo && <DemoBar />}
-        {children}
+        {awaitingFirstRun && property ? <AwaitingFirstRun hotel={property.name}>{children}</AwaitingFirstRun> : children}
       </AppShell>
     </RoleProvider>
   );
