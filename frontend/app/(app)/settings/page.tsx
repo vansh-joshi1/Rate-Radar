@@ -6,6 +6,7 @@ import { demoInvoices } from '../../../../backend/lib/demo';
 import { requestProperty } from '../../../../backend/lib/demo/context';
 import { DEFAULT_RATES_CONFIG } from '../../../../backend/lib/rates-config';
 import { ALERT_THRESHOLDS } from '../../../../backend/lib/alerts/rules';
+import { RUN_SLOTS_CT } from '../../../../backend/collector/budget';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,7 @@ export default async function Settings() {
         (snapshot.sources.find((s) => s.source === 'rates')?.data as { budget?: SearchBudget } | undefined)?.budget
       }
       thresholds={ALERT_THRESHOLDS}
+      runSlots={RUN_SLOTS_CT}
       invoices={isDemo ? demoInvoices : []}
       isDemo={isDemo}
     />

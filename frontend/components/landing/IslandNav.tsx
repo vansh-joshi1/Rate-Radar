@@ -35,6 +35,14 @@ export default function IslandNav() {
   const [open, setOpen] = useState(false);
   const firstLink = useRef<HTMLAnchorElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
+  const linkEls = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const [spot, setSpot] = useState<{ x: number; w: number } | null>(null);
+
+  // Keep the last position when no section is current, so the tint fades where it was.
+  useEffect(() => {
+    const el = current && linkEls.current[current];
+    if (el) setSpot({ x: el.offsetLeft, w: el.offsetWidth });
+  }, [current]);
 
   useEffect(() => {
     const visible = new Set<string>();
@@ -77,20 +85,32 @@ export default function IslandNav() {
     <>
       <header className="pointer-events-none fixed inset-x-0 top-4 z-40 flex justify-center px-4">
         <div
-          className={`pointer-events-auto flex w-full max-w-[1200px] items-center justify-between gap-6 rounded-full bg-white/70 py-1.5 pl-5 pr-1.5 shadow-[0_12px_40px_-16px_rgba(11,28,48,0.22)] ring-1 ring-[#0b1c30]/[0.06] backdrop-blur-xl md:w-max md:max-w-none`}
+          className={`pointer-events-auto flex w-full max-w-[1200px] items-center justify-between gap-6 rounded-full bg-white/70 py-1.5 pl-5 pr-1.5 shadow-[0_12px_40px_-16px_rgba(11,28,48,0.22)] ring-1 ring-[#0b1c30]/[0.06] backdrop-blur-xl md:w-max md:max-w-none [@media(prefers-reduced-transparency:reduce)]:bg-white [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none`}
         >
           <Link href="/" className={`flex items-center gap-2 rounded-full ${ring}`} onClick={() => setOpen(false)}>
             <RadarIcon className="h-5 w-5 text-[#085ac0]" />
             <span className="text-[15px] font-semibold tracking-tight text-[#0b1c30]">Rate Radar</span>
           </Link>
 
-          <nav aria-label="Sections" className="hidden items-center gap-7 md:flex">
+          <nav aria-label="Sections" className="relative hidden items-center gap-1 md:flex">
+            {/* One tint slides to the current section instead of the cue jumping between links.
+                It fades out in place when no section is current, so it never slides in from the edge. */}
+            {spot && (
+              <span
+                aria-hidden
+                className={`absolute inset-y-0 left-0 rounded-full bg-[#085ac0]/[0.08] transition-[transform,width,opacity] duration-500 ${SPRING} motion-reduce:transition-none`}
+                style={{ width: spot.w, transform: `translateX(${spot.x}px)`, opacity: current ? 1 : 0 }}
+              />
+            )}
             {LINKS.map((l) => (
               <a
                 key={l.id}
+                ref={(el) => {
+                  linkEls.current[l.id] = el;
+                }}
                 href={`#${l.id}`}
                 aria-current={current === l.id ? 'location' : undefined}
-                className={`rounded-full text-[13px] font-medium transition-colors duration-300 ${SPRING} ${ring} ${
+                className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors duration-300 ${SPRING} ${ring} ${
                   current === l.id ? 'text-[#085ac0]' : 'text-[#44474d] hover:text-[#0b1c30]'
                 }`}
               >
@@ -105,7 +125,7 @@ export default function IslandNav() {
             </Link>
             <Link
               href="/demo"
-              className={`group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-[#085ac0] py-1 pl-4 pr-1 text-[13px] font-medium text-white transition-[transform,background-color] duration-500 ${SPRING} hover:bg-[#06489c] active:scale-[0.98] ${ring}`}
+              className={`group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-[#085ac0] py-1 pl-4 pr-1 text-[13px] font-medium text-white transition-[transform,background-color] duration-500 ${SPRING} hover:bg-[#06489c] active:scale-[0.98] active:duration-100 motion-reduce:transition-none ${ring}`}
             >
               Open the demo
               <span
@@ -150,7 +170,7 @@ export default function IslandNav() {
         // React 18's types predate `inert`; as a plain attribute it keeps the
         // closed menu's links out of the tab order.
         {...({ inert: open ? undefined : '' } as Record<string, string | undefined>)}
-        className={`fixed inset-0 z-30 flex flex-col justify-center bg-white/80 px-6 backdrop-blur-3xl transition-opacity duration-500 ${SPRING} motion-reduce:transition-none md:hidden ${
+        className={`fixed inset-0 z-30 flex flex-col justify-center bg-white/80 px-6 backdrop-blur-3xl [@media(prefers-reduced-transparency:reduce)]:bg-white [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none transition-opacity duration-500 ${SPRING} motion-reduce:transition-none md:hidden ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
@@ -180,7 +200,7 @@ export default function IslandNav() {
           <Link
             href="/demo"
             onClick={() => setOpen(false)}
-            className={`group inline-flex items-center gap-3 rounded-full bg-[#085ac0] py-1.5 pl-6 pr-1.5 text-[15px] font-medium text-white active:scale-[0.98] ${ring}`}
+            className={`group inline-flex items-center gap-3 rounded-full bg-[#085ac0] py-1.5 pl-6 pr-1.5 text-[15px] font-medium text-white transition-transform duration-500 ${SPRING} active:scale-[0.98] active:duration-100 motion-reduce:transition-none ${ring}`}
           >
             Open the demo
             <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15">

@@ -1,5 +1,5 @@
 'use client';
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { track } from './PostHogInit';
 import { useRouter } from 'next/navigation';
@@ -25,7 +25,8 @@ import { DOT_FIELD, Grain, HeroRadar } from './landing/Backdrop';
  * The two tabs are two real routes (/login and /signup), not just UI state:
  * switching rewrites the path so links, the ?next= redirect, and Auth.js's
  * pages.signIn config all keep working. History is rewritten in place instead
- * of navigating so a half-typed email survives a tab switch.
+ * of navigating, and both panes stay mounted, so a half-typed email survives
+ * a tab switch.
  *
  * Only the auth that actually exists is on screen (auth.ts): email + password
  * (the account an /onboarding access request creates), an invite-gated Resend
@@ -149,7 +150,7 @@ function FieldNote({ id, children }: { id: string; children: React.ReactNode }) 
 /** The success state that replaces an email form once the link is out. */
 function Inbox({ email, onReset }: { email: string; onReset: () => void }) {
   return (
-    <div className="auth-settle mt-7 rounded-[1.25rem] bg-[#029768]/[0.06] p-5 ring-1 ring-[#029768]/15">
+    <div role="status" className="auth-settle mt-7 rounded-[1.25rem] bg-[#029768]/[0.06] p-5 ring-1 ring-[#029768]/15">
       <div className="flex gap-3">
         <CheckCircleIcon weight="fill" aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-[#029768]" />
         <div className="min-w-0">
@@ -241,11 +242,18 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
   const [linkBusy, setLinkBusy] = useState(false);
   const [linkSent, setLinkSent] = useState<Sent>(null);
   const [linkError, setLinkError] = useState('');
+  const [lastEmail, setLastEmail] = useState('');
 
   const [pwBusy, setPwBusy] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwShown, setPwShown] = useState(false);
+  const pwInput = useRef<HTMLInputElement>(null);
 
+  // A wrong password leaves the field selected, so retyping replaces it. Runs
+  // after the re-render that re-enables the input.
+  useEffect(() => {
+    if (pwError) pwInput.current?.select();
+  }, [pwError]);
 
   function selectTab(next: Tab) {
     setTab(next);
@@ -357,14 +365,24 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
           <div className="mx-auto w-full max-w-[420px] lg:mx-0">
             <Tabs tab={tab} onSelect={selectTab} />
 
-            {tab === 'signin' ? (
-              <div key="signin" id="pane-signin" role="tabpanel" aria-labelledby="tab-signin" className="auth-settle mt-8">
+            {/* Both panes stay mounted, so a half-typed field survives a tab switch, and share one grid
+                cell, so the column is always as tall as the taller pane and the centred block (tabs
+                included) never jumps. The inactive one is visibility-hidden: out of sight, the tab order
+                and the accessibility tree. Re-adding auth-settle replays the settle on each switch. */}
+            <div className="mt-8 grid">
+            <div id="pane-signin" role="tabpanel" aria-labelledby="tab-signin" className={`[grid-area:1/1] ${tab === 'signin' ? 'auth-settle' : 'invisible'}`}>
                 <Heading title="Welcome back">
                   Sign in with your email and password, or get a one-time link by email.
                 </Heading>
 
                 {linkSent ? (
-                  <Inbox email={linkSent.email} onReset={() => setLinkSent(null)} />
+                  <Inbox
+                    email={linkSent.email}
+                    onReset={() => {
+                      setLastEmail(linkSent.email);
+                      setLinkSent(null);
+                    }}
+                  />
                 ) : (
                   <form onSubmit={submitAccount} className="mt-7">
                     <label className={LABEL} htmlFor={ids.linkEmail}>
@@ -378,6 +396,9 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
                       autoComplete="email"
                       inputMode="email"
                       placeholder="you@yourhotel.com"
+                      // Back from "Use a different email": the old address, focused, ready to fix.
+                      defaultValue={lastEmail}
+                      autoFocus={!!lastEmail}
                       className={FIELD}
                       disabled={linkBusy}
                       aria-invalid={linkError ? true : undefined}
@@ -425,6 +446,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
                   </label>
                   <div className="relative">
                     <input
+                      ref={pwInput}
                       id={ids.pw}
                       name="password"
                       type={pwShown ? 'text' : 'password'}
@@ -455,8 +477,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
                   </PillButton>
                 </form>
               </div>
-            ) : (
-              <div key="signup" id="pane-signup" role="tabpanel" aria-labelledby="tab-signup" className="auth-settle mt-8">
+              <div id="pane-signup" role="tabpanel" aria-labelledby="tab-signup" className={`[grid-area:1/1] ${tab === 'signup' ? 'auth-settle' : 'invisible'}`}>
                 <Heading title="Set up your hotel">
                   Start with your hotel&rsquo;s email. We&rsquo;ll walk you through the property, your listings and
                   your compset.
@@ -488,7 +509,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
                   </Link>
                 </p>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
