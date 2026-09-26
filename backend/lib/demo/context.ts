@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { getStore, prefixed, type Store } from '../store';
-import { DEFAULT_PROPERTY_ID, DEMO_PROPERTY, getProperty, propKey, type Property } from '../properties';
+import { redirect } from 'next/navigation';
+import { getStore, prefixed, storeFor, type Store } from '../store';
+import { DEFAULT_PROPERTY_ID, DEMO_PROPERTY, getProperty, loadProperty, propKey, type Property } from '../properties';
 import { DEMO_COOKIE, DEMO_TTL_SECONDS, demoPrefix, isValidDemoSid } from './session';
 import { demoSnapshot, DEMO_NEARBY_HOTELS } from '../demo';
 import { watchlistKey, type WatchlistHotel } from '../watchlist';
@@ -40,20 +41,33 @@ export function demoSid(): string | null {
 /**
  * The store this request may touch. A demo request gets a view namespaced to
  * its own sandbox, with every write given a rolling 24h expiry so an abandoned
- * demo costs nothing and no cleanup job is needed.
+ * demo costs nothing and no cleanup job is needed. Anyone else gets their own
+ * hotel's store (see `storeFor`).
  */
-export function requestStore(): Store {
+export async function requestStore(): Promise<Store> {
   const sid = demoSid();
-  return sid ? prefixed(getStore(), demoPrefix(sid), DEMO_TTL_SECONDS) : getStore();
+  if (sid) return prefixed(getStore(), demoPrefix(sid), DEMO_TTL_SECONDS);
+  return storeFor((await requestProperty()).id);
 }
 
-/** The property this request is about — the invented one inside a demo. */
-export function requestProperty(): Property {
-  return demoSid() ? DEMO_PROPERTY : getProperty(DEFAULT_PROPERTY_ID)!;
-}
-
-export function requestPropertyId(): string {
-  return requestProperty().id;
+/**
+ * The property this request is about: the invented one inside a demo, the
+ * signed-in member's own hotel otherwise. Never a caller-supplied id.
+ *
+ * No member session means no property, not the default one: a signed-in
+ * stranger (pending request, removed teammate) is sent to /login rather than
+ * shown the original hotel. Local dev without Supabase has no sessions at all
+ * and gets the original property, as it always has.
+ */
+export async function requestProperty(): Promise<Property> {
+  if (demoSid()) return DEMO_PROPERTY;
+  // Deferred, as in guard.ts: keeps the Supabase graph out of modules that only need the demo seam.
+  const { auth, authConfigured } = await import('../../auth');
+  if (!authConfigured()) return getProperty(DEFAULT_PROPERTY_ID)!;
+  const session = await auth();
+  const property = session && (await loadProperty(getStore(), session.user.propertyId));
+  if (!property) redirect('/login');
+  return property;
 }
 
 /**

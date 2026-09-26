@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { requestStore } from '../../../../backend/lib/demo/context';
 import { loadRatesConfig, saveRatesConfig, validateRatesConfig, type RatesConfig } from '../../../../backend/lib/rates-config';
 import { propertyFromRequest } from '../../../../backend/lib/api/property-request';
 import { requireRole } from '../../../../backend/lib/auth/guard';
@@ -13,9 +12,9 @@ export const dynamic = 'force-dynamic';
  */
 
 export async function GET(req: NextRequest) {
-  const target = propertyFromRequest(req);
+  const target = await propertyFromRequest(req);
   if (!target.ok) return target.response;
-  const config = await loadRatesConfig(requestStore(), target.propertyId);
+  const config = await loadRatesConfig(target.store, target.propertyId);
   return NextResponse.json({ propertyId: target.propertyId, config });
 }
 
@@ -23,7 +22,7 @@ export async function PUT(req: NextRequest) {
   const gate = await requireRole('manager');
   if (!gate.ok) return gate.response;
 
-  const target = propertyFromRequest(req);
+  const target = await propertyFromRequest(req);
   if (!target.ok) return target.response;
 
   const body = (await req.json().catch(() => null)) as { config?: RatesConfig } | null;
@@ -32,6 +31,6 @@ export async function PUT(req: NextRequest) {
   const problem = validateRatesConfig(body.config);
   if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
-  await saveRatesConfig(requestStore(), target.propertyId, body.config);
+  await saveRatesConfig(target.store, target.propertyId, body.config);
   return NextResponse.json({ ok: true, config: body.config });
 }

@@ -1,5 +1,5 @@
 import { getStore } from '../../../../../backend/lib/store';
-import { PROPERTIES } from '../../../../../backend/lib/properties';
+import { listProperties } from '../../../../../backend/lib/properties';
 import { authenticate, canReadProperty, envelope, apiError } from '../../../../../backend/lib/api/auth';
 import { loadPropertySnapshot } from '../../../../../backend/lib/api/context';
 
@@ -11,10 +11,10 @@ export async function GET(req: Request) {
   const auth = await authenticate(req, store);
   if (!auth.ok) return apiError(auth.status, auth.code, auth.message);
 
-  const visible = PROPERTIES.filter((p) => canReadProperty(auth.record, p.id));
+  const visible = (await listProperties(store)).filter((p) => canReadProperty(auth.record, p.id));
   const data = await Promise.all(
     visible.map(async (p) => {
-      const snap = await loadPropertySnapshot(store, p.id);
+      const snap = await loadPropertySnapshot(p.id);
       return {
         id: p.id,
         name: p.name,

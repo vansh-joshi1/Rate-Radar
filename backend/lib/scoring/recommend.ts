@@ -59,15 +59,24 @@ const WEIGHTS: Record<string, number> = {
   holidays: 0.05,
 };
 
-export function confidence(sources: SourceResult[]): { value: number; note: string } {
+/**
+ * Share of the expected sources that reported, weighted. `expected` narrows the
+ * list to what a property's market has (see ingest `expectedSources`); the
+ * score is then out of those weights, so a hotel is not docked for a Nashville
+ * calendar it could never have.
+ */
+export function confidence(sources: SourceResult[], expected: string[] = Object.keys(WEIGHTS)): { value: number; note: string } {
   let value = 0;
   const down: string[] = [];
+  let total = 0;
   for (const [name, weight] of Object.entries(WEIGHTS)) {
+    if (!expected.includes(name)) continue;
+    total += weight;
     const s = sources.find((x) => x.source === name);
     if (s?.status === 'ok') value += weight;
     else down.push(`${name}${s?.status === 'awaiting-key' ? ' (awaiting API key)' : ''}`);
   }
-  const pct = Math.round(value * 100);
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   const note =
     down.length === 0
       ? 'All data sources reporting.'

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { requestStore } from '../../../../backend/lib/demo/context';
-import { chicagoToday } from '../../../../backend/lib/ingest';
+import { requestProperty, requestStore } from '../../../../backend/lib/demo/context';
+import { todayIn } from '../../../../backend/lib/date';
 import type { HistoryRecord, Snapshot } from '../../../../backend/lib/scoring/types';
 
 export async function GET() {
-  const store = requestStore();
-  const today = chicagoToday();
+  const store = await requestStore();
+  const today = todayIn((await requestProperty()).timezone);
   const [snapshot, note, actuals] = await Promise.all([
     store.get<Snapshot>('snapshot:latest'),
     store.hget<string>('notes', today),

@@ -16,8 +16,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function Competitors() {
   const { snapshot, isDemo } = await loadSnapshot();
-  const store = requestStore();
-  const property = requestProperty();
+  const store = await requestStore();
+  const property = await requestProperty();
 
   const compsets = (snapshot.compsets ?? (snapshot.compset ? [snapshot.compset] : [])).filter(Boolean);
 

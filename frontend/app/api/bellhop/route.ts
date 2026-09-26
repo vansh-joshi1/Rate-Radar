@@ -27,8 +27,8 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'invalid' }, { status: 400 });
 
-  const store = requestStore();
-  const property = requestProperty();
+  const store = await requestStore();
+  const property = await requestProperty();
 
   // The public demo spends the real key's quota. The counter lives in the
   // sandbox (it expires with it), so this is per sandbox per day.

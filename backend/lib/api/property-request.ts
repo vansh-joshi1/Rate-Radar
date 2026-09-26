@@ -1,47 +1,43 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { DEFAULT_PROPERTY_ID, DEMO_PROPERTY, getProperty, type Property } from '../properties';
-import { demoSid } from '../demo/context';
+import { getStore, storeFor, type Store } from '../store';
+import { loadProperty, type Property } from '../properties';
+import { demoSid, requestProperty, requestStore } from '../demo/context';
 
 /**
- * `?propertyId=` → a real property, or the 404 to early-return.
- *
- * Five dashboard routes opened with the same two lines — read the param,
- * default it, 404 on an unknown id — written out eight times between them,
- * which is eight chances for one of them to answer differently.
+ * Which property a dashboard API request is about, and the store its data lives in.
  *
  * Deliberately NOT part of `lib/api/context.ts`: that module serves the
  * versioned public API, which authenticates by key and answers in a
  * `{ error: { code, message } }` envelope. These routes answer the dashboard's
- * own session-authenticated callers in a flat `{ error }` shape. Sharing one
- * helper across both would have to change one of those contracts.
+ * own callers in a flat `{ error }` shape.
+ *
+ * The property comes from WHO is asking, never from the URL alone. A member
+ * gets their own hotel; a `?propertyId=` naming any other one is refused, not
+ * honoured — otherwise one hotel could read another's rates by editing a query
+ * string. The one caller allowed to name a property is the collector, which
+ * holds INGEST_SECRET and collects for every hotel.
  */
 export type PropertyRequest =
-  | { ok: true; propertyId: string; property: Property }
+  | { ok: true; propertyId: string; property: Property; store: Store }
   | { ok: false; response: NextResponse };
 
-/**
- * Just the id, unvalidated.
- *
- * `GET /api/watchlist` reads it this way on purpose: an unknown id there
- * returns an empty list rather than a 404, and the collector polls that
- * endpoint. Tightening it would be a behaviour change, not a refactor.
- *
- * The default is property-aware, not constant: a demo sandbox falls back to
- * its invented property, never the live one. Putting that here rather than in
- * each caller is the whole point of the shared prelude — a route added later
- * gets it without knowing the demo exists.
- */
-export function propertyIdFromRequest(req: NextRequest | Request): string {
-  const explicit = new URL(req.url).searchParams.get('propertyId');
-  if (explicit) return explicit;
-  return demoSid() ? DEMO_PROPERTY.id : DEFAULT_PROPERTY_ID;
+export function isCollector(req: NextRequest | Request): boolean {
+  const secret = process.env.INGEST_SECRET;
+  return Boolean(secret) && req.headers.get('authorization') === `Bearer ${secret}`;
 }
 
-export function propertyFromRequest(req: NextRequest | Request): PropertyRequest {
-  const propertyId = propertyIdFromRequest(req);
-  const property = getProperty(propertyId);
-  if (!property) {
-    return { ok: false, response: NextResponse.json({ error: 'unknown property' }, { status: 404 }) };
+export async function propertyFromRequest(req: NextRequest | Request): Promise<PropertyRequest> {
+  const explicit = new URL(req.url).searchParams.get('propertyId');
+
+  if (isCollector(req) && !demoSid()) {
+    const property = explicit ? await loadProperty(getStore(), explicit) : undefined;
+    if (!property) return { ok: false, response: NextResponse.json({ error: 'unknown property' }, { status: 404 }) };
+    return { ok: true, propertyId: property.id, property, store: storeFor(property.id) };
   }
-  return { ok: true, propertyId, property };
+
+  const property = await requestProperty();
+  if (explicit && explicit !== property.id) {
+    return { ok: false, response: NextResponse.json({ error: 'not your property' }, { status: 403 }) };
+  }
+  return { ok: true, propertyId: property.id, property, store: await requestStore() };
 }

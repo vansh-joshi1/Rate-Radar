@@ -41,6 +41,42 @@ export async function saveRatesConfig(store: Store, propertyId: string, cfg: Rat
   await store.set(ratesConfigKey(propertyId), cfg);
 }
 
+/**
+ * A first baseline for a hotel approved from onboarding, from the cheapest
+ * rate Google showed for each of its tiers. The config file's numbers are one
+ * budget hotel's; seeding a $180 hotel with them would recommend a price cut
+ * on every night until someone noticed. The owner tunes these in Settings.
+ *
+ * ponytail: fixed day-of-week spreads around one observed price. A tier with
+ * no price borrows the other tier's, and with no prices at all the config file
+ * default stands.
+ */
+export function baselineFromRooms(rooms: { tier: 'standard' | 'superior'; price: number | null }[]): RatesConfig {
+  const cheapest = (tier: string) =>
+    Math.min(...rooms.filter((r) => r.tier === tier && r.price !== null).map((r) => r.price!));
+  const std = cheapest('standard');
+  const sup = cheapest('superior');
+  if (!Number.isFinite(std) && !Number.isFinite(sup)) return DEFAULT_RATES_CONFIG;
+  const at = (p: number, lo: number, hi: number): DayRange => {
+    const clamp = (n: number) => Math.min(1000, Math.max(20, Math.round(n)));
+    return { min: clamp(p * lo), max: clamp(p * hi) };
+  };
+  const tier = (id: string, label: string, p: number): TierBaseline => ({
+    id,
+    label,
+    weekday: at(p, 0.9, 1),
+    sunday: at(p, 0.95, 1.05),
+    weekend: at(p, 1, 1.15),
+  });
+  return {
+    ...DEFAULT_RATES_CONFIG,
+    tiers: [
+      tier('standard', 'Standard', Number.isFinite(std) ? std : sup / 1.15),
+      tier('superior', 'Superior', Number.isFinite(sup) ? sup : std * 1.15),
+    ],
+  };
+}
+
 const DAY_CLASSES = ['weekday', 'sunday', 'weekend'] as const;
 
 /** Returns a human-readable problem, or null when the config is sound. */

@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { requestStore } from '../../../../backend/lib/demo/context';
 import { loadCurrentRates, saveCurrentRates, validateCurrentRates } from '../../../../backend/lib/current-rates';
 import { propertyFromRequest } from '../../../../backend/lib/api/property-request';
 import { requireRole } from '../../../../backend/lib/auth/guard';
@@ -13,9 +12,9 @@ export const dynamic = 'force-dynamic';
  */
 
 export async function GET(req: NextRequest) {
-  const target = propertyFromRequest(req);
+  const target = await propertyFromRequest(req);
   if (!target.ok) return target.response;
-  const rates = await loadCurrentRates(requestStore(), target.propertyId);
+  const rates = await loadCurrentRates(target.store, target.propertyId);
   return NextResponse.json({ propertyId: target.propertyId, rates });
 }
 
@@ -23,7 +22,7 @@ export async function PUT(req: NextRequest) {
   const gate = await requireRole('manager');
   if (!gate.ok) return gate.response;
 
-  const target = propertyFromRequest(req);
+  const target = await propertyFromRequest(req);
   if (!target.ok) return target.response;
 
   const body = (await req.json().catch(() => null)) as { tiers?: Record<string, number> } | null;
@@ -33,6 +32,6 @@ export async function PUT(req: NextRequest) {
   if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
   const rates = { tiers: body.tiers, updatedAt: new Date().toISOString() };
-  await saveCurrentRates(requestStore(), target.propertyId, rates);
+  await saveCurrentRates(target.store, target.propertyId, rates);
   return NextResponse.json({ ok: true, rates });
 }

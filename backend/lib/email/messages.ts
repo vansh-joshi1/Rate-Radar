@@ -110,3 +110,25 @@ export function signInEmail(opts: { url: string; email: string }): EmailMessage 
   const text = [heading, '', intro, '', opts.url, '', "If you didn't ask to sign in, ignore this email."].join('\n');
   return { subject, html, text };
 }
+
+/** Sent when an access request is approved: the account the owner made at /onboarding now signs in. */
+export function verifiedEmail(opts: { loginUrl: string; hotelName: string }): EmailMessage {
+  const origin = new URL(opts.loginUrl).origin;
+  const subject = `${opts.hotelName} is verified on Rate Radar`;
+  const heading = "You're verified";
+  const intro = `${opts.hotelName} is set up. Sign in with the email and password you chose when you requested access. The first rates arrive after the next collection run, within about half a day.`;
+
+  const html = emailShell({
+    preheader: 'Your access request was approved. Sign in with the password you chose.',
+    heading,
+    intro,
+    status: { label: 'Approved', tone: 'ok' },
+    cta: { label: 'Sign in', href: opts.loginUrl },
+    afterCtaHtml: linkFallback(opts.loginUrl),
+    reason: 'You requested access to Rate Radar for this hotel.',
+    origin,
+  });
+
+  const text = [heading, '', intro, '', opts.loginUrl, '', FOOTER_TEXT].join('\n');
+  return { subject, html, text };
+}

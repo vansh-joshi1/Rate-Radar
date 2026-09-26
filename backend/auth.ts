@@ -1,8 +1,10 @@
+import * as React from 'react';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { getStore } from './lib/store';
 import { noStoreFetch, supabaseAdmin } from './lib/supabase';
-import { roleFor } from './lib/auth/members';
+import { membershipFor, ownerEmail } from './lib/auth/members';
+import { DEFAULT_PROPERTY_ID } from './lib/properties';
 import type { Role } from './lib/auth/roles';
 import { signInEmail } from './lib/email/messages';
 
@@ -23,6 +25,13 @@ import { signInEmail } from './lib/email/messages';
  * request, so removing someone from the team signs them out immediately.
  */
 
+/**
+ * React `cache` exists only in Next's server build of React. Plain React 18
+ * (tests, scripts) lacks it, and there memoizing per render is moot anyway.
+ */
+const perRender: <F extends (...args: never[]) => unknown>(fn: F) => F =
+  (React as { cache?: <F>(fn: F) => F }).cache ?? ((fn) => fn);
+
 /** The shared-password identity. Never emailed; `.invalid` is reserved and can't receive mail. */
 export const SHARED_LOGIN_EMAIL = 'front-desk@rate-radar.invalid';
 const SHARED_NAME = 'Front desk (shared password)';
@@ -32,12 +41,21 @@ export interface SessionUser {
   name: string | null;
   email: string | null;
   role: Role;
+  /** The one hotel this person may see. Every read and write is scoped to it. */
+  propertyId: string;
+  /** OWNER_EMAIL: may approve access requests and see every property (/admin). */
+  isAdmin: boolean;
 }
 
 function authEnv(): { url: string; anonKey: string } | null {
   const url = process.env.SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY;
   return url && anonKey ? { url, anonKey } : null;
+}
+
+/** False in local dev without Supabase, where there are no sessions and the original property is shown. */
+export function authConfigured(): boolean {
+  return authEnv() !== null;
 }
 
 /** Cookie-bound Supabase client for the current request (route handlers + server components). */
@@ -60,19 +78,39 @@ export function supabaseAuth() {
   });
 }
 
-/** The signed-in user, or null. Same shape the call sites used under Auth.js. */
-export async function auth(): Promise<{ user: SessionUser } | null> {
+/**
+ * The signed-in user, or null. Same shape the call sites used under Auth.js.
+ *
+ * Memoized per server render (`perRender`): the layout, the page and
+ * every `requestStore()`/`requestProperty()` inside them ask, and each ask is a
+ * Supabase round trip plus two store reads. Route handlers are not memoized by
+ * `cache` and simply call through.
+ */
+export const auth = perRender(async (): Promise<{ user: SessionUser } | null> => {
   if (!authEnv()) return null;
   const {
     data: { user },
   } = await supabaseAuth().auth.getUser();
   const email = user?.email?.toLowerCase();
   if (!user || !email) return null;
-  if (email === SHARED_LOGIN_EMAIL) return { user: { id: user.id, name: SHARED_NAME, email: null, role: 'owner' } };
-  const role = await roleFor(getStore(), email);
-  if (!role) return null;
-  return { user: { id: user.id, name: (user.user_metadata?.name as string | undefined) ?? null, email, role } };
-}
+  // The shared front-desk password belongs to the original property only.
+  if (email === SHARED_LOGIN_EMAIL) {
+    return {
+      user: { id: user.id, name: SHARED_NAME, email: null, role: 'owner', propertyId: DEFAULT_PROPERTY_ID, isAdmin: false },
+    };
+  }
+  const membership = await membershipFor(getStore(), email);
+  if (!membership) return null;
+  return {
+    user: {
+      id: user.id,
+      name: (user.user_metadata?.name as string | undefined) ?? null,
+      email,
+      ...membership,
+      isAdmin: email === ownerEmail(),
+    },
+  };
+});
 
 /** One-time magic-link token hash for `email`, creating the Supabase user on first use. */
 async function magicLinkToken(email: string, name?: string): Promise<string> {

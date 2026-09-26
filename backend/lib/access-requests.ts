@@ -3,8 +3,8 @@ import type { Store } from './store';
 import { passwordOk } from './password';
 
 /**
- * Access requests: what /onboarding collects, saved for a person to review and
- * set up by hand (onboarding is sales-assisted, PRODUCT.md). One hash, keyed
+ * Access requests: what /onboarding collects, saved for OWNER_EMAIL to review
+ * and approve at /admin (onboarding is sales-assisted, PRODUCT.md). One hash, keyed
  * by email, so a field write is atomic and a re-request overwrites cleanly.
  *
  * The password is NOT here: it goes straight to Supabase Auth, which hashes it.
@@ -38,6 +38,8 @@ export const AccessRequestBody = z.object({
 
 export type AccessRequest = Omit<z.infer<typeof AccessRequestBody>, 'password'> & {
   status: 'pending' | 'approved';
+  /** Set when approval starts, so a retry after a partial failure finishes the same hotel instead of making another. */
+  propertyId?: string;
   submittedAt: string;
 };
 
@@ -47,4 +49,10 @@ export async function saveAccessRequest(store: Store, req: AccessRequest): Promi
 
 export async function getAccessRequest(store: Store, email: string): Promise<AccessRequest | null> {
   return store.hget<AccessRequest>(KEY, email.trim().toLowerCase());
+}
+
+/** Every request, newest first. */
+export async function listAccessRequests(store: Store): Promise<AccessRequest[]> {
+  const all = Object.values(await store.hgetall<AccessRequest>(KEY));
+  return all.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
 }

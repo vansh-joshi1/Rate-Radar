@@ -1,3 +1,4 @@
+import { storeFor } from '../../../../../../../backend/lib/store';
 import { propertyContext, provenance } from '../../../../../../../backend/lib/api/context';
 import { envelope } from '../../../../../../../backend/lib/api/auth';
 import { loadCurrentRates } from '../../../../../../../backend/lib/current-rates';
@@ -42,7 +43,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   // Your rate: owner-entered is authoritative (the owner sets prices); the
   // scraped direct rate fills in otherwise. Market position compares it
   // lead-vs-lead against the compset — room types don't match across brands.
-  const owner = await loadCurrentRates(ctx.store, ctx.property.id);
+  const owner = await loadCurrentRates(storeFor(ctx.property.id), ctx.property.id);
   const ownerStandard = owner?.tiers['standard'] ?? null;
   const direct = checks.find((c) => c.official && c.status === 'ok')?.price ?? null;
   const yourRate = ownerStandard ?? direct;

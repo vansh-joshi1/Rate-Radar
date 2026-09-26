@@ -88,7 +88,7 @@ async function nominatimSearch(q: string, property: Property): Promise<Suggestio
 
 export async function GET(req: NextRequest) {
   const q = (new URL(req.url).searchParams.get('q') ?? '').trim();
-  const target = propertyFromRequest(req);
+  const target = await propertyFromRequest(req);
   if (!target.ok) return target.response;
   const { property } = target;
   if (q.length < 3) return NextResponse.json({ results: [] });
