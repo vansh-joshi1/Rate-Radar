@@ -61,7 +61,7 @@ type PillVariant = 'primary' | 'secondary';
 type PillSize = 'md' | 'sm';
 
 function pillClass(variant: PillVariant, size: PillSize) {
-  return `group inline-flex items-center justify-between gap-3 whitespace-nowrap rounded-full font-medium transition-[transform,background-color] duration-500 ${SPRING} active:scale-[0.98] motion-reduce:transition-none ${focusRing} ${
+  return `group inline-flex items-center justify-between gap-3 whitespace-nowrap rounded-full font-medium transition-[transform,background-color] duration-500 ${SPRING} active:scale-[0.98] active:duration-100 motion-reduce:transition-none ${focusRing} ${
     size === 'sm' ? 'py-1 pl-4 pr-1 text-[13px]' : 'py-1.5 pl-6 pr-1.5 text-[15px]'
   } ${
     variant === 'primary'
@@ -97,10 +97,21 @@ export function PillCta({
   /** Swaps the arrow for another glyph, as on PillButton. */
   icon?: React.ReactNode;
 }) {
-  return (
-    <Link href={href} className={pillClass(variant, size)}>
+  const inner = (
+    <>
       {children}
       <PillArrow variant={variant} size={size} icon={icon} />
+    </>
+  );
+  // A same-page hash goes through a plain anchor: the browser fires `hashchange`
+  // for it, which the router's pushState does not (SettingsView listens for it).
+  return href.startsWith('#') ? (
+    <a href={href} className={pillClass(variant, size)}>
+      {inner}
+    </a>
+  ) : (
+    <Link href={href} className={pillClass(variant, size)}>
+      {inner}
     </Link>
   );
 }

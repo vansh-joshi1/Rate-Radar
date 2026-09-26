@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { CreditCardIcon } from '@phosphor-icons/react/dist/ssr/CreditCard';
 import { UsersThreeIcon } from '@phosphor-icons/react/dist/ssr/UsersThree';
@@ -84,6 +84,8 @@ interface Props {
   sources: SourceHealth[];
   budget?: SearchBudget;
   thresholds: Thresholds;
+  /** Collection hours, Central, straight from the collector's RUN_SLOTS_CT. */
+  runSlots: readonly number[];
   invoices: { date: string; amount: string; status: string }[];
   isDemo: boolean;
 }
@@ -129,11 +131,47 @@ const SOURCE_LABEL: Record<string, { name: string; feeds: string }> = {
   'hotel-prices': { name: 'Hotel price feed', feeds: 'Competitor prices and channel parity' },
 };
 
+// Measure before paint in the browser; plain useEffect on the server, where layout effects warn.
+const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
 const PANEL = 'space-y-6 p-6 md:p-8';
 
-export default function SettingsView({ property, tiers, sources, budget, thresholds, invoices, isDemo }: Props) {
+export default function SettingsView({ property, tiers, sources, budget, thresholds, runSlots, invoices, isDemo }: Props) {
   const [tab, setTab] = useState<TabId>('property');
+  // A panel stays mounted once opened and is only hidden after, so unsaved
+  // baseline edits and fetched team/rates data survive a tab switch.
+  const [seen, setSeen] = useState<Set<TabId>>(() => new Set(['property']));
+  useEffect(() => {
+    setSeen((s) => (s.has(tab) ? s : new Set(s).add(tab)));
+  }, [tab]);
+  const show = (id: TabId) => seen.has(id) || tab === id;
+  // A plain call, not an inner component, so React never remounts the panel.
+  const panel = (id: TabId, children: React.ReactNode) =>
+    show(id) ? (
+      <div id={`panel-${id}`} role="tabpanel" aria-labelledby={`tab-${id}`} hidden={tab !== id} className="space-y-6">
+        {children}
+      </div>
+    ) : null;
   const tabRefs = useRef(new Map<TabId, HTMLButtonElement>());
+  const tablist = useRef<HTMLDivElement>(null);
+
+  // One thumb slides under the active tab, as on the pricing toggle and the
+  // sign-in tabs. Tabs differ in width, so it is measured, and re-measured when
+  // the bar resizes (Geist loading, a narrower window).
+  const [thumb, setThumb] = useState<{ x: number; w: number } | null>(null);
+  // Off until the first switch, so opening /settings#team places the thumb
+  // rather than sliding it across from Property.
+  const [moved, setMoved] = useState(false);
+  useIsoLayoutEffect(() => {
+    const measure = () => {
+      const el = tabRefs.current.get(tab);
+      if (el) setThumb({ x: el.offsetLeft, w: el.offsetWidth });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (tablist.current) ro.observe(tablist.current);
+    return () => ro.disconnect();
+  }, [tab]);
 
   // The hash is the source of truth, so links and the back button both work.
   useEffect(() => {
@@ -142,14 +180,22 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
       if (isTab(h)) setTab(h);
     };
     read();
-    window.addEventListener('hashchange', read);
-    return () => window.removeEventListener('hashchange', read);
+    const onHash = () => {
+      setMoved(true);
+      read();
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
   const choose = (id: TabId, focus = false) => {
+    setMoved(true);
     setTab(id);
     if (window.location.hash.slice(1) !== id) window.history.pushState(null, '', `#${id}`);
-    if (focus) tabRefs.current.get(id)?.focus();
+    const el = tabRefs.current.get(id);
+    // On phones the bar scrolls sideways; bring a clipped tab fully into view.
+    el?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (focus) el?.focus();
   };
 
   const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -182,11 +228,21 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
           over content (DESIGN.md → the Blur-Is-Fixed Rule). */}
       <div className="sticky top-16 z-30 -mx-1 bg-[#f8f9ff] px-1 py-2">
         <div
+          ref={tablist}
           role="tablist"
           aria-label="Settings sections"
           onKeyDown={onTabKey}
-          className="flex w-max max-w-full gap-1 overflow-x-auto rounded-full bg-white p-1 ring-1 ring-[#0b1c30]/[0.08] shadow-[0_12px_32px_-20px_rgba(11,28,48,0.35)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="relative flex w-max max-w-full gap-1 overflow-x-auto rounded-full bg-white p-1 ring-1 ring-[#0b1c30]/[0.08] shadow-[0_12px_32px_-20px_rgba(11,28,48,0.35)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
+          {thumb && (
+            <span
+              aria-hidden
+              className={`absolute inset-y-1 left-0 rounded-full bg-[#e5eeff] ${
+                moved ? 'transition-[transform,width] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]' : ''
+              } motion-reduce:transition-none`}
+              style={{ width: thumb.w, transform: `translateX(${thumb.x}px)` }}
+            />
+          )}
           {TABS.map(({ id, label, Icon }) => {
             const on = tab === id;
             return (
@@ -202,8 +258,8 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                 aria-controls={`panel-${id}`}
                 tabIndex={on ? 0 : -1}
                 onClick={() => choose(id)}
-                className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-[14px] font-medium transition-[background-color,color,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] motion-reduce:transition-none ${FOCUS} ${
-                  on ? 'bg-[#e5eeff] text-[#085ac0]' : 'text-[#44474d] hover:bg-[#0b1c30]/[0.04] hover:text-[#1a1b20]'
+                className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-[14px] font-medium transition-[background-color,color,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] active:duration-100 motion-reduce:transition-none ${FOCUS} ${
+                  on ? 'text-[#085ac0]' : 'text-[#44474d] hover:bg-[#0b1c30]/[0.04] hover:text-[#1a1b20]'
                 }`}
               >
                 <Icon weight={on ? 'regular' : 'light'} aria-hidden className="h-[18px] w-[18px]" />
@@ -214,8 +270,8 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
         </div>
       </div>
 
-      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="space-y-6">
-        {tab === 'property' && (
+      <div>
+        {panel('property', (
           <>
             <Bezel core={PANEL}>
               <PanelHead title="Property profile">
@@ -247,9 +303,9 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
               <CurrentRatesCard propertyId={property.id} tiers={tiers} />
             </Bezel>
           </>
-        )}
+        ))}
 
-        {tab === 'billing' && (
+        {panel('billing', (
           <Bezel core={PANEL}>
             <PanelHead title="Billing and subscription">
               {isDemo && <StatusChip title="Rendered from sample data, not a live feed">Sample data</StatusChip>}
@@ -257,8 +313,8 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
 
             <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-3">
               <Fact label="Plan" big>
-                One property
-                <span className="mt-1 block text-[14px] font-normal tracking-normal text-[#44474d]">$99 a month</span>
+                Starter
+                <span className="mt-1 block text-[14px] font-normal tracking-normal text-[#44474d]">$99 per month</span>
               </Fact>
               <Fact label="Next invoice" big>
                 <span className="text-[#44474d]">None</span>
@@ -297,16 +353,16 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
 
             <Footnote>Billing is not wired to a payment provider yet. These figures are placeholders, not charges.</Footnote>
           </Bezel>
-        )}
+        ))}
 
-        {tab === 'team' && (
+        {panel('team', (
           <Bezel core={PANEL}>
             <PanelHead title="Team" />
             <TeamManager />
           </Bezel>
-        )}
+        ))}
 
-        {tab === 'notifications' && (
+        {panel('notifications', (
           <Bezel core={PANEL}>
             <PanelHead title="Notifications">
               <StatusChip title="Rules live in lib/alerts/rules.ts">Set in code</StatusChip>
@@ -358,9 +414,9 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
               </p>
             </div>
           </Bezel>
-        )}
+        ))}
 
-        {tab === 'integrations' && (
+        {panel('integrations', (
           <>
             <Bezel core={PANEL}>
               <PanelHead title="Data sources">
@@ -524,9 +580,9 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
               <div>
                 <p className={MONO_LABEL}>Runs each day, {property.timezone.replace(/_/g, ' ')}</p>
                 <ul className="mt-2 flex flex-wrap gap-2">
-                  {['7:00', '10:00', '13:00', '15:00', '18:00', '20:00', '22:00'].map((t) => (
-                    <li key={t} className="rounded-full bg-[#0b1c30]/[0.05] px-3 py-1 font-geist-mono text-[13px] tabular-nums">
-                      {t}
+                  {runSlots.map((h) => (
+                    <li key={h} className="rounded-full bg-[#0b1c30]/[0.05] px-3 py-1 font-geist-mono text-[13px] tabular-nums">
+                      {h}:00
                     </li>
                   ))}
                 </ul>
@@ -537,7 +593,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
               </Footnote>
             </Bezel>
           </>
-        )}
+        ))}
       </div>
     </div>
   );

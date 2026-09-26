@@ -48,7 +48,7 @@ export default function WatchDemo({ variant = 'primary' }: { variant?: 'primary'
       <button
         type="button"
         onClick={open}
-        className={`group inline-flex items-center justify-between gap-3 whitespace-nowrap rounded-full py-1.5 pl-6 pr-1.5 text-[15px] font-medium transition-[transform,background-color] duration-500 ${SPRING} active:scale-[0.98] motion-reduce:transition-none ${focusRing} ${
+        className={`group inline-flex items-center justify-between gap-3 whitespace-nowrap rounded-full py-1.5 pl-6 pr-1.5 text-[15px] font-medium transition-[transform,background-color] duration-500 ${SPRING} active:scale-[0.98] active:duration-100 motion-reduce:transition-none ${focusRing} ${
           primary
             ? 'bg-[#085ac0] text-white hover:bg-[#06489c]'
             : 'bg-white text-[#0b1c30] ring-1 ring-[#0b1c30]/[0.08] hover:bg-[#f3f5fc]'

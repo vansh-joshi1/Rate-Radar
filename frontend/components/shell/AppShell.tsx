@@ -134,6 +134,11 @@ export default function AppShell({
     if (hit) {
       router.push(hit.href);
       setQuery('');
+    } else {
+      // Say so rather than silently doing nothing on Enter.
+      const input = e.currentTarget.querySelector('input');
+      input?.setCustomValidity(`No page matches “${query.trim()}”`);
+      input?.reportValidity();
     }
   }
 
@@ -179,7 +184,7 @@ export default function AppShell({
             onClick={() => setSwitcherOpen((v) => !v)}
             aria-expanded={switcherOpen}
             aria-haspopup="true"
-            className={`group flex w-full items-center gap-3 rounded-full bg-white py-1.5 pl-1.5 pr-3.5 text-left ring-1 ring-[#0b1c30]/[0.08] transition-[transform,background-color] duration-500 ${SPRING} hover:bg-[#f3f5fc] active:scale-[0.98] motion-reduce:transition-none ${FOCUS}`}
+            className={`group flex w-full items-center gap-3 rounded-full bg-white py-1.5 pl-1.5 pr-3.5 text-left ring-1 ring-[#0b1c30]/[0.08] transition-[transform,background-color] duration-500 ${SPRING} hover:bg-[#f3f5fc] active:scale-[0.98] active:duration-100 motion-reduce:transition-none ${FOCUS}`}
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#e5eeff] text-[#085ac0]">
               <BuildingsIcon weight="light" className="h-[18px] w-[18px]" />
@@ -334,7 +339,10 @@ export default function AppShell({
               <input
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  e.target.setCustomValidity('');
+                  setQuery(e.target.value);
+                }}
                 placeholder="Jump to a page"
                 aria-label="Jump to a page"
                 className="h-10 w-60 rounded-full bg-white pl-10 pr-4 text-[14px] text-[#1a1b20] shadow-[inset_0_1px_2px_rgba(11,28,48,0.06)] outline-none ring-1 ring-[#0b1c30]/[0.12] transition-shadow duration-150 placeholder:text-[#44474d] focus:ring-2 focus:ring-[#085ac0]/60"
@@ -345,7 +353,7 @@ export default function AppShell({
               href="/alerts"
               aria-label={alerts > 0 ? `Alerts: ${alerts} source${alerts === 1 ? '' : 's'} need attention` : 'Alerts'}
               title={alerts > 0 ? `${alerts} source(s) need attention` : 'Alerts'}
-              className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#44474d] transition-[transform,background-color,color] duration-500 ${SPRING} hover:bg-[#0b1c30]/[0.05] hover:text-[#1a1b20] active:scale-[0.96] motion-reduce:transition-none ${FOCUS}`}
+              className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#44474d] transition-[transform,background-color,color] duration-500 ${SPRING} hover:bg-[#0b1c30]/[0.05] hover:text-[#1a1b20] active:scale-[0.96] active:duration-100 motion-reduce:transition-none ${FOCUS}`}
             >
               <BellIcon weight="light" className="h-5 w-5" />
               {/* Real collector health, not decoration: drawn only when a source failed. */}
@@ -357,7 +365,7 @@ export default function AppShell({
             {/* Rate entry lives in Settings → Property; this is the shortcut
                 to it, not a control that writes prices anywhere itself. */}
             <span className="hidden sm:block">
-              <PillCta href="/settings" size="sm">
+              <PillCta href={pathname.startsWith('/settings') ? '#property' : '/settings#property'} size="sm">
                 Update rates
               </PillCta>
             </span>

@@ -194,36 +194,68 @@ function DemandPreview() {
 
 // ---------------------------------------------------------------- pricing
 
-/* Prices, property counts, the trial and the price-watch horizon are the
-   owner's (PRODUCT.md, commercial model). The shared list below is what the
-   product already does for every property today, not a packaging split. */
+/* Tiers, prices, limits and the trial are the owner's (PRODUCT.md, commercial
+   model). INCLUDED is what every tier, Starter included, gets today. */
 const PLANS: {
   name: string;
   audience: string;
   price?: string;
+  yearly?: string;
+  badge?: string;
+  includes?: string;
   facts: string[];
   cta: { href: string; label: string };
   primary?: boolean;
 }[] = [
   {
-    name: 'One property',
-    audience: 'For a single independent hotel or motel.',
+    name: 'Starter',
+    audience: 'For the single independent hotel or motel getting its pricing under control.',
     price: '$99',
-    facts: ['1 property', '14-day free trial'],
+    yearly: '$990',
+    facts: [
+      '1 property',
+      'Twice-daily rate refreshes across hotel-direct, Booking.com and Expedia',
+      'Rate parity monitoring with instant violation alerts',
+      'Nightly price recommendations from the deterministic engine',
+      'Manual occupancy entry and recommended-vs-actual tracking',
+      '90-day rate history',
+      'Daily email digest',
+      'Email support',
+    ],
+    cta: { href: '/signup', label: 'Start free trial' },
+  },
+  {
+    name: 'Growth',
+    audience: 'For small groups and owners adding a second or third property.',
+    price: '$249',
+    yearly: '$2,490',
+    badge: 'Most popular',
+    includes: 'Everything in Starter, plus:',
+    facts: [
+      'Up to 5 properties, under $50 per property at 5',
+      '4× daily rate refreshes',
+      'Competitor benchmarking, up to 8 comps per property',
+      'Event intelligence with event-impact alerts',
+      'Bellhop AI: “ask why” on every recommendation',
+      '13-month rate history for the full seasonality view',
+      'Multi-property rollup dashboard',
+      'Priority support',
+    ],
     cta: { href: '/signup', label: 'Start free trial' },
     primary: true,
   },
   {
-    name: 'Three properties',
-    audience: 'For owners running a small group.',
-    price: '$349',
-    facts: ['Up to 3 properties', '30-day price watch', 'Everything in One property'],
-    cta: { href: '/signup', label: 'Get access' },
-  },
-  {
     name: 'Enterprise',
-    audience: 'For management companies and big groups.',
-    facts: ['More than 3 properties', 'Setup and terms agreed with you'],
+    audience: 'For portfolios that need rollup reporting and IT sign-off.',
+    includes: 'Everything in Growth, plus:',
+    facts: [
+      '6+ properties, portfolios and management companies',
+      'PMS integrations (HotelKey, Cloudbeds, Mews): occupancy and ADR flow in automatically',
+      'SSO/SAML through Auth0 Organizations',
+      'Custom comp sets and market-level benchmarking',
+      'Dedicated onboarding and quarterly pricing strategy reviews',
+      'SLA and phone support',
+    ],
     cta: { href: '/signup', label: 'Contact us' },
   },
 ];
@@ -232,8 +264,6 @@ const INCLUDED = [
   'A nightly rate for each room tier, with a range and a confidence',
   'The reasoning behind every number, rejected signals included',
   'Rate parity across the channels Google Hotels lists for you',
-  'Competitor prices from a compset you choose',
-  'A 21-night demand calendar scored from local events',
   'Email alerts only when something actually changes',
   'Team access with owner, manager and viewer roles',
   'Setup done with you by a person, not a form',
@@ -382,33 +412,77 @@ export default function Landing() {
         </section>
 
         {/* pricing: three plans, set by the owner */}
+        {/* The billing toggle is two radios; group-has flips every price in CSS, no client JS. */}
         <section id="pricing" className="scroll-mt-24 px-4 pb-24 md:px-6 md:pb-40">
-          <div className="mx-auto max-w-[1200px]">
+          <div className="group/billing mx-auto max-w-[1200px]">
             <Reveal>
               <h2 className="text-balance text-[36px] font-semibold leading-[1.05] tracking-tighter text-[#0b1c30] md:text-[52px]">
-                Priced per property
+                Pick your plan after the trial
               </h2>
               <p className="mt-6 max-w-[56ch] text-pretty text-[17px] leading-relaxed text-[#44474d]">
-                Start with one hotel on a 14-day free trial. Add properties when you need them.
+                14 days free, no card required. Your trial runs on Growth features with one property, then you choose
+                the plan that fits.
               </p>
             </Reveal>
 
-            <ul className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {/* One thumb slides between equal-width segments, so the selection travels instead of
+                jumping. CSS transitions retarget from the live value, so a quick double-click reverses
+                mid-slide without a snap. */}
+            <fieldset className="relative mt-12 inline-grid grid-cols-2 rounded-full bg-[#0b1c30]/[0.05] p-1">
+              <legend className="sr-only">Billing period</legend>
+              <span
+                aria-hidden
+                className="absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-white shadow-[0_1px_2px_rgba(11,28,48,0.08),0_2px_8px_rgba(11,28,48,0.06)] transition-transform duration-[350ms] ease-[cubic-bezier(0.32,0.72,0,1)] group-has-[#bill-yearly:checked]/billing:translate-x-full motion-reduce:transition-none"
+              />
+              {(['monthly', 'yearly'] as const).map((period) => (
+                <label
+                  key={period}
+                  className="relative cursor-pointer select-none whitespace-nowrap rounded-full px-5 py-2 text-center text-[14px] font-medium text-[#44474d] transition-[color,transform] duration-100 ease-out active:scale-[0.97] has-[:checked]:text-[#0b1c30] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#085ac0] motion-reduce:active:scale-100"
+                >
+                  <input
+                    type="radio"
+                    name="billing"
+                    id={`bill-${period}`}
+                    defaultChecked={period === 'monthly'}
+                    className="sr-only"
+                  />
+                  {period === 'monthly' ? 'Monthly' : 'Yearly'}
+                  {period === 'yearly' && <span className="ml-2 text-[12px] text-[#085ac0]">2 months free</span>}
+                </label>
+              ))}
+            </fieldset>
+
+            <ul className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
               {PLANS.map((plan, i) => (
                 <Reveal as="li" key={plan.name} delay={i * 100}>
                   <Bezel
                     className={`h-full ${plan.price ? '' : '!bg-transparent !shadow-none'}`}
                     core={`flex h-full flex-col p-8 ${plan.price ? '' : '!bg-[#0b1c30]/[0.035] !shadow-none'}`}
                   >
-                    <h3 className="text-[18px] font-semibold tracking-tight text-[#0b1c30]">{plan.name}</h3>
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-[18px] font-semibold tracking-tight text-[#0b1c30]">{plan.name}</h3>
+                      {plan.badge && (
+                        <span className="rounded-full bg-[#085ac0]/10 px-2.5 py-1 text-[12px] font-medium text-[#085ac0]">
+                          {plan.badge}
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-1.5 text-pretty text-[14px] leading-relaxed text-[#44474d]">{plan.audience}</p>
-                    <div className="mt-6 flex items-baseline gap-2">
+                    <div className="mt-6">
                       {plan.price ? (
                         <>
-                          <span className="text-[48px] font-semibold leading-none tracking-tighter tabular-nums text-[#0b1c30]">
-                            {plan.price}
-                          </span>
-                          <span className="text-[14px] text-[#44474d]">a month</span>
+                          <p className="flex items-baseline gap-2 group-has-[#bill-yearly:checked]/billing:hidden">
+                            <span className="text-[48px] font-semibold leading-none tracking-tighter tabular-nums text-[#0b1c30]">
+                              {plan.price}
+                            </span>
+                            <span className="text-[14px] text-[#44474d]">per month</span>
+                          </p>
+                          <p className="hidden items-baseline gap-2 group-has-[#bill-yearly:checked]/billing:flex">
+                            <span className="text-[48px] font-semibold leading-none tracking-tighter tabular-nums text-[#0b1c30]">
+                              {plan.yearly}
+                            </span>
+                            <span className="text-[14px] text-[#44474d]">per year</span>
+                          </p>
                         </>
                       ) : (
                         <span className="text-[32px] font-semibold leading-[1.5] tracking-tighter text-[#0b1c30]">
@@ -416,7 +490,8 @@ export default function Landing() {
                         </span>
                       )}
                     </div>
-                    <ul className={`mt-8 flex-1 ${divide}`}>
+                    {plan.includes && <p className="mt-8 text-[13px] font-medium text-[#0b1c30]">{plan.includes}</p>}
+                    <ul className={`${plan.includes ? 'mt-2' : 'mt-8'} flex-1 ${divide}`}>
                       {plan.facts.map((f) => (
                         <li key={f} className="flex gap-3 py-3 text-[14.5px] text-[#1a1b20]">
                           <span aria-hidden className="text-[#085ac0]">•</span>
