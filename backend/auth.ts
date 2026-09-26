@@ -9,12 +9,15 @@ import { signInEmail } from './lib/email/messages';
 /**
  * Supabase Auth, session in SSR cookies (refreshed by the middleware).
  *
- * Two ways in:
+ * Three ways in:
  *  - shared site password → a session for one shared "front desk" user, owner role
  *  - email magic link → INVITE-GATED: only OWNER_EMAIL and addresses on the
  *    Team list get a link. We mint the link with the admin API and send it
  *    ourselves, so it carries the branded template and the gate lives here,
  *    not in Supabase's dashboard.
+ *  - email + password → the account an /onboarding access request creates.
+ *    Having the account is not access: until the email is on the Team list,
+ *    /api/auth/sign-in signs it straight back out ("still under review").
  *
  * Roles are NOT stored in the token: they are read from the Team list on every
  * request, so removing someone from the team signs them out immediately.
@@ -79,6 +82,30 @@ async function magicLinkToken(email: string, name?: string): Promise<string> {
   const { data, error } = await admin.generateLink({ type: 'magiclink', email });
   if (error) throw new Error(`Supabase generateLink: ${error.message}`);
   return data.properties.hashed_token;
+}
+
+/**
+ * Create the email + password account an access request signs in with. Supabase
+ * hashes the password; we never store it. Returns the user id, or null when the
+ * email already has an account (a teammate, or a repeat request).
+ */
+export async function createPasswordUser(email: string, password: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin().auth.admin.createUser({ email, password, email_confirm: true });
+  if (error) {
+    if (error.code === 'email_exists' || /already/i.test(error.message)) return null;
+    throw new Error(`Supabase createUser: ${error.message}`);
+  }
+  return data.user.id;
+}
+
+export async function deleteUserById(id: string): Promise<void> {
+  await supabaseAdmin().auth.admin.deleteUser(id);
+}
+
+/** Email + password → session cookies on the current response. */
+export async function signInWithPassword(email: string, password: string): Promise<boolean> {
+  const { error } = await supabaseAuth().auth.signInWithPassword({ email, password });
+  return !error;
 }
 
 /** Exchange a token hash for session cookies on the current response. */
