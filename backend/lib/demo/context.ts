@@ -28,10 +28,10 @@ import { watchlistKey, type WatchlistHotel } from '../watchlist';
  * the collector, the scripts and the test suite all run there. Those contexts
  * are never a demo, so the throw means null rather than an error.
  */
-export function demoSid(): string | null {
+export async function demoSid(): Promise<string | null> {
   let raw: string | undefined;
   try {
-    raw = cookies().get(DEMO_COOKIE)?.value;
+    raw = (await cookies()).get(DEMO_COOKIE)?.value;
   } catch {
     return null;
   }
@@ -45,7 +45,7 @@ export function demoSid(): string | null {
  * hotel's store (see `storeFor`).
  */
 export async function requestStore(): Promise<Store> {
-  const sid = demoSid();
+  const sid = await demoSid();
   if (sid) return prefixed(getStore(), demoPrefix(sid), DEMO_TTL_SECONDS);
   return storeFor((await requestProperty()).id);
 }
@@ -60,7 +60,7 @@ export async function requestStore(): Promise<Store> {
  * and gets the original property, as it always has.
  */
 export async function requestProperty(): Promise<Property> {
-  if (demoSid()) return DEMO_PROPERTY;
+  if (await demoSid()) return DEMO_PROPERTY;
   // Deferred, as in guard.ts: keeps the Supabase graph out of modules that only need the demo seam.
   const { auth, authConfigured } = await import('../../auth');
   if (!authConfigured()) return getProperty(DEFAULT_PROPERTY_ID)!;

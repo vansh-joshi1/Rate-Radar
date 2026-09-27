@@ -28,7 +28,7 @@ export const dynamic = 'force-dynamic';
  * is written onto the request first, so a failed approval can simply be retried.
  */
 export async function POST(req: NextRequest) {
-  if (demoSid()) return demoRefusal('Approving access requests is turned off in the demo.');
+  if (await demoSid()) return demoRefusal('Approving access requests is turned off in the demo.');
   const gate = await requireRole('owner');
   if (!gate.ok) return gate.response;
   // Owner of a hotel is not enough: approving creates hotels, so it is OWNER_EMAIL's alone.

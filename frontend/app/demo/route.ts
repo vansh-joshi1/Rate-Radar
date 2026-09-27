@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: Request) {
   const reset = new URL(req.url).searchParams.get('reset') === '1';
-  const existing = cookies().get(DEMO_COOKIE)?.value;
+  const existing = (await cookies()).get(DEMO_COOKIE)?.value;
   const sid = !reset && isValidDemoSid(existing) ? existing : newDemoSid();
 
   const store = prefixed(getStore(), demoPrefix(sid), DEMO_TTL_SECONDS);

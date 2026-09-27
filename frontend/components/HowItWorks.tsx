@@ -308,7 +308,7 @@ function Verdict({
 }: {
   rate: number;
   visible: boolean;
-  rateRef?: React.RefObject<HTMLSpanElement>;
+  rateRef?: React.RefObject<HTMLSpanElement | null>;
 }) {
   const a = arrive(visible, 0);
   const b = arrive(visible, 3);

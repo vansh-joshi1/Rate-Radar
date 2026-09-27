@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   // invented hotel — so it rescores the demo world instead, through the same
   // `recommendNight` that prices the real property. Baseline edits therefore
   // move the numbers in the demo exactly as they do in production.
-  if (demoSid()) {
+  if (await demoSid()) {
     const snapshot = await recomputeDemoSandbox(await requestStore(), target.propertyId);
     return NextResponse.json({
       ok: true,

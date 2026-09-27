@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
  * recommendations with the full reasoning and every considered event,
  * including the ones judged too small to matter.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const ctx = await propertyContext(req, params.id);
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await propertyContext(req, (await params).id);
   if (ctx instanceof Response) return ctx;
 
   const raw = new URL(req.url).searchParams.get('nights');

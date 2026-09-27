@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
  * A demo visitor sees the invented portfolio instead.
  */
 export default async function Admin() {
-  if (demoSid()) return <SamplePortfolio />;
+  if (await demoSid()) return <SamplePortfolio />;
   const session = await auth();
   if (!session?.user.isAdmin) redirect('/overview');
 

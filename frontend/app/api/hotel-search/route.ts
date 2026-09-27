@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
   // A real lookup around the demo's coordinates would answer with real hotels,
   // which would then be shown carrying invented prices — and it would point
   // public demo traffic at two free community services for no good reason.
-  if (demoSid()) {
+  if (await demoSid()) {
     const needle = q.toLowerCase();
     const hits: Suggestion[] = DEMO_NEARBY_HOTELS.filter((h) => h.name.toLowerCase().includes(needle))
       .map((h) => ({

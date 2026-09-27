@@ -59,10 +59,10 @@ export function authConfigured(): boolean {
 }
 
 /** Cookie-bound Supabase client for the current request (route handlers + server components). */
-export function supabaseAuth() {
+export async function supabaseAuth() {
   const env = authEnv();
   if (!env) throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set');
-  const jar = cookies();
+  const jar = await cookies();
   return createServerClient(env.url, env.anonKey, {
     global: { fetch: noStoreFetch },
     cookies: {
@@ -90,7 +90,7 @@ export const auth = perRender(async (): Promise<{ user: SessionUser } | null> =>
   if (!authEnv()) return null;
   const {
     data: { user },
-  } = await supabaseAuth().auth.getUser();
+  } = await (await supabaseAuth()).auth.getUser();
   const email = user?.email?.toLowerCase();
   if (!user || !email) return null;
   // The shared front-desk password belongs to the original property only.
@@ -142,13 +142,13 @@ export async function deleteUserById(id: string): Promise<void> {
 
 /** Email + password → session cookies on the current response. */
 export async function signInWithPassword(email: string, password: string): Promise<boolean> {
-  const { error } = await supabaseAuth().auth.signInWithPassword({ email, password });
+  const { error } = await (await supabaseAuth()).auth.signInWithPassword({ email, password });
   return !error;
 }
 
 /** Exchange a token hash for session cookies on the current response. */
 export async function verifyMagicLink(tokenHash: string): Promise<boolean> {
-  const { error } = await supabaseAuth().auth.verifyOtp({ type: 'magiclink', token_hash: tokenHash });
+  const { error } = await (await supabaseAuth()).auth.verifyOtp({ type: 'magiclink', token_hash: tokenHash });
   return !error;
 }
 

@@ -22,7 +22,7 @@ const DEMO_SWITCHER: ShellProperty[] = [
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const inDemo = demoSid() !== null;
+  const inDemo = (await demoSid()) !== null;
   const [{ snapshot, isDemo, awaitingFirstRun }, session] = await Promise.all([loadSnapshot(), inDemo ? null : auth()]);
   // Signed in to Supabase but no longer on the team: the middleware can't know that, auth() does.
   if (!inDemo && !session) redirect('/login');
