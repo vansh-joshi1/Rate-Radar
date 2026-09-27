@@ -1,6 +1,6 @@
 # SerpApi as the Rate Source
 
-**Status:** approved design, not yet implemented
+**Status:** implemented
 **Date:** 2026-08-22
 **Supersedes:** `2026-08-16-compset-transport-hardening-design.md` (never implemented)
 **Touches:** `collector/sources/rates.ts`, `collector/budget.ts` (new),
