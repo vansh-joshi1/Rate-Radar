@@ -12,11 +12,8 @@ export interface Store {
   hset(key: string, field: string, value: unknown): Promise<void>;
   /** Every field of a hash. For small hashes (access requests), not big ones. */
   hgetall<T>(key: string): Promise<Record<string, T>>;
-  lpush(key: string, value: unknown): Promise<void>;
-  lrange<T>(key: string, start: number, stop: number): Promise<T[]>;
   /** Atomic counter with TTL set on first increment — used for rate limiting. */
   incr(key: string, ttlSeconds: number): Promise<number>;
-  del(key: string): Promise<void>;
   /** Put a time limit on an existing key, whatever its type. */
   expire(key: string, ttlSeconds: number): Promise<void>;
 }
@@ -63,18 +60,8 @@ export class SupabaseStore implements Store {
     // A hash is one jsonb object in its row, so a plain get returns all of it.
     return (await this.get<Record<string, T>>(key)) ?? {};
   }
-  async lpush(key: string, value: unknown): Promise<void> {
-    await this.rpc('kv_lpush', { k: key, v: value });
-  }
-  async lrange<T>(key: string, start: number, stop: number): Promise<T[]> {
-    return this.rpc<T[]>('kv_lrange', { k: key, start, stop });
-  }
   async incr(key: string, ttlSeconds: number): Promise<number> {
     return Number(await this.rpc('kv_incr', { k: key, ttl: ttlSeconds }));
-  }
-  async del(key: string): Promise<void> {
-    const { error } = await this.db.from('kv').delete().eq('key', key);
-    SupabaseStore.check('del', error);
   }
   async expire(key: string, ttlSeconds: number): Promise<void> {
     const { error } = await this.db.from('kv').update({ expires_at: SupabaseStore.expiry(ttlSeconds) }).eq('key', key);
@@ -85,7 +72,6 @@ export class SupabaseStore implements Store {
 interface FileData {
   kv: Record<string, unknown>;
   hashes: Record<string, Record<string, unknown>>;
-  lists: Record<string, unknown[]>;
 }
 
 /** Local JSON-file store. Used automatically when Supabase env vars are absent (dev / demo mode). */
@@ -93,7 +79,7 @@ export class FileStore implements Store {
   constructor(public path: string) {}
 
   private read(): FileData {
-    if (!existsSync(this.path)) return { kv: {}, hashes: {}, lists: {} };
+    if (!existsSync(this.path)) return { kv: {}, hashes: {} };
     return JSON.parse(readFileSync(this.path, 'utf8')) as FileData;
   }
   private write(d: FileData): void {
@@ -122,15 +108,6 @@ export class FileStore implements Store {
   async hgetall<T>(key: string): Promise<Record<string, T>> {
     return (this.read().hashes[key] ?? {}) as Record<string, T>;
   }
-  async lpush(key: string, value: unknown): Promise<void> {
-    const d = this.read();
-    (d.lists[key] ??= []).unshift(value);
-    this.write(d);
-  }
-  async lrange<T>(key: string, start: number, stop: number): Promise<T[]> {
-    const l = this.read().lists[key] ?? [];
-    return (stop === -1 ? l.slice(start) : l.slice(start, stop + 1)) as T[];
-  }
   async incr(key: string, ttlSeconds: number): Promise<number> {
     const d = this.read();
     const rec = d.kv[key] as { n: number; expiresAt: number } | undefined;
@@ -140,11 +117,6 @@ export class FileStore implements Store {
     d.kv[key] = live;
     this.write(d);
     return live.n;
-  }
-  async del(key: string): Promise<void> {
-    const d = this.read();
-    delete d.kv[key];
-    this.write(d);
   }
   /** No-op: the local file is a disposable dev artifact, so nothing sweeps it. */
   async expire(): Promise<void> {}
@@ -209,27 +181,12 @@ export class PrefixedStore implements Store {
   hgetall<T>(key: string): Promise<Record<string, T>> {
     return this.inner.hgetall<T>(this.k(key));
   }
-  async lpush(key: string, value: unknown): Promise<void> {
-    await this.inner.lpush(this.k(key), value);
-    await this.touch(this.k(key));
-  }
-  lrange<T>(key: string, start: number, stop: number): Promise<T[]> {
-    return this.inner.lrange<T>(this.k(key), start, stop);
-  }
   incr(key: string, ttlSeconds: number): Promise<number> {
     return this.inner.incr(this.k(key), ttlSeconds);
-  }
-  del(key: string): Promise<void> {
-    return this.inner.del(this.k(key));
   }
   expire(key: string, ttlSeconds: number): Promise<void> {
     return this.inner.expire(this.k(key), ttlSeconds);
   }
-}
-
-/** Wrap a store so every key it sees is written under `prefix`. */
-export function prefixed(inner: Store, prefix: string, ttlSeconds?: number): Store {
-  return new PrefixedStore(inner, prefix, ttlSeconds);
 }
 
 /**
@@ -240,5 +197,5 @@ export function prefixed(inner: Store, prefix: string, ttlSeconds?: number): Sto
  * has always had, so none of its data moves.
  */
 export function storeFor(propertyId: string): Store {
-  return propertyId === DEFAULT_PROPERTY_ID ? getStore() : prefixed(getStore(), `tenant:${propertyId}:`);
+  return propertyId === DEFAULT_PROPERTY_ID ? getStore() : new PrefixedStore(getStore(), `tenant:${propertyId}:`);
 }

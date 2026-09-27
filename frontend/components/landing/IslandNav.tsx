@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowUpRight';
 import { RadarIcon } from '../RadarMark';
+import { SPRING } from './Machined';
 
 /*
  * The landing's floating island nav: a glass pill detached from the top edge.
@@ -26,7 +27,6 @@ const LINKS = [
   { id: 'pricing', label: 'Pricing' },
 ];
 
-const SPRING = 'ease-[cubic-bezier(0.32,0.72,0,1)]';
 const ring =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
@@ -167,9 +167,8 @@ export default function IslandNav() {
       <div
         id="island-menu"
         aria-hidden={!open}
-        // React 18's types predate `inert`; as a plain attribute it keeps the
-        // closed menu's links out of the tab order.
-        {...({ inert: open ? undefined : '' } as Record<string, string | undefined>)}
+        // Keeps the closed menu's links out of the tab order.
+        inert={!open}
         className={`fixed inset-0 z-30 flex flex-col justify-center bg-white/80 px-6 backdrop-blur-3xl [@media(prefers-reduced-transparency:reduce)]:bg-white [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none transition-opacity duration-500 ${SPRING} motion-reduce:transition-none md:hidden ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}

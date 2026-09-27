@@ -30,8 +30,6 @@
  * schedule, so nothing is stored between runs and it tests without a store.
  */
 
-import { dateRange } from '../lib/date';
-
 export type BudgetTier = 'full' | 'reduced' | 'minimal';
 
 export interface SearchPlan {
@@ -57,11 +55,6 @@ export const RUN_SLOTS_CT = [7, 13] as const;
 
 /** Nights priced ahead, counting tonight. Five is what 250 searches/month buys. */
 export const HORIZON_DAYS = 5;
-
-/** Tonight plus the next HORIZON_DAYS-1 nights, as YYYY-MM-DD. */
-export function horizonDates(today: string, days = HORIZON_DAYS): string[] {
-  return dateRange(today, days);
-}
 
 /** How many horizon dates each slot prices, per tier, and whether it buys parity. */
 const LADDER: Record<BudgetTier, { dates: number; details: boolean }[]> = {
@@ -158,7 +151,7 @@ export function planSearches(input: {
   now?: Date;
   /** SerpApi's `plan_renewal_date` (YYYY-MM-DD). Falls back to calendar month-end. */
   renewalDate?: string;
-  /** The horizon, nearest night first — normally horizonDates(today). */
+  /** The horizon, nearest night first — normally dateRange(today, HORIZON_DAYS). */
   dates: string[];
 }): SearchPlan {
   const now = input.now ?? new Date();
@@ -168,7 +161,7 @@ export function planSearches(input: {
 
   // Never price more of the horizon than the ladder allows, however many dates
   // the caller passes — the daily cost has to hold for the tier maths to mean anything.
-  const take = Math.min(rung.dates, HORIZON_DAYS, input.dates.length);
+  const take = Math.min(rung.dates, input.dates.length);
   const compsetDates = input.dates.slice(0, take);
   const skipped = input.dates.slice(take).map((date) => ({ date, reason: 'budget' as const }));
 

@@ -23,7 +23,9 @@ export const FIELD_BAD = 'ring-2 ring-[#b45309]/60 focus:ring-[#b45309]/70';
 
 export const DIVIDER = 'h-px bg-[#0b1c30]/[0.06]';
 
-const CHIP = 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-medium';
+/* A chip's shape; the tone classes go beside it. */
+export const CHIP = 'inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-medium';
+const STATUS_CHIP = `${CHIP} gap-1.5`;
 const TONES = {
   ok: 'bg-[#029768]/[0.08] text-[#027a55]',
   warn: 'bg-[#b45309]/[0.08] text-[#b45309]',
@@ -35,7 +37,7 @@ export type Tone = keyof typeof TONES;
 
 export function StatusChip({ tone = 'quiet', children, title }: { tone?: Tone; children: ReactNode; title?: string }) {
   return (
-    <span className={`${CHIP} ${TONES[tone]}`} title={title}>
+    <span className={`${STATUS_CHIP} ${TONES[tone]}`} title={title}>
       {children}
     </span>
   );

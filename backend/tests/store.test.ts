@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -20,8 +20,6 @@ function contract(name: string, make: () => { store: Store; k: (s: string) => st
       expect(await store.get(k('missing'))).toBeNull();
       await store.set(k('kv'), { a: 1, b: ['x'] });
       expect(await store.get(k('kv'))).toEqual({ a: 1, b: ['x'] });
-      await store.del(k('kv'));
-      expect(await store.get(k('kv'))).toBeNull();
     });
 
     it('roundtrips hget/hset', async () => {
@@ -30,25 +28,12 @@ function contract(name: string, make: () => { store: Store; k: (s: string) => st
       await store.hset(k('h'), 'g', 'other');
       expect(await store.hget(k('h'), 'f')).toEqual({ v: 2 });
       expect(await store.hget(k('h'), 'g')).toBe('other');
-      await store.del(k('h'));
-    });
-
-    it('lpush prepends and lrange slices', async () => {
-      await store.lpush(k('l'), 'first');
-      await store.lpush(k('l'), 'second');
-      await store.lpush(k('l'), 'third');
-      expect(await store.lrange(k('l'), 0, -1)).toEqual(['third', 'second', 'first']);
-      expect(await store.lrange(k('l'), 0, 0)).toEqual(['third']);
-      expect(await store.lrange(k('l'), 1, 5)).toEqual(['second', 'first']);
-      expect(await store.lrange(k('none'), 0, -1)).toEqual([]);
-      await store.del(k('l'));
     });
 
     it('incr counts up within the ttl window', async () => {
       expect(await store.incr(k('c'), 60)).toBe(1);
       expect(await store.incr(k('c'), 60)).toBe(2);
       expect(await store.incr(k('c'), 60)).toBe(3);
-      await store.del(k('c'));
     });
   });
 }
@@ -61,6 +46,9 @@ contract('FileStore', () => ({
 if (supabaseConfigured()) {
   const run = `test:${crypto.randomUUID()}:`;
   contract('SupabaseStore', () => ({ store: new SupabaseStore(supabaseAdmin()), k: (s) => run + s }));
+  afterAll(async () => {
+    await supabaseAdmin().from('kv').delete().like('key', `${run}%`);
+  });
 
   it('SupabaseStore: an expired key reads as missing', async () => {
     const store = new SupabaseStore(supabaseAdmin());
@@ -70,7 +58,6 @@ if (supabaseConfigured()) {
     await supabaseAdmin().from('kv').update({ expires_at: new Date(Date.now() - 1000).toISOString() }).eq('key', `${run}ttl`);
     expect(await store.get(`${run}ttl`)).toBeNull();
     expect(await store.incr(`${run}ttl`, 60)).toBe(1); // an expired counter restarts
-    await store.del(`${run}ttl`);
   });
 }
 

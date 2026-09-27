@@ -18,14 +18,6 @@ export function Chip({
   return <span className={`chip ${tones[tone]} ${className}`}>{children}</span>;
 }
 
-/** Stamped demand-signal chip: quiet / minor / meaningful / major. */
-export function DemandChip({ score }: { score: number }) {
-  if (score >= 70) return <span className="chip border-accent bg-accent text-white">major</span>;
-  if (score >= 40) return <span className="chip border-transparent bg-accent-muted text-accent">meaningful</span>;
-  if (score >= 15) return <span className="chip border-transparent bg-ink/10 text-ink">minor</span>;
-  return <span className="chip border-dashed text-muted">quiet</span>;
-}
-
 export function SectionTitle({ children }: { children: ReactNode }) {
   return <h2 className="mb-5 text-2xl font-extrabold tracking-tight">{children}</h2>;
 }

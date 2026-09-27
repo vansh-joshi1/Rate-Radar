@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { FileStore, prefixed } from '../lib/store';
+import { FileStore, PrefixedStore } from '../lib/store';
 import { membershipFor, saveMembers } from '../lib/auth/members';
 import { addProperty, listProperties, loadProperty, newPropertyId, DEFAULT_PROPERTY_ID, type Property } from '../lib/properties';
 import { baselineFromRooms, DEFAULT_RATES_CONFIG } from '../lib/rates-config';
@@ -89,7 +89,7 @@ describe('property registry', () => {
 
   it("a tenant prefix keeps one hotel's keys out of another's", async () => {
     const base = freshStore();
-    await prefixed(base, 'tenant:maple-lodge:').set('snapshot:latest', { who: 'maple' });
+    await new PrefixedStore(base, 'tenant:maple-lodge:').set('snapshot:latest', { who: 'maple' });
     expect(await base.get('snapshot:latest')).toBeNull();
     await base.hset('onboarding:requests', 'a@b.com', { n: 1 });
     expect(await base.hgetall('onboarding:requests')).toEqual({ 'a@b.com': { n: 1 } });

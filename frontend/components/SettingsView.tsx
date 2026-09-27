@@ -10,6 +10,7 @@ import BaselineEditor from './BaselineEditor';
 import TeamManager from './TeamManager';
 import CurrentRatesCard from './CurrentRates';
 import { Bezel } from './landing/Machined';
+import { ago } from '../lib/ago';
 import { Code, DIVIDER, FOCUS, Footnote, MONO_LABEL, PanelHead, StatusChip, type Tone } from './settings/parts';
 
 /*
@@ -108,13 +109,6 @@ const TIER_COPY: Record<SearchBudget['tier'], { label: string; detail: string; t
   },
 };
 
-const relative = (iso: string) => {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.round(mins / 60);
-  return hrs < 48 ? `${hrs}h ago` : `${Math.round(hrs / 24)}d ago`;
-};
-
 /** Human names for the collector's sources: what it is, and what it feeds. */
 const SOURCE_LABEL: Record<string, { name: string; feeds: string }> = {
   ticketmaster: { name: 'Ticketmaster', feeds: 'Concerts and shows' },
@@ -130,9 +124,6 @@ const SOURCE_LABEL: Record<string, { name: string; feeds: string }> = {
   'weather-alerts': { name: 'Weather alerts feed', feeds: 'Active advisories' },
   'hotel-prices': { name: 'Hotel price feed', feeds: 'Competitor prices and channel parity' },
 };
-
-// Measure before paint in the browser; plain useEffect on the server, where layout effects warn.
-const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 const PANEL = 'space-y-6 p-6 md:p-8';
 
@@ -162,7 +153,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
   // Off until the first switch, so opening /settings#team places the thumb
   // rather than sliding it across from Property.
   const [moved, setMoved] = useState(false);
-  useIsoLayoutEffect(() => {
+  useLayoutEffect(() => {
     const measure = () => {
       const el = tabRefs.current.get(tab);
       if (el) setThumb({ x: el.offsetLeft, w: el.offsetWidth });
@@ -450,7 +441,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                           </StatusChip>
                         </div>
                         <p className={`${MONO_LABEL} mt-2 tabular-nums`}>
-                          {awaiting ? 'Add its key to start collecting' : `Last run ${relative(s.fetchedAt)}`}
+                          {awaiting ? 'Add its key to start collecting' : `Last run ${ago(s.fetchedAt)}`}
                         </p>
                         {!ok && s.error && (
                           <p className="mt-1 truncate text-[12.5px] text-[#44474d]" title={s.error}>

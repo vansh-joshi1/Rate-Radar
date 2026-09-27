@@ -7,6 +7,7 @@ import { membershipFor, ownerEmail } from './lib/auth/members';
 import { DEFAULT_PROPERTY_ID } from './lib/properties';
 import type { Role } from './lib/auth/roles';
 import { signInEmail } from './lib/email/messages';
+import { sendEmail } from './lib/email/send';
 
 /**
  * Supabase Auth, session in SSR cookies (refreshed by the middleware).
@@ -162,13 +163,7 @@ export async function sendMagicLink(email: string, origin: string, next: string)
   const url = new URL('/auth/confirm', origin);
   url.searchParams.set('token_hash', await magicLinkToken(email));
   url.searchParams.set('next', next);
-  const { subject, html, text } = signInEmail({ url: url.toString(), email });
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: 'Rate Radar <onboarding@resend.dev>', to: email, subject, html, text }),
-  });
-  if (!res.ok) throw new Error('Resend error: ' + JSON.stringify(await res.json()));
+  await sendEmail({ to: email, ...signInEmail({ url: url.toString(), email }) });
 }
 
 /**

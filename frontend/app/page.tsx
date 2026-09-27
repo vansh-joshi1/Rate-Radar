@@ -1,6 +1,4 @@
 import Link from 'next/link';
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
 import OriginIdInit from '../components/OriginIdInit';
 import { RadarIcon } from '../components/RadarMark';
 import RadarDemo from '../components/RadarDemo';
@@ -11,6 +9,7 @@ import { Bezel, Eyebrow, PillCta } from '../components/landing/Machined';
 import { DOT_FIELD, Grain, HeroRadar } from '../components/landing/Backdrop';
 import HonestStates from '../components/landing/HonestStates';
 import WatchDemo from '../components/landing/WatchDemo';
+import { SampleReading, type Reason } from '../components/landing/SampleReading';
 
 /*
  * Marketing landing in the "Machined Instrument" language (DESIGN.md →
@@ -39,7 +38,7 @@ const textLink =
 
 // ---------------------------------------------------------------- readings
 
-const REASONS: { text: string; delta: string; rejected?: boolean }[] = [
+const REASONS: Reason[] = [
   { text: 'Saturday baseline', delta: '$84' },
   { text: 'Cascadia State vs. Ridgeline, score 46, meaningful', delta: '+9%' },
   { text: 'Compset median $99. Event nights are never capped', delta: 'no cap' },
@@ -51,33 +50,7 @@ function ReasoningPreview() {
   return (
     <div className="grid gap-8 md:grid-cols-[1.5fr_1fr]">
       <div>
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <div className={`${mono} text-[#44474d]`}>Saturday, Standard</div>
-            <div className="mt-2 text-[48px] font-semibold leading-none tracking-tighter tabular-nums text-[#085ac0]">$92</div>
-          </div>
-          <div className="text-right font-geist-mono text-[13px] tabular-nums text-[#44474d]">
-            <div>$88 to $96</div>
-            <div className="text-[#029768]">+10% vs baseline</div>
-          </div>
-        </div>
-        <ul className={`mt-6 ${divide}`}>
-          {REASONS.map((r) => (
-            <li key={r.text} className="flex items-baseline justify-between gap-4 py-3 text-[14px] leading-snug">
-              <span className={`flex min-w-0 gap-3 ${r.rejected ? 'text-[#44474d]' : 'text-[#1a1b20]'}`}>
-                <span aria-hidden className={r.rejected ? 'text-[#0b1c30]/25' : 'text-[#085ac0]'}>•</span>
-                {r.text}
-              </span>
-              {r.rejected ? (
-                <span className={`${chip} bg-[#0b1c30]/[0.05] text-[#44474d]`}>
-                  {r.delta}
-                </span>
-              ) : (
-                <span className="shrink-0 font-geist-mono text-[13px] tabular-nums">{r.delta}</span>
-              )}
-            </li>
-          ))}
-        </ul>
+        <SampleReading reasons={REASONS} rateSize="text-[48px]" />
       </div>
 
       <div className="md:border-l md:border-[#0b1c30]/[0.08] md:pl-8">
@@ -274,7 +247,7 @@ const INCLUDED = [
 export default function Landing() {
   return (
     <div
-      className={`${GeistSans.variable} ${GeistMono.variable} bg-[#f8f9ff] font-geist text-[#1a1b20] antialiased`}
+      className="bg-[#f8f9ff] font-geist text-[#1a1b20] antialiased"
       style={DOT_FIELD}
     >
       <Grain />

@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { roleAtLeast, type Role } from './roles';
 
-export { roleAtLeast };
-export type { Role };
-
 /**
  * Server-side role enforcement.
  *

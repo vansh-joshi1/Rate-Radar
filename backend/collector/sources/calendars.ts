@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { noonUTC, toIsoDate } from '../../lib/date';
+import { addDays } from '../../lib/date';
 import type { RawEvent, SourceResult } from '../../lib/scoring/types';
 
 /**
@@ -37,13 +37,15 @@ async function fetchHtml(url: string): Promise<string> {
   return res.text();
 }
 
+const ymd = (y: number, m: number, d: number) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
 /** "May 14" + year context → YYYY-MM-DD. Handles "Aug 26", "June 8", "Nov 21-Nov 29" (takes first date). */
 export function parseMonthDay(text: string, year: number): string | null {
   const m = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2})\b/);
   if (!m) return null;
   const month = MONTHS[m[1].slice(0, 3).toLowerCase()];
   if (!month) return null;
-  return `${year}-${String(month).padStart(2, '0')}-${String(Number(m[2])).padStart(2, '0')}`;
+  return ymd(year, month, Number(m[2]));
 }
 
 /** Full-date extraction: "May 8, 2026" / "2026-05-08". */
@@ -53,13 +55,17 @@ export function parseDate(text: string): string | null {
   const us = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})\b/);
   if (us) {
     const month = MONTHS[us[1].slice(0, 3).toLowerCase()];
-    if (month) return `${us[3]}-${String(month).padStart(2, '0')}-${String(Number(us[2])).padStart(2, '0')}`;
+    if (month) return ymd(Number(us[3]), month, Number(us[2]));
   }
   return null;
 }
 
-function uniq(events: RawEvent[]): RawEvent[] {
-  return [...new Map(events.map((e) => [e.id, e])).values()];
+/** Dedupe by id; zero events means the page changed shape, so say so. */
+function result(name: string, events: RawEvent[], url: string, what = 'overnight-relevant events', label = name): SubResult {
+  const unique = [...new Map(events.map((e) => [e.id, e])).values()];
+  return unique.length > 0
+    ? { name, events: unique }
+    : { name, events: [], warning: `${label} calendar parsed but produced 0 ${what} — page structure may have changed: ${url}` };
 }
 
 /** Vanderbilt registrar academic calendar: h3 "Fall 2026" headings + date|description table rows. */
@@ -94,10 +100,7 @@ export function parseVanderbilt(html: string, url: string): SubResult {
     });
   });
 
-  const unique = uniq(events);
-  return unique.length > 0
-    ? { name: 'Vanderbilt', events: unique }
-    : { name: 'Vanderbilt', events: [], warning: `Vanderbilt calendar parsed but produced 0 overnight-relevant events — page structure may have changed: ${url}` };
+  return result('Vanderbilt', events, url);
 }
 
 /** Generic fallback: any row/list item with an overnight keyword AND a full date. */
@@ -121,10 +124,7 @@ export function parseUniversityCalendar(html: string, school: string, url: strin
       source: 'calendars',
     });
   });
-  const unique = uniq(events);
-  return unique.length > 0
-    ? { name: school, events: unique }
-    : { name: school, events: [], warning: `${school} calendar parsed but produced 0 overnight-relevant events — page structure may have changed: ${url}` };
+  return result(school, events, url);
 }
 
 /**
@@ -164,8 +164,6 @@ export function parseMcc(html: string, url: string): SubResult {
     `\\b(${MON}) (\\d{1,2})(?: ?- ?(?:(${MON}) )?(\\d{1,2}))? (.{3,90}?) Attendance: ([\\d,]+)`, 'g'
   );
   const monthNum = (mon: string): number => MONTHS[mon.toLowerCase()]!;
-  const iso = (y: number, mo: number, d: number) =>
-    `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
   const events: RawEvent[] = [];
   for (const m of text.matchAll(entry)) {
@@ -173,24 +171,19 @@ export function parseMcc(html: string, url: string): SubResult {
     const year = yearAt(m.index!);
     if (!year) continue; // no month-header context → not the grid section
     const sMo = monthNum(startMon);
-    const start = iso(year, sMo, Number(startDay));
+    const start = ymd(year, sMo, Number(startDay));
     let end: string | null = null;
     if (endDay) {
       const eMo = endMon ? monthNum(endMon) : sMo;
       const eYear = eMo < sMo ? year + 1 : year; // Dec 30 - Jan 02 rollover
-      end = iso(eYear, eMo, Number(endDay));
+      end = ymd(eYear, eMo, Number(endDay));
     }
     const name = rawName.trim();
 
     // nights: multi-day events occupy start..end-1; single-day events just that night
     const nights: string[] = [];
     if (end && end > start) {
-      const d = noonUTC(start);
-      const stop = noonUTC(end);
-      while (d < stop) {
-        nights.push(toIsoDate(d));
-        d.setUTCDate(d.getUTCDate() + 1);
-      }
+      for (let d = start; d < end; d = addDays(d, 1)) nights.push(d);
     } else {
       nights.push(start);
     }
@@ -209,10 +202,7 @@ export function parseMcc(html: string, url: string): SubResult {
     }
   }
 
-  const unique = uniq(events);
-  return unique.length > 0
-    ? { name: 'Music City Center', events: unique }
-    : { name: 'Music City Center', events: [], warning: `MCC calendar parsed but produced 0 events — page structure may have changed: ${url}` };
+  return result('Music City Center', events, url, 'events', 'MCC');
 }
 
 /** July 2026 → "2026-27" (academic years roll over in June). */
@@ -226,7 +216,7 @@ function sources(now = new Date()) {
   return [
     {
       url: `https://registrar.vanderbilt.edu/calendars/${slug}-academic.php`,
-      parse: (html: string, url: string) => parseVanderbilt(html, url),
+      parse: parseVanderbilt,
     },
     {
       url: 'https://www.belmont.edu/registrar/academic-calendars/',
@@ -234,7 +224,7 @@ function sources(now = new Date()) {
     },
     {
       url: 'https://nashvillemcc.com/calendar',
-      parse: (html: string, url: string) => parseMcc(html, url),
+      parse: parseMcc,
     },
   ];
 }

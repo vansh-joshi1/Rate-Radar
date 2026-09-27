@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { redirect } from 'next/navigation';
-import { getStore, prefixed, storeFor, type Store } from '../store';
+import { getStore, PrefixedStore, storeFor, type Store } from '../store';
 import { DEFAULT_PROPERTY_ID, DEMO_PROPERTY, getProperty, loadProperty, propKey, type Property } from '../properties';
 import { DEMO_COOKIE, DEMO_TTL_SECONDS, demoPrefix, isValidDemoSid } from './session';
 import { demoSnapshot, DEMO_NEARBY_HOTELS } from '../demo';
@@ -46,7 +46,7 @@ export async function demoSid(): Promise<string | null> {
  */
 export async function requestStore(): Promise<Store> {
   const sid = await demoSid();
-  if (sid) return prefixed(getStore(), demoPrefix(sid), DEMO_TTL_SECONDS);
+  if (sid) return new PrefixedStore(getStore(), demoPrefix(sid), DEMO_TTL_SECONDS);
   return storeFor((await requestProperty()).id);
 }
 

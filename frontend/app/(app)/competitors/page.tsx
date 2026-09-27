@@ -1,5 +1,3 @@
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
 import { loadSnapshot } from '../../../../backend/lib/dashboard-data';
 import { requestProperty, requestStore } from '../../../../backend/lib/demo/context';
 import { loadCurrentRates } from '../../../../backend/lib/current-rates';
@@ -19,7 +17,7 @@ export default async function Competitors() {
   const store = await requestStore();
   const property = await requestProperty();
 
-  const compsets = (snapshot.compsets ?? (snapshot.compset ? [snapshot.compset] : [])).filter(Boolean);
+  const compsets = snapshot.compsets ?? [];
 
   // Your rate: owner-entered (authoritative — you set your prices) beats the
   // scraped direct rate, which redroof.com's bot wall often blocks anyway.
@@ -70,7 +68,7 @@ export default async function Competitors() {
   }));
 
   return (
-    <div className={`${GeistSans.variable} ${GeistMono.variable} font-geist text-[#1a1b20] antialiased`}>
+    <div className="font-geist text-[#1a1b20] antialiased">
       <CompetitorInsights
         propertyId={property.id}
         propertyName={property.name}

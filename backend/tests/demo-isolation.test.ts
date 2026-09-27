@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
-import { FileStore, prefixed } from '../lib/store';
+import { FileStore, PrefixedStore } from '../lib/store';
 import { demoPrefix, isValidDemoSid } from '../lib/demo/session';
 import { demoSnapshot, DEMO_NEARBY_HOTELS } from '../lib/demo';
 import { DEMO_PROPERTY, PROPERTIES, getProperty } from '../lib/properties';
@@ -22,23 +22,21 @@ describe('sandbox key namespacing', () => {
     const store = freshStore();
     await store.set('snapshot:latest', { runId: 'real' });
 
-    const sandbox = prefixed(store, demoPrefix(SID));
+    const sandbox = new PrefixedStore(store, demoPrefix(SID));
     await sandbox.set('snapshot:latest', { runId: 'demo' });
 
     expect(await store.get('snapshot:latest')).toEqual({ runId: 'real' });
     expect(await sandbox.get('snapshot:latest')).toEqual({ runId: 'demo' });
   });
 
-  it('namespaces hashes, lists and counters too', async () => {
+  it('namespaces hashes and counters too', async () => {
     const store = freshStore();
-    const sandbox = prefixed(store, demoPrefix(SID));
+    const sandbox = new PrefixedStore(store, demoPrefix(SID));
 
     await sandbox.hset('notes', '2026-09-22', 'sandbox note');
-    await sandbox.lpush('runs', 'sandbox run');
     await sandbox.incr('collect-now:throttle', 60);
 
     expect(await store.hget('notes', '2026-09-22')).toBeNull();
-    expect(await store.lrange('runs', 0, -1)).toEqual([]);
     // The real throttle counter is untouched, so a demo visitor cannot burn it.
     expect(await store.get('collect-now:throttle')).toBeNull();
 
@@ -47,8 +45,8 @@ describe('sandbox key namespacing', () => {
 
   it('gives two sandboxes separate worlds', async () => {
     const store = freshStore();
-    const a = prefixed(store, demoPrefix(SID));
-    const b = prefixed(store, demoPrefix('11111111-2222-4333-8444-555555555555'));
+    const a = new PrefixedStore(store, demoPrefix(SID));
+    const b = new PrefixedStore(store, demoPrefix('11111111-2222-4333-8444-555555555555'));
 
     await a.set('current-rates', { standard: 99 });
     expect(await b.get('current-rates')).toBeNull();
@@ -120,7 +118,7 @@ describe('the demo world is invented', () => {
    */
   it('seeds the sandbox watchlist rather than inheriting the real compset whitelist', async () => {
     const store = freshStore();
-    const sandbox = prefixed(store, demoPrefix(SID));
+    const sandbox = new PrefixedStore(store, demoPrefix(SID));
     await seedDemoSandbox(sandbox);
 
     const list = await loadWatchlist(sandbox, DEMO_PROPERTY.id);

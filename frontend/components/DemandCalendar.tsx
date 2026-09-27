@@ -5,6 +5,8 @@ import { XIcon } from '@phosphor-icons/react/dist/ssr/X';
 import { CaretLeftIcon } from '@phosphor-icons/react/dist/ssr/CaretLeft';
 import { CaretRightIcon } from '@phosphor-icons/react/dist/ssr/CaretRight';
 import { Bezel, PillButton } from './landing/Machined';
+import { CHIP, MONO_LABEL } from './settings/parts';
+import { band, fmtMi, KIND_LABEL, type Band } from './band';
 import { todayIn, noonUTC, toIsoDate, addDays, fmtDay, fmtDow, fmtDowDayYear, fmtWeekdayLong, fmtMonthYearLong } from '../../backend/lib/date';
 
 /*
@@ -28,7 +30,7 @@ import { todayIn, noonUTC, toIsoDate, addDays, fmtDay, fmtDow, fmtDowDayYear, fm
  * looks the same here as a Major event in the list above it.
  */
 
-export interface CalendarEvent {
+interface CalendarEvent {
   id: string;
   name: string;
   venue: string;
@@ -63,29 +65,18 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  * what a tier looks like. An earlier legend picked its own colours and
  * rendered one swatch white on white. `track` is the meter's colour on that fill.
  */
-const TIERS = [
-  { min: 70, label: 'Major', fill: 'bg-[#085ac0]', text: 'text-white', sub: 'text-white/75', track: 'bg-white/25' },
-  { min: 40, label: 'Meaningful', fill: 'bg-[#e5eeff]', text: 'text-[#085ac0]', sub: 'text-[#085ac0]/80', track: 'bg-[#085ac0]/15' },
-  { min: 15, label: 'Minor', fill: 'bg-[#1a1b20]/[0.08]', text: 'text-[#1a1b20]', sub: 'text-[#44474d]', track: 'bg-[#1a1b20]/10' },
-  { min: 0, label: 'Quiet', fill: 'bg-[#0b1c30]/[0.035]', text: 'text-[#44474d]', sub: 'text-[#44474d]', track: 'bg-[#0b1c30]/[0.06]' },
-] as const;
+const TIERS: readonly { band: Band; label: string; fill: string; text: string; sub: string; track: string }[] = [
+  { band: 'major', label: 'Major', fill: 'bg-[#085ac0]', text: 'text-white', sub: 'text-white/75', track: 'bg-white/25' },
+  { band: 'meaningful', label: 'Meaningful', fill: 'bg-[#e5eeff]', text: 'text-[#085ac0]', sub: 'text-[#085ac0]/80', track: 'bg-[#085ac0]/15' },
+  { band: 'minor', label: 'Minor', fill: 'bg-[#1a1b20]/[0.08]', text: 'text-[#1a1b20]', sub: 'text-[#44474d]', track: 'bg-[#1a1b20]/10' },
+  { band: 'quiet', label: 'Quiet', fill: 'bg-[#0b1c30]/[0.035]', text: 'text-[#44474d]', sub: 'text-[#44474d]', track: 'bg-[#0b1c30]/[0.06]' },
+];
 
-const tierFor = (score: number) => TIERS.find((t) => score >= t.min) ?? TIERS[TIERS.length - 1];
+const tierFor = (score: number) => TIERS.find((t) => t.band === band(score))!;
 
-const KIND_LABEL: Record<string, string> = {
-  convention: 'Conference',
-  university: 'University',
-  concert: 'Concert',
-  sports: 'Sports',
-  holiday: 'Holiday',
-  other: 'Event',
-};
-
-const MONO_LABEL = 'font-geist-mono text-[12px] text-[#44474d]';
 /* Month navigation: white pills, as everything pressable is (DESIGN.md → Pill-Or-Panel). */
 const NAV_PILL =
   'inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full bg-white text-[13px] font-medium text-[#0b1c30] ring-1 ring-[#0b1c30]/[0.1] transition-[background-color,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#f3f5fc] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/50 motion-reduce:transition-none';
-const CHIP = 'inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-medium';
 
 /**
  * Property-local today that stays correct in a tab left open past midnight.
@@ -131,16 +122,16 @@ function useLiveToday(serverToday: string, timeZone: string): string {
 export default function DemandCalendar({
   nights,
   today: serverToday,
-  timeZone = 'America/Chicago',
+  timeZone,
   onShowOnMap,
 }: {
   nights: CalendarNight[];
   /** Property-local today as rendered on the server; kept live on the client. */
   today: string;
   /** The property's IANA zone — the night being priced is its local night. */
-  timeZone?: string;
+  timeZone: string;
   /** Filter the event map to this night and bring it into view. */
-  onShowOnMap?: (date: string) => void;
+  onShowOnMap: (date: string) => void;
 }) {
   const today = useLiveToday(serverToday, timeZone);
   const byDate = useMemo(() => new Map(nights.map((n) => [n.date, n])), [nights]);
@@ -543,14 +534,10 @@ export default function DemandCalendar({
                 night={night}
                 isTonight={night.date === first}
                 onClose={() => close(true)}
-                onShowOnMap={
-                  onShowOnMap
-                    ? (d) => {
-                        setOpen(false);
-                        onShowOnMap(d);
-                      }
-                    : undefined
-                }
+                onShowOnMap={(d) => {
+                  setOpen(false);
+                  onShowOnMap(d);
+                }}
               />
             </div>
           )}
@@ -577,7 +564,7 @@ function NightDetail({
   night: CalendarNight;
   isTonight: boolean;
   onClose: () => void;
-  onShowOnMap?: (date: string) => void;
+  onShowOnMap: (date: string) => void;
 }) {
   const tier = tierFor(night.nightScore);
   const events = night.events ?? [];
@@ -670,7 +657,7 @@ function NightDetail({
                 </p>
                 <p className="mt-0.5 text-pretty text-[13px] text-[#44474d]">
                   {KIND_LABEL[e.kind] ?? 'Event'} at {e.venue}
-                  {e.miles != null ? `, ${e.miles < 10 ? e.miles.toFixed(1) : Math.round(e.miles)} mi away` : ''}
+                  {e.miles != null ? `, ${fmtMi(e.miles)} mi away` : ''}
                 </p>
                 <p className="mt-2 text-pretty text-[13px] leading-relaxed text-[#44474d]">{e.verdict}</p>
               </li>
@@ -679,7 +666,7 @@ function NightDetail({
         </ul>
       )}
 
-      {onShowOnMap && events.some((e) => e.miles != null) && (
+      {events.some((e) => e.miles != null) && (
         <div className="mt-5">
           <PillButton
             variant="secondary"

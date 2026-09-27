@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { Resend } from 'resend';
 import { auth } from '../../../../../backend/auth';
 import { demoRefusal, demoSid } from '../../../../../backend/lib/demo/context';
 import { requireRole } from '../../../../../backend/lib/auth/guard';
@@ -11,6 +10,7 @@ import { saveWatchlist } from '../../../../../backend/lib/watchlist';
 import { baselineFromRooms, saveRatesConfig } from '../../../../../backend/lib/rates-config';
 import { locateAddress } from '../../../../../backend/lib/geo';
 import { verifiedEmail } from '../../../../../backend/lib/email/messages';
+import { sendEmail } from '../../../../../backend/lib/email/send';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,10 +102,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function sendVerified(to: string, hotelName: string, loginUrl: string): Promise<boolean> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return false;
-  const { subject, html, text } = verifiedEmail({ loginUrl, hotelName });
-  const { error } = await new Resend(key).emails.send({ from: 'Rate Radar <onboarding@resend.dev>', to, subject, html, text });
-  if (error) throw new Error(`Resend: ${error.message}`);
+  if (!process.env.RESEND_API_KEY) return false;
+  await sendEmail({ to, ...verifiedEmail({ loginUrl, hotelName }) });
   return true;
 }

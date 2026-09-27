@@ -3,9 +3,7 @@ import type { Snapshot } from '../scoring/types';
 import { recommendNight } from '../scoring/recommend';
 import { loadRatesConfig } from '../rates-config';
 import { propKey } from '../properties';
-import { demoSnapshot } from '../demo';
-
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+import { DAY_NAMES, demoSnapshot } from '../demo';
 
 /**
  * Recompute a demo sandbox after a baseline edit.

@@ -10,6 +10,7 @@ import { listMembers, memberProperty } from '../../../../backend/lib/auth/member
 import { loadPropertySnapshot } from '../../../../backend/lib/api/context';
 import { Chip, SampleBadge, SectionTitle } from '../../../components/ui';
 import ApproveRequest from '../../../components/ApproveRequest';
+import { ago } from '../../../lib/ago';
 
 export const dynamic = 'force-dynamic';
 
@@ -108,7 +109,7 @@ export default async function Admin() {
                         <div className="text-xs text-muted">{p.city}</div>
                       </td>
                       <td className="td">
-                        {snap ? age(snap.runAt) : <Chip className="opacity-60">Waiting for first run</Chip>}
+                        {snap ? ago(snap.runAt) : <Chip className="opacity-60">Waiting for first run</Chip>}
                       </td>
                       <td className="td">{snap ? `${snap.confidence}%` : '—'}</td>
                       <td className="td">{team}</td>
@@ -127,11 +128,6 @@ export default async function Admin() {
       </section>
     </div>
   );
-}
-
-function age(iso: string): string {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
-  return mins < 60 ? `${mins}m ago` : mins < 2880 ? `${Math.round(mins / 60)}h ago` : `${Math.round(mins / 1440)}d ago`;
 }
 
 function SamplePortfolio() {

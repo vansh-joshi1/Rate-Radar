@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import { roleAtLeast, type Role } from '../lib/auth/guard';
+import { roleAtLeast, type Role } from '../lib/auth/roles';
 
 describe('roleAtLeast', () => {
   it('lets a role satisfy its own level', () => {
