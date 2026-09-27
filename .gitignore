@@ -21,3 +21,6 @@ skills-lock.json
 # Derived knowledge graph (graphify): ~2.4MB of generated JSON/HTML rebuilt from
 # the source tree on demand. The graph is an analysis artifact, not source.
 graphify-out/
+
+# Local brag video/post output
+brag-output/

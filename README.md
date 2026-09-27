@@ -112,7 +112,7 @@ Runs the collector without POSTing and without spending any metered searches.
 
 ## Stack
 
-Next.js 14 (App Router) · TypeScript · Tailwind · Supabase Auth (magic link + shared
+Next.js 15 (App Router) · TypeScript · Tailwind · Supabase Auth (magic link + shared
 password) · Supabase Postgres · Vitest · GitHub Actions · Vercel. ~13,400 lines of
 TypeScript, 18 API routes.
 

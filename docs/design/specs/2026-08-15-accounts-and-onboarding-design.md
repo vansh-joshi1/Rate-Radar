@@ -1,6 +1,6 @@
 # Accounts, Property Registry, and Real Onboarding
 
-**Status:** approved design, not yet implemented
+**Status:** implemented
 **Date:** 2026-08-15
 **Supersedes:** the single-property assumptions in `lib/properties.ts` and `config/properties.json`
 
