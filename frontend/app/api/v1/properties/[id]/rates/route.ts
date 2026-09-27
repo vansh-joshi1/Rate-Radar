@@ -17,8 +17,8 @@ export const dynamic = 'force-dynamic';
  * always matches the rows beside it. `meta.channelPolicy` names the rule, so
  * a consumer can tell three-of-many from three-of-three.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const ctx = await propertyContext(req, params.id);
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await propertyContext(req, (await params).id);
   if (ctx instanceof Response) return ctx;
 
   const checks = trackedParity(ctx.snapshot.parity).map((p) => ({

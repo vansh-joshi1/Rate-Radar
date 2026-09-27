@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getStore } from '../../../../../backend/lib/store';
 import type { Snapshot } from '../../../../../backend/lib/scoring/types';
 import { pipelineStaleEmail, type EmailMessage } from '../../../../../backend/lib/email/messages';
+import { sendEmail } from '../../../../../backend/lib/email/send';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -26,21 +27,10 @@ export const maxDuration = 30;
  */
 const STALE_HOURS = 20;
 
-async function alertByEmail({ subject, html, text }: EmailMessage): Promise<void> {
-  const key = process.env.RESEND_API_KEY;
+async function alertByEmail(msg: EmailMessage): Promise<void> {
   const to = process.env.ALERT_EMAIL_TO;
-  if (!key || !to) return;
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: 'Rate Radar <onboarding@resend.dev>',
-      to: to.split(',').map((s) => s.trim()),
-      subject,
-      html,
-      text,
-    }),
-  }).catch(() => undefined);
+  if (!process.env.RESEND_API_KEY || !to) return;
+  await sendEmail({ to: to.split(',').map((s) => s.trim()), ...msg }).catch(() => undefined);
 }
 
 export async function GET(req: NextRequest) {

@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { roleAtLeast, type Role } from './roles';
 
-export { roleAtLeast };
-export type { Role };
-
 /**
  * Server-side role enforcement.
  *
@@ -35,7 +32,7 @@ export async function requireRole(required: Role): Promise<RoleGate> {
   // store — spending metered API searches, sending mail — are not covered by
   // that, and each one refuses demo callers explicitly at its own door.
   const { demoSid } = await import('../demo/context');
-  if (demoSid()) return { ok: true, role: 'owner' };
+  if (await demoSid()) return { ok: true, role: 'owner' };
 
   const { auth } = await import('../../auth');
   const session = await auth();

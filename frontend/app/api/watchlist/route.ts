@@ -27,7 +27,7 @@ export const dynamic = 'force-dynamic';
 /** Read: the collector's secret, a demo sandbox, or any signed-in member. */
 async function authorizedRead(req: NextRequest): Promise<boolean> {
   if (isCollector(req)) return true;
-  if (demoSid()) return true;
+  if (await demoSid()) return true;
   return Boolean((await auth())?.user);
 }
 
@@ -39,7 +39,7 @@ async function authorizedWrite(): Promise<RoleGate> {
 async function geocode(name: string, city: string): Promise<Pick<WatchlistHotel, 'lat' | 'lng' | 'address'>> {
   // Invented hotels are not on the map. Answer from the demo directory instead
   // of asking Nominatim about a place that does not exist.
-  if (demoSid()) {
+  if (await demoSid()) {
     const hit = DEMO_NEARBY_HOTELS.find((h) => h.name.toLowerCase() === name.trim().toLowerCase());
     return hit ? { lat: hit.lat, lng: hit.lng, address: hit.address } : {};
   }

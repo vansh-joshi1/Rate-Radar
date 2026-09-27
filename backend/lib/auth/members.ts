@@ -52,10 +52,6 @@ export async function membershipFor(store: Store, email: string): Promise<Member
   return member ? { role: member.role, propertyId: memberProperty(member) } : null;
 }
 
-export async function roleFor(store: Store, email: string): Promise<Role | null> {
-  return (await membershipFor(store, email))?.role ?? null;
-}
-
 export async function isAllowed(store: Store, email: string): Promise<boolean> {
   return (await membershipFor(store, email)) !== null;
 }

@@ -17,6 +17,8 @@
  * Every figure is from the invented demo world (lib/demo.ts).
  */
 
+import { Bezel } from './Machined';
+
 type Row = {
   name: string;
   note: string;
@@ -110,8 +112,10 @@ export default function HonestStates() {
       ))}
 
       {/* the card: outer tray and inner core both pass the rows through */}
-      <div className="rounded-[2rem] bg-[#0b1c30]/[0.035] p-1.5 shadow-[0_32px_64px_-32px_rgba(11,28,48,0.22)] ring-1 ring-[#0b1c30]/[0.05] lg:col-start-2 lg:row-span-6 lg:row-start-1 lg:grid lg:grid-rows-subgrid">
-        <div className="rounded-[calc(2rem-0.375rem)] bg-white px-6 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(11,28,48,0.04)] md:px-8 lg:row-span-6 lg:grid lg:grid-rows-subgrid">
+      <Bezel
+        className="lg:col-start-2 lg:row-span-6 lg:row-start-1 lg:grid lg:grid-rows-subgrid"
+        core="px-6 md:px-8 lg:row-span-6 lg:grid lg:grid-rows-subgrid"
+      >
           <div className="flex items-end justify-between gap-6 pb-6 pt-7 md:pt-8">
             <div>
               <div className="font-geist-mono text-[12px] text-[#44474d]">Tonight, Standard</div>
@@ -143,8 +147,7 @@ export default function HonestStates() {
           <p className="border-t border-[#0b1c30]/[0.06] pb-7 pt-5 text-[13px] text-[#44474d] md:pb-8">
             Confidence is 64% because hotel prices are four hours old. The rate still went out, with every gap named.
           </p>
-        </div>
-      </div>
+      </Bezel>
     </div>
   );
 }

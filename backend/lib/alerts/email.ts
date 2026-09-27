@@ -1,6 +1,6 @@
-import { Resend } from 'resend';
 import type { Trigger } from './rules';
 import { alertDigestEmail } from '../email/messages';
+import { sendEmail } from '../email/send';
 
 /**
  * Sends ONE digest email per run, regardless of how many triggers fired.
@@ -16,17 +16,6 @@ export async function sendAlertEmail(triggers: Trigger[], recipients?: string[])
     console.warn('[email] RESEND_API_KEY or ALERT_EMAIL_TO unset — alert email skipped. Triggers:', triggers.map((t) => t.line));
     return 'skipped';
   }
-  const { subject, html, text } = alertDigestEmail(triggers, process.env.DASHBOARD_URL);
-
-  const resend = new Resend(key);
-  // Resend returns failures as `{ error }` instead of throwing.
-  const { error } = await resend.emails.send({
-    from: 'Rate Radar <onboarding@resend.dev>',
-    to: to.split(',').map((s) => s.trim()),
-    subject,
-    html,
-    text,
-  });
-  if (error) throw new Error(`Resend: ${error.message}`);
+  await sendEmail({ to: to.split(',').map((s) => s.trim()), ...alertDigestEmail(triggers, process.env.DASHBOARD_URL) });
   return 'sent';
 }

@@ -81,7 +81,7 @@ export function nearbyHotels(self: Candidate, hotels: Candidate[], limit = 8): N
   const seen = new Set([self.token]);
   return hotels
     .filter((c) => !seen.has(c.token) && seen.add(c.token))
-    .map((c) => ({ name: c.name, distanceMi: Math.round(haversineMiles(self.lat, self.lng, c.lat, c.lng) * 10) / 10 }))
+    .map((c) => ({ name: c.name, distanceMi: haversineMiles(self.lat, self.lng, c.lat, c.lng) }))
     .sort((a, b) => a.distanceMi - b.distanceMi)
     .slice(0, limit);
 }

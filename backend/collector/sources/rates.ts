@@ -1,8 +1,8 @@
 import { createSerpApiClient, type SerpApiClient, type SerpProperty, type SerpPropertyDetails } from './serpapi';
-import { planSearches, horizonDates, type SearchPlan } from '../budget';
+import { planSearches, HORIZON_DAYS, type SearchPlan } from '../budget';
 import { loadProperties, mapRoomToTier, type RatePropertyConfig, type RoomTierRule } from '../properties';
 import type { CompsetConfig } from '../../lib/scoring/compset';
-import { addDays, todayIn } from '../../lib/date';
+import { addDays, dateRange, todayIn } from '../../lib/date';
 import type { CompsetEntry, RateCheck, RoomRate, SourceResult } from '../../lib/scoring/types';
 
 /**
@@ -194,7 +194,8 @@ export async function collect(
     const quota = await client.accountQuota();
 
     const today = todayIn(prop.timezone ?? 'America/Chicago', now);
-    const dates = horizonDates(today);
+    // Tonight first: the Overview headline prices tonight, so it most needs a competitor bound.
+    const dates = dateRange(today, HORIZON_DAYS);
     const plan = planSearches({
       // ponytail: an even split of what is left, re-read per hotel; weight by hotel size if one needs more.
       remaining: Math.floor(quota.remaining / Math.max(1, deps.share ?? 1)),

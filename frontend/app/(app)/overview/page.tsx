@@ -1,6 +1,4 @@
 import Link from 'next/link';
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr/Warning';
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { KeyIcon } from '@phosphor-icons/react/dist/ssr/Key';
@@ -10,6 +8,9 @@ import { loadSnapshot } from '../../../../backend/lib/dashboard-data';
 import { loadCurrentRates } from '../../../../backend/lib/current-rates';
 import { requestProperty, requestStore } from '../../../../backend/lib/demo/context';
 import { Bezel } from '../../../components/landing/Machined';
+import { CHIP, DIVIDER, MONO_LABEL, StatusChip } from '../../../components/settings/parts';
+import { band, BAND_CHIP, type Band } from '../../../components/band';
+import { ago } from '../../../lib/ago';
 import { fmtWeekdayLong, fmtRange, fmtDow } from '../../../../backend/lib/date';
 import type { ScoredEvent, SourceResult } from '../../../../backend/lib/scoring/types';
 
@@ -36,41 +37,20 @@ export const dynamic = 'force-dynamic';
  * warning banners only render when the data is stale or a source failed.
  */
 
-const relative = (iso: string) => {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
-  if (mins < 60) return `${mins} min ago`;
-  const hrs = Math.round(mins / 60);
-  return hrs < 24 ? `${hrs} hr${hrs === 1 ? '' : 's'} ago` : `${Math.round(hrs / 24)}d ago`;
-};
-
 const money = (n: number) => `$${n}`;
 const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '-' : ''}$${Math.abs(n)}`;
 
-const MONO_LABEL = 'font-geist-mono text-[12px] text-[#44474d]';
-const DIVIDER = 'h-px bg-[#0b1c30]/[0.06]';
 const LINK =
   'rounded-full text-[14px] font-medium text-[#44474d] underline decoration-[#0b1c30]/20 underline-offset-4 transition-colors duration-150 hover:text-[#1a1b20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2';
 
 /* ---- chips (DESIGN.md → Chips, migrated form) ---- */
 
-const CHIP = 'inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-medium';
-
-function StatusChip({ tone, children }: { tone: 'ok' | 'quiet'; children: React.ReactNode }) {
-  return (
-    <span
-      className={`${CHIP} ${tone === 'ok' ? 'bg-[#029768]/[0.08] text-[#027a55]' : 'bg-[#0b1c30]/[0.05] text-[#44474d]'}`}
-    >
-      {children}
-    </span>
-  );
-}
-
 /** Reads the scorer's own tier rather than re-deriving it from the score. */
 const DEMAND_CHIP: Record<ScoredEvent['tier'], { label: string; tone: string }> = {
-  major: { label: 'Major', tone: 'bg-[#085ac0] text-white' },
-  meaningful: { label: 'Meaningful', tone: 'bg-[#e5eeff] text-[#085ac0]' },
-  minor: { label: 'Minor', tone: 'bg-[#1a1b20]/10 text-[#1a1b20]' },
-  'too-small': { label: 'Too small', tone: 'bg-[#0b1c30]/[0.05] text-[#44474d]' },
+  major: { label: 'Major', tone: BAND_CHIP.major.cls },
+  meaningful: { label: 'Meaningful', tone: BAND_CHIP.meaningful.cls },
+  minor: { label: 'Minor', tone: BAND_CHIP.minor.cls },
+  'too-small': { label: 'Too small', tone: BAND_CHIP.quiet.cls },
 };
 
 function DemandChip({ event }: { event: ScoredEvent }) {
@@ -109,12 +89,13 @@ function NightStrip({ nights }: { nights: { date: string; rate: number }[] }) {
 }
 
 /** Heat ramp by night score; steps 3 and 4 carry white text. */
-function heat(score: number) {
-  if (score >= 70) return 'bg-[#131b2e] text-white';
-  if (score >= 40) return 'bg-[#085ac0] text-white';
-  if (score >= 15) return 'bg-[#d8e2ff] text-[#0b1c30]';
-  return 'bg-[#d3e4fe]/60 text-[#44474d]';
-}
+const HEAT: Record<Band, string> = {
+  major: 'bg-[#131b2e] text-white',
+  meaningful: 'bg-[#085ac0] text-white',
+  minor: 'bg-[#d8e2ff] text-[#0b1c30]',
+  quiet: 'bg-[#d3e4fe]/60 text-[#44474d]',
+};
+const heat = (score: number) => HEAT[band(score)];
 
 function LogRow({ source, timeZone }: { source: SourceResult; timeZone: string }) {
   const { status, error } = source;
@@ -191,7 +172,7 @@ export default async function Overview() {
     rate: (n.tiers.find((t) => t.tierId === std.tierId) ?? n.tiers[0]).recommended,
   }));
 
-  const compset = snapshot.compsets?.[0] ?? snapshot.compset;
+  const compset = snapshot.compsets?.[0];
   const compsetMedian = compset?.median ?? null;
   const neighbours = [...(compset?.entries ?? [])].sort((a, b) => a.price - b.price);
   const shownNeighbours = neighbours.slice(0, 7);
@@ -204,7 +185,7 @@ export default async function Overview() {
   const confidence = Math.round(snapshot.confidence);
 
   return (
-    <div className={`${GeistSans.variable} ${GeistMono.variable} space-y-8 font-geist text-[#1a1b20] antialiased`}>
+    <div className="space-y-8 font-geist text-[#1a1b20] antialiased">
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
@@ -436,7 +417,7 @@ export default async function Overview() {
           </h2>
           <span className={`${MONO_LABEL} inline-flex items-center gap-1.5`}>
             <ArrowsClockwiseIcon weight="light" className="h-3.5 w-3.5" aria-hidden />
-            Run {snapshot.runId}, {relative(snapshot.runAt)}
+            Run {snapshot.runId}, {ago(snapshot.runAt)}
           </span>
         </div>
         <ul className="mt-2 divide-y divide-[#0b1c30]/[0.06]">

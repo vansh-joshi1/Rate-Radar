@@ -1,6 +1,7 @@
 import type { RateCheck } from '../../backend/lib/scoring/types';
 import { trackedParity } from '../../backend/lib/parity/channels';
 import { Bezel } from './landing/Machined';
+import { MONO_LABEL } from './settings/parts';
 
 /*
  * Your own listed rate on the channels this property reports parity against:
@@ -23,7 +24,6 @@ import { Bezel } from './landing/Machined';
  */
 
 const VISIBLE = 8;
-const MONO_LABEL = 'font-geist-mono text-[12px] text-[#44474d]';
 
 export default function ParityGrid({ parity }: { parity: RateCheck[] }) {
   const tracked = trackedParity(parity);

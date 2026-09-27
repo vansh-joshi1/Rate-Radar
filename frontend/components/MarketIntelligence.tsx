@@ -3,8 +3,10 @@ import { useMemo, useState } from 'react';
 import { CloudWarningIcon } from '@phosphor-icons/react/dist/ssr/CloudWarning';
 import { AirplaneTiltIcon } from '@phosphor-icons/react/dist/ssr/AirplaneTilt';
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
-import EventMap, { band, scaleFor, useVenueBlips, venueKey, type MapEvent } from './EventMap';
+import EventMap, { scaleFor, useVenueBlips, venueKey } from './EventMap';
 import DemandCalendar, { type CalendarNight } from './DemandCalendar';
+import { band, BAND_CHIP, fmtMi, KIND_LABEL, type Band } from './band';
+import { CHIP, FOCUS, MONO_LABEL } from './settings/parts';
 import { Bezel } from './landing/Machined';
 import { fmtDay, fmtDow, noonUTC } from '../../backend/lib/date';
 
@@ -42,13 +44,10 @@ export interface MIEvent {
   miles: number | null;
 }
 
-/** A forecast night, with its rate and every event on it (the calendar's detail). */
-export type MINight = CalendarNight;
-
 interface Props {
   property: { name: string; lat: number; lng: number };
   events: MIEvent[];
-  nights: MINight[];
+  nights: CalendarNight[];
   weather: { note?: string; bnaNote?: string } | null;
   isDemo: boolean;
   /** Property-local today as rendered on the server; the calendar keeps it live. */
@@ -69,28 +68,7 @@ const FAMILIES = [
 const familyOf = (kind: string) =>
   FAMILIES.find((f) => (f.kinds as readonly string[]).includes(kind))?.key ?? 'other';
 
-const KIND_LABEL: Record<string, string> = {
-  convention: 'Conference',
-  university: 'University',
-  concert: 'Concert',
-  sports: 'Sports',
-  holiday: 'Holiday',
-  other: 'Event',
-};
-
-const MONO_LABEL = 'font-geist-mono text-[12px] text-[#44474d]';
-const CHIP = 'inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-medium';
 const QUIET = 'bg-[#0b1c30]/[0.05] text-[#44474d]';
-const FOCUS =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
-
-/* Demand chips, DESIGN.md → Chips. The map's blips use the same bands. */
-const BAND_CHIP = {
-  major: { label: 'Major', cls: 'bg-[#085ac0] text-white' },
-  meaningful: { label: 'Meaningful', cls: 'bg-[#e5eeff] text-[#085ac0]' },
-  minor: { label: 'Minor', cls: 'bg-[#1a1b20]/[0.10] text-[#1a1b20]' },
-  quiet: { label: 'Quiet', cls: QUIET },
-} as const;
 
 const LEGEND = [
   { label: 'Major', swatch: 'bg-[#085ac0] ring-2 ring-white' },
@@ -116,8 +94,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
   const located = useMemo(() => visible.filter(isPlaced), [visible]);
   const unlocated = visible.filter((e) => !isPlaced(e));
 
-  const mapEvents: MapEvent[] = located;
-  const blips = useVenueBlips(property, mapEvents);
+  const blips = useVenueBlips(property, located);
   // Scaled on every placed event, so filtering never moves the frame.
   const { range, step } = useMemo(() => scaleFor(property, events.filter(isPlaced)), [property, events]);
   // A pin whose venue has been filtered away describes nothing.
@@ -333,7 +310,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
                             <span className="min-w-0 truncate">{e.venue}</span>
                             {e.miles != null && (
                               <span className="shrink-0 font-geist-mono text-[12px] tabular-nums">
-                                {e.miles < 10 ? e.miles.toFixed(1) : Math.round(e.miles)} mi
+                                {fmtMi(e.miles)} mi
                               </span>
                             )}
                           </span>
@@ -372,7 +349,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
 }
 
 /* Scrubber bars share the blips' bands, drawn for a navy surface. */
-const BAR: Record<ReturnType<typeof band>, string> = {
+const BAR: Record<Band, string> = {
   major: 'bg-[#085ac0] ring-1 ring-inset ring-white/60',
   meaningful: 'bg-[#adc6ff]',
   minor: 'bg-white/45',
@@ -391,7 +368,7 @@ function NightScrubber({
   selected,
   onSelect,
 }: {
-  nights: MINight[];
+  nights: CalendarNight[];
   events: MIEvent[];
   selected: string | null;
   onSelect: (date: string | null) => void;

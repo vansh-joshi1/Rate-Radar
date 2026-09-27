@@ -5,9 +5,11 @@ import { join } from 'node:path';
 import { FileStore } from '../lib/store';
 import { processBundle, type Bundle } from '../lib/ingest';
 import { saveRatesConfig } from '../lib/rates-config';
+import { getProperty } from '../lib/properties';
 import type { Snapshot } from '../lib/scoring/types';
 
 const PROP = 'rri-franklin';
+const property = getProperty(PROP)!;
 
 function freshStore(): FileStore {
   return new FileStore(join(mkdtempSync(join(tmpdir(), 'rr-rq-')), 'store.json'));
@@ -17,7 +19,7 @@ describe('recompute from the stored bundle', () => {
   it('ingest stores the raw bundle; reprocessing honors edited baselines', async () => {
     const store = freshStore();
     const bundle: Bundle = { runAt: new Date().toISOString(), sources: [] };
-    await processBundle(bundle, store);
+    await processBundle(bundle, store, new Date(), property);
 
     // raw bundle persisted for /api/recompute
     const stored = await store.get<Bundle>(`prop:${PROP}:bundle:latest`);
@@ -38,7 +40,7 @@ describe('recompute from the stored bundle', () => {
       ],
       upliftCapPct: 40,
     });
-    await processBundle(stored!, store);
+    await processBundle(stored!, store, new Date(), property);
 
     const snap2 = await store.get<Snapshot>(`prop:${PROP}:snapshot:latest`);
     expect(snap2!.runAt).toBe(bundle.runAt); // freshness stays honest — same collected data

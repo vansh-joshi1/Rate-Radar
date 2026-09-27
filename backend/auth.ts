@@ -7,6 +7,7 @@ import { membershipFor, ownerEmail } from './lib/auth/members';
 import { DEFAULT_PROPERTY_ID } from './lib/properties';
 import type { Role } from './lib/auth/roles';
 import { signInEmail } from './lib/email/messages';
+import { sendEmail } from './lib/email/send';
 
 /**
  * Supabase Auth, session in SSR cookies (refreshed by the middleware).
@@ -59,10 +60,10 @@ export function authConfigured(): boolean {
 }
 
 /** Cookie-bound Supabase client for the current request (route handlers + server components). */
-export function supabaseAuth() {
+export async function supabaseAuth() {
   const env = authEnv();
   if (!env) throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set');
-  const jar = cookies();
+  const jar = await cookies();
   return createServerClient(env.url, env.anonKey, {
     global: { fetch: noStoreFetch },
     cookies: {
@@ -90,7 +91,7 @@ export const auth = perRender(async (): Promise<{ user: SessionUser } | null> =>
   if (!authEnv()) return null;
   const {
     data: { user },
-  } = await supabaseAuth().auth.getUser();
+  } = await (await supabaseAuth()).auth.getUser();
   const email = user?.email?.toLowerCase();
   if (!user || !email) return null;
   // The shared front-desk password belongs to the original property only.
@@ -142,13 +143,13 @@ export async function deleteUserById(id: string): Promise<void> {
 
 /** Email + password → session cookies on the current response. */
 export async function signInWithPassword(email: string, password: string): Promise<boolean> {
-  const { error } = await supabaseAuth().auth.signInWithPassword({ email, password });
+  const { error } = await (await supabaseAuth()).auth.signInWithPassword({ email, password });
   return !error;
 }
 
 /** Exchange a token hash for session cookies on the current response. */
 export async function verifyMagicLink(tokenHash: string): Promise<boolean> {
-  const { error } = await supabaseAuth().auth.verifyOtp({ type: 'magiclink', token_hash: tokenHash });
+  const { error } = await (await supabaseAuth()).auth.verifyOtp({ type: 'magiclink', token_hash: tokenHash });
   return !error;
 }
 
@@ -162,13 +163,7 @@ export async function sendMagicLink(email: string, origin: string, next: string)
   const url = new URL('/auth/confirm', origin);
   url.searchParams.set('token_hash', await magicLinkToken(email));
   url.searchParams.set('next', next);
-  const { subject, html, text } = signInEmail({ url: url.toString(), email });
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: 'Rate Radar <onboarding@resend.dev>', to: email, subject, html, text }),
-  });
-  if (!res.ok) throw new Error('Resend error: ' + JSON.stringify(await res.json()));
+  await sendEmail({ to: email, ...signInEmail({ url: url.toString(), email }) });
 }
 
 /**

@@ -1,5 +1,3 @@
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
 import { requestProperty, requestStore } from '../../../../backend/lib/demo/context';
 import { todayIn } from '../../../../backend/lib/date';
 import { BOOKINGS_KEY, type Bookings } from '../../../../backend/lib/bookings';
@@ -13,7 +11,7 @@ export default async function BellhopPage() {
   const tonight = bookings[todayIn(property.timezone)]?.at(-1) ?? null;
 
   return (
-    <div className={`${GeistSans.variable} ${GeistMono.variable} font-geist text-[#1a1b20] antialiased`}>
+    <div className="font-geist text-[#1a1b20] antialiased">
       <Bellhop propertyName={property.name} totalRooms={property.totalRooms} tonight={tonight} />
     </div>
   );

@@ -37,7 +37,7 @@ interface Team {
  * out only when that person later requests a sign-in link.
  */
 async function team(): Promise<Team | null> {
-  if (demoSid()) {
+  if (await demoSid()) {
     return { store: await requestStore(), propertyId: '', mine: () => true, owner: DEMO_OWNER_EMAIL };
   }
   const session = await auth();
@@ -84,6 +84,10 @@ export async function POST(req: NextRequest) {
   if (members.filter(t.mine).length >= 20) return NextResponse.json({ error: 'team is capped at 20 members' }, { status: 400 });
 
   const member: Member = { email, role, invitedAt: new Date().toISOString(), ...(t.propertyId ? { propertyId: t.propertyId } : {}) };
+  // Any account already under this email was made by someone who never proved
+  // they own it (an unreviewed /onboarding request): drop it, or its password
+  // would sign in as the new teammate. The teammate signs in by link instead.
+  if (!(await demoSid())) await revokeUser(email);
   await saveMembers(t.store, [...members, member]);
   return NextResponse.json({ ok: true, member });
 }
@@ -108,6 +112,6 @@ export async function DELETE(req: NextRequest) {
   }
   await saveMembers(t.store, remaining);
   // A sandbox's team is fictional; only a real removal has sessions to kill.
-  if (!demoSid()) await revokeUser(e);
+  if (!(await demoSid())) await revokeUser(e);
   return NextResponse.json({ ok: true });
 }

@@ -22,6 +22,14 @@ import type { SourceResult } from '../lib/scoring/types';
  *   --skip-rates  skip the price fetches (fast local testing, spends no searches)
  */
 
+/** Authenticated fetch against the dashboard; null when DASHBOARD_URL or INGEST_SECRET is unset. */
+function dashboard(path: string, init: { method?: string; headers?: Record<string, string>; body?: string } = {}): Promise<Response> | null {
+  const base = process.env.DASHBOARD_URL;
+  const secret = process.env.INGEST_SECRET;
+  if (!base || !secret) return null;
+  return fetch(`${base.replace(/\/$/, '')}${path}`, { ...init, headers: { ...init.headers, Authorization: `Bearer ${secret}` } });
+}
+
 /**
  * The UI-editable watchlist lives in the dashboard's store; fetch it so edits
  * take effect on the next run without a deploy. Any failure (local dev, URL
@@ -29,14 +37,9 @@ import type { SourceResult } from '../lib/scoring/types';
  * compset beats no compset.
  */
 async function fetchWatchlist(propertyId: string): Promise<{ name: string; propertyToken?: string }[] | null> {
-  const base = process.env.DASHBOARD_URL;
-  const secret = process.env.INGEST_SECRET;
-  if (!base || !secret) return null;
   try {
-    const res = await fetch(`${base.replace(/\/$/, '')}/api/watchlist?propertyId=${encodeURIComponent(propertyId)}`, {
-      headers: { Authorization: `Bearer ${secret}` },
-    });
-    if (!res.ok) return null;
+    const res = await dashboard(`/api/watchlist?propertyId=${encodeURIComponent(propertyId)}`);
+    if (!res?.ok) return null;
     const { hotels } = (await res.json()) as { hotels: { name: string; propertyToken?: string }[] };
     return hotels.length > 0 ? hotels : null;
   } catch {
@@ -50,13 +53,9 @@ async function fetchWatchlist(propertyId: string): Promise<{ name: string; prope
  * collect the config-file property alone rather than nothing.
  */
 async function fetchStoredProperties(): Promise<RatePropertyConfig[]> {
-  const base = process.env.DASHBOARD_URL;
-  const secret = process.env.INGEST_SECRET;
-  if (!base || !secret) return [];
   try {
-    const res = await fetch(`${base.replace(/\/$/, '')}/api/ingest/properties`, {
-      headers: { Authorization: `Bearer ${secret}` },
-    });
+    const res = await dashboard('/api/ingest/properties');
+    if (!res) return [];
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const { properties } = (await res.json()) as { properties: Property[] };
     return properties.filter(hasCollect).map(fromStoredProperty);
@@ -80,14 +79,12 @@ async function settleAll(runs: Record<string, Promise<SourceResult>>): Promise<S
 }
 
 async function postBundle(bundle: unknown): Promise<unknown> {
-  const base = process.env.DASHBOARD_URL;
-  const secret = process.env.INGEST_SECRET;
-  if (!base || !secret) throw new Error('DASHBOARD_URL / INGEST_SECRET unset');
-  const res = await fetch(`${base.replace(/\/$/, '')}/api/ingest`, {
+  const res = await dashboard('/api/ingest', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${secret}` },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(bundle),
   });
+  if (!res) throw new Error('DASHBOARD_URL / INGEST_SECRET unset');
   const summary = await res.json();
   if (!res.ok) throw new Error(`Ingest rejected (${res.status}): ${JSON.stringify(summary)}`);
   return summary;
@@ -126,16 +123,8 @@ async function main() {
         prop.compset = { ...prop.compset, competitors: liveWatchlist.map((h) => h.name) };
         prop.watchlistHotels = liveWatchlist;
       }
-      try {
-        sources.push(await rates(prop, { share: properties.length }));
-      } catch (err) {
-        sources.push({
-          source: 'rates',
-          status: 'failed',
-          fetchedAt: new Date().toISOString(),
-          error: String(err).slice(0, 300),
-        });
-      }
+      // rates() turns every failure into a 'failed' result itself.
+      sources.push(await rates(prop, { share: properties.length }));
     }
 
     console.log(`\n=== Collection summary — ${prop.name} (${prop.id}) ===`);

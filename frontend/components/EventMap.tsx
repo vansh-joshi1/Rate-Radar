@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { GeoJSONSource, LayerSpecification, Map as MLMap, Marker, StyleSpecification } from 'maplibre-gl';
 import { CrosshairSimpleIcon } from '@phosphor-icons/react/dist/ssr/CrosshairSimple';
+import { haversineMiles } from '../../backend/lib/geo';
+import { band, fmtMi, type Band } from './band';
 
 /*
  * Demand events on a real map, themed as an instrument (DESIGN.md → the Navy
@@ -38,7 +40,7 @@ export interface MapEvent {
   lng: number;
 }
 
-export interface VenueBlip {
+interface VenueBlip {
   key: string;
   venue: string;
   lat: number;
@@ -68,12 +70,7 @@ function bearingDeg(a: LngLat, b: LngLat): number {
 const COMPASS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const compass = (deg: number) => COMPASS[Math.round(deg / 45) % 8];
 
-function milesBetween(a: LngLat, b: LngLat): number {
-  const h =
-    Math.sin(toRad(b.lat - a.lat) / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(toRad(b.lng - a.lng) / 2) ** 2;
-  return 3958.8 * 2 * Math.asin(Math.sqrt(h));
-}
+const milesBetween = (a: LngLat, b: LngLat) => haversineMiles(a.lat, a.lng, b.lat, b.lng);
 
 /* Outer ring radius and ring spacing. Picked in round pairs so the ring labels
    read as a scale (5, 10, 15 mi) rather than as 3.8 and 11.3, with a little
@@ -104,12 +101,7 @@ export function scaleFor(property: LngLat, events: LngLat[]): { range: number; s
   );
 }
 
-/** Demand band, on the scoring engine's own thresholds (DESIGN.md → Chips). */
-export function band(score: number): 'major' | 'meaningful' | 'minor' | 'quiet' {
-  return score >= 70 ? 'major' : score >= 40 ? 'meaningful' : score >= 15 ? 'minor' : 'quiet';
-}
-
-export const BLIP_FILL: Record<ReturnType<typeof band>, string> = {
+const BLIP_FILL: Record<Band, string> = {
   major: 'bg-[#085ac0] ring-2 ring-white',
   meaningful: 'bg-[#adc6ff] ring-1 ring-[#0b1c30]/40',
   minor: 'bg-white/60 ring-1 ring-[#0b1c30]/40',
@@ -282,8 +274,6 @@ const SWEEP_MS = 7000;
 
 /** Blip diameter in px: area tracks attendance, clamped so a 5K stays findable. */
 const blipSize = (attendance: number) => Math.round(Math.min(34, Math.max(12, 6 + Math.sqrt(attendance) / 6)));
-
-const fmtMi = (n: number) => (n < 10 ? n.toFixed(1) : Math.round(n).toString());
 
 /* Extra room at the bottom for the outer ring's label and the attribution. */
 const FIT_PADDING = { top: 24, right: 24, bottom: 40, left: 24 };

@@ -26,7 +26,7 @@ export async function POST() {
 
   // A real run dispatches CI and spends SerpApi searches out of a 250/month
   // budget. That is somebody's actual money, and the demo is open to anyone.
-  if (demoSid()) {
+  if (await demoSid()) {
     return demoRefusal(
       'Collection runs are disabled in the demo — a real run spends metered price searches. The sample data is already loaded.'
     );

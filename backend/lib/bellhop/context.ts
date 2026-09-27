@@ -41,7 +41,7 @@ export function buildSystemPrompt(ctx: BellhopContext): string {
         confidenceNote: snapshot.confidenceNote,
         // Spelled-out day: left to derive it from the date, the model called a Friday "Thursday".
         nights: snapshot.nights.map((n) => ({ day: fmtDowDay(n.date), ...n })),
-        compsets: snapshot.compsets ?? (snapshot.compset ? [snapshot.compset] : []),
+        compsets: snapshot.compsets ?? [],
         parity: snapshot.parity,
         // Health only — raw payloads are large and say nothing the nights don't.
         sources: snapshot.sources.map(({ source, status, error }) => ({ source, status, error })),

@@ -29,7 +29,7 @@ export function isCollector(req: NextRequest | Request): boolean {
 export async function propertyFromRequest(req: NextRequest | Request): Promise<PropertyRequest> {
   const explicit = new URL(req.url).searchParams.get('propertyId');
 
-  if (isCollector(req) && !demoSid()) {
+  if (isCollector(req) && !(await demoSid())) {
     const property = explicit ? await loadProperty(getStore(), explicit) : undefined;
     if (!property) return { ok: false, response: NextResponse.json({ error: 'unknown property' }, { status: 404 }) };
     return { ok: true, propertyId: property.id, property, store: storeFor(property.id) };

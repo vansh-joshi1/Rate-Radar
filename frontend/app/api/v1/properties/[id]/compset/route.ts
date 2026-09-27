@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic';
  * GET /api/v1/properties/:id/compset[?date=YYYY-MM-DD] — competitor prices per
  * night. Without ?date, every compset the latest run captured is returned.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const ctx = await propertyContext(req, params.id);
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await propertyContext(req, (await params).id);
   if (ctx instanceof Response) return ctx;
 
   const date = new URL(req.url).searchParams.get('date');
@@ -16,7 +16,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     return apiError(400, 'bad_date', 'date must be YYYY-MM-DD.');
   }
 
-  const all = ctx.snapshot.compsets ?? (ctx.snapshot.compset ? [ctx.snapshot.compset] : []);
+  const all = ctx.snapshot.compsets ?? [];
   const selected = date ? all.filter((c) => c.date === date) : all;
   if (date && selected.length === 0) {
     return apiError(404, 'no_compset', `No compset captured for ${date} in the latest run.`);

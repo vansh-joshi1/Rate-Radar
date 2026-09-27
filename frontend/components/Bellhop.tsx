@@ -153,24 +153,22 @@ export default function Bellhop({
       {/* Pinned while the page scrolls, so a long answer never pushes the composer out of reach. */}
       <div className="sticky bottom-0 rounded-b-[calc(2rem-0.375rem)] bg-white px-6 pb-6 md:px-8">
         <div className={`${DIVIDER} mb-4`} />
-        <div className="flex items-center gap-2">
-          <form onSubmit={submit} className="flex flex-1 items-center gap-2">
-            <label htmlFor="bellhop-q" className="sr-only">
-              Ask Bellhop
-            </label>
-            <input
-              id="bellhop-q"
-              className={`${FIELD} h-12`}
-              placeholder="Ask Bellhop"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              maxLength={4000}
-            />
-            <PillButton type="submit" disabled={busy || !draft.trim()}>
-              Ask
-            </PillButton>
-          </form>
-        </div>
+        <form onSubmit={submit} className="flex items-center gap-2">
+          <label htmlFor="bellhop-q" className="sr-only">
+            Ask Bellhop
+          </label>
+          <input
+            id="bellhop-q"
+            className={`${FIELD} h-12`}
+            placeholder="Ask Bellhop"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            maxLength={4000}
+          />
+          <PillButton type="submit" disabled={busy || !draft.trim()}>
+            Ask
+          </PillButton>
+        </form>
         {turns.length > 0 && !busy && (
           <button type="button" onClick={() => setTurns([])} className={`mt-3 text-[13px] ${LINK}`}>
             Start over
@@ -320,7 +318,7 @@ function UserSays({ children }: { children: ReactNode }) {
  * The one character DESIGN.md allows (owner's call, 2026-09-25), inside a
  * small double bezel like every enclosure.
  */
-export function BellhopAvatar({ size = 'sm', typing = false }: { size?: 'sm' | 'lg'; typing?: boolean }) {
+function BellhopAvatar({ size = 'sm', typing = false }: { size?: 'sm' | 'lg'; typing?: boolean }) {
   const lg = size === 'lg';
   const frame = `absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${SPRING}`;
   return (

@@ -115,8 +115,6 @@ export interface Snapshot {
   confidenceNote: string;
   nights: NightRecommendation[];
   parity: RateCheck[];
-  /** Back-compat single entry (tomorrow); prefer compsets. */
-  compset?: CompsetInfo;
   compsets?: CompsetInfo[];
   sources: SourceResult[];
 }

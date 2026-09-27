@@ -12,27 +12,24 @@ import { demoSid, requestProperty } from '../../../backend/lib/demo/context';
 import { DEMO_PROPERTY } from '../../../backend/lib/properties';
 import type { ShellProperty } from '../../components/shell/AppShell';
 import type { Role } from '../../../backend/lib/auth/roles';
+import { ago } from '../../lib/ago';
 
 export const dynamic = 'force-dynamic';
 
-/** The switcher a demo visitor sees — no real property is named anywhere in it. */
-const DEMO_SWITCHER: ShellProperty[] = [
-  { id: DEMO_PROPERTY.id, label: DEMO_PROPERTY.name, sub: DEMO_PROPERTY.city },
-  { id: 'demo-sunrise', label: 'Sunrise Suites', sub: 'Alder Flats, OR (sample)' },
-];
+/** The property a demo visitor sees — no real property is named anywhere in it. */
+const DEMO_SHELL_PROPERTY: ShellProperty = { id: DEMO_PROPERTY.id, label: DEMO_PROPERTY.name, sub: DEMO_PROPERTY.city };
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const inDemo = demoSid() !== null;
+  const inDemo = (await demoSid()) !== null;
   const [{ snapshot, isDemo, awaitingFirstRun }, session] = await Promise.all([loadSnapshot(), inDemo ? null : auth()]);
   // Signed in to Supabase but no longer on the team: the middleware can't know that, auth() does.
   if (!inDemo && !session) redirect('/login');
   const property = inDemo ? null : await requestProperty();
-  const mins = Math.max(0, Math.round((Date.now() - new Date(snapshot.runAt).getTime()) / 60_000));
   const freshness = awaitingFirstRun
     ? 'Waiting for the first collection'
     : isDemo
       ? 'Sample data. Run the collector to go live'
-      : `Data fresh as of ${mins < 60 ? `${mins}m` : `${Math.round(mins / 60)}h`} ago`;
+      : `Data fresh as of ${ago(snapshot.runAt)}`;
   // A demo visitor owns their sandbox outright, so every control is live for
   // them — that is the point of the demo. The role is real; its reach is not.
   const role = inDemo
@@ -63,7 +60,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         freshness={freshness}
         user={user}
         alerts={alerts}
-        properties={property ? [{ id: property.id, label: property.name, sub: property.city }] : DEMO_SWITCHER}
+        property={property ? { id: property.id, label: property.name, sub: property.city } : DEMO_SHELL_PROPERTY}
         showPortfolio={inDemo || Boolean(session?.user.isAdmin)}
         isDemo={inDemo}
       >

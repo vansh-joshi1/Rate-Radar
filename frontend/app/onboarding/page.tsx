@@ -1,22 +1,16 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { track } from '../../components/PostHogInit';
 import { useRouter } from 'next/navigation';
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
 import { ArrowLeftIcon } from '@phosphor-icons/react/dist/ssr/ArrowLeft';
 import { CheckIcon } from '@phosphor-icons/react/dist/ssr/Check';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
-import { EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
-import { EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
 import { CircleIcon } from '@phosphor-icons/react/dist/ssr/Circle';
 import { PASSWORD_RULES, passwordOk } from '../../../backend/lib/password';
-import { RadarIcon } from '../../components/RadarMark';
 import { Bezel, PillButton, SPRING } from '../../components/landing/Machined';
-import { DOT_FIELD, Grain, HeroRadar } from '../../components/landing/Backdrop';
-import { FIELD, LABEL, ring } from '../../components/AuthPanes';
+import { AuthFrame, FIELD, LABEL, PasswordToggle, ring } from '../../components/AuthPanes';
+import { SuggestList, useSuggest } from '../../components/suggest/Suggest';
 import { assignTiers, nearbyHotels, type Candidate, type Nearby, type RoomTier, type RoomType } from '../../../backend/lib/onboarding';
 
 /*
@@ -162,57 +156,28 @@ function formatAddress({ properties: p }: PhotonFeature): string {
  * Street address with suggestions as you type, from Photon (OSM), the same
  * free geocoder the watchlist search uses (app/api/hotel-search). Called from
  * the browser (Photon allows any origin) and debounced to respect its fair
- * use. US only: prices are fetched with gl=us. The combobox follows the
- * watchlist search in components/CompetitorInsights.tsx.
+ * use. US only: prices are fetched with gl=us. The combobox is shared with the
+ * watchlist search (components/suggest/Suggest.tsx).
  */
 function AddressField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [hits, setHits] = useState<string[]>([]);
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(-1);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abort = useRef<AbortController | null>(null);
-
-  useEffect(
-    () => () => {
-      abort.current?.abort();
-      if (timer.current) clearTimeout(timer.current);
+  const s = useSuggest<string>(
+    'address',
+    async (q, signal) => {
+      const res = await fetch(
+        `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=10&lang=en&layer=house&layer=street`,
+        { signal },
+      );
+      if (!res.ok) return null;
+      const { features } = (await res.json()) as { features: PhotonFeature[] };
+      return [...new Set(features.filter((f) => f.properties.countrycode === 'US').map(formatAddress))].slice(0, 5);
     },
-    [],
+    { delay: 350 },
   );
-
-  function type(v: string) {
-    onChange(v);
-    if (timer.current) clearTimeout(timer.current);
-    if (v.trim().length < 3) {
-      setHits([]);
-      setOpen(false);
-      return;
-    }
-    timer.current = setTimeout(async () => {
-      abort.current?.abort();
-      const ctrl = new AbortController();
-      abort.current = ctrl;
-      try {
-        const res = await fetch(
-          `https://photon.komoot.io/api/?q=${encodeURIComponent(v.trim())}&limit=10&lang=en&layer=house&layer=street`,
-          { signal: ctrl.signal },
-        );
-        if (!res.ok) return;
-        const { features } = (await res.json()) as { features: PhotonFeature[] };
-        const list = [...new Set(features.filter((f) => f.properties.countrycode === 'US').map(formatAddress))].slice(0, 5);
-        setHits(list);
-        setActive(-1);
-        setOpen(list.length > 0);
-      } catch {
-        /* aborted or offline: typing by hand still works */
-      }
-    }, 350);
-  }
 
   function pick(address: string) {
     onChange(address);
-    setOpen(false);
-    setActive(-1);
+    s.setOpen(false);
+    s.setActive(-1);
   }
 
   return (
@@ -224,59 +189,30 @@ function AddressField({ value, onChange }: { value: string; onChange: (v: string
         id="address"
         name="address"
         value={value}
-        onChange={(e) => type(e.target.value)}
-        onFocus={() => hits.length > 0 && setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          s.search(e.target.value);
+        }}
+        {...s.inputProps}
         onKeyDown={(e) => {
-          if (!open || hits.length === 0) return;
+          if (!s.open || s.items.length === 0) return;
           if (e.key === 'Escape') {
-            setOpen(false);
-          } else if (e.key === 'ArrowDown') {
+            s.setOpen(false);
+          } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault();
-            setActive((i) => (i + 1) % hits.length);
-          } else if (e.key === 'ArrowUp') {
+            s.move(e.key === 'ArrowDown' ? 1 : -1);
+          } else if (e.key === 'Enter' && s.active >= 0) {
             e.preventDefault();
-            setActive((i) => (i <= 0 ? hits.length - 1 : i - 1));
-          } else if (e.key === 'Enter' && active >= 0) {
-            e.preventDefault();
-            pick(hits[active]);
+            pick(s.items[s.active]);
           }
         }}
         required
         minLength={5}
         autoComplete="off"
         placeholder="Start typing your address"
-        role="combobox"
-        aria-expanded={open}
-        aria-controls="address-suggestions"
-        aria-autocomplete="list"
-        aria-activedescendant={open && active >= 0 ? `address-option-${active}` : undefined}
         className={FIELD}
       />
-      {open && (
-        <ul
-          id="address-suggestions"
-          role="listbox"
-          className="absolute left-0 right-0 top-full z-30 mt-2 max-h-72 overflow-y-auto rounded-[1.25rem] bg-white p-1.5 shadow-[0_24px_48px_-24px_rgba(11,28,48,0.35)] ring-1 ring-[#0b1c30]/[0.08]"
-        >
-          {hits.map((h, i) => (
-            <li key={h} id={`address-option-${i}`} role="option" aria-selected={i === active}>
-              <button
-                type="button"
-                tabIndex={-1}
-                onMouseDown={(e) => e.preventDefault() /* keep focus until click fires */}
-                onClick={() => pick(h)}
-                onMouseEnter={() => setActive(i)}
-                className={`w-full truncate rounded-[0.875rem] px-4 py-2.5 text-left text-[14.5px] text-[#1a1b20] transition-colors duration-150 hover:bg-[#f3f5fc] ${
-                  i === active ? 'bg-[#f3f5fc]' : ''
-                }`}
-              >
-                {h}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <SuggestList s={s} itemKey={(h) => h} onPick={pick} optionClass="truncate text-[14.5px] text-[#1a1b20]" render={(h) => h} />
     </div>
   );
 }
@@ -523,24 +459,7 @@ export default function Onboarding() {
     (last && (submitting || !passwordOk(a.password) || a.confirm !== a.password));
 
   return (
-    <main
-      className={`${GeistSans.variable} ${GeistMono.variable} relative isolate grid min-h-[100dvh] grid-cols-1 bg-[#f8f9ff] font-geist text-[#1a1b20] antialiased lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]`}
-      style={DOT_FIELD}
-    >
-      <Grain />
-
-      <section className="flex min-w-0 flex-col px-4 pb-8 pt-6 md:px-6 lg:px-12 xl:px-20">
-        <div>
-          <Link
-            href="/"
-            className={`inline-flex items-center gap-2 rounded-full bg-white/70 py-2 pl-4 pr-5 ring-1 ring-[#0b1c30]/[0.06] ${ring}`}
-          >
-            <RadarIcon className="h-5 w-5 text-[#085ac0]" />
-            <span className="text-[15px] font-semibold tracking-tight text-[#0b1c30]">Rate Radar</span>
-          </Link>
-        </div>
-
-        <div className="flex flex-1 items-center py-10 md:py-12">
+    <AuthFrame aside={<Readback a={a} channels={channels} rooms={rooms} />}>
           <form onSubmit={next} className="mx-auto w-full max-w-[420px] lg:mx-0">
             <Stepper step={step} />
 
@@ -783,19 +702,7 @@ export default function Onboarding() {
                           aria-invalid={a.password !== '' && !passwordOk(a.password) ? true : undefined}
                           className={`${FIELD} pr-14`}
                         />
-                        <button
-                          type="button"
-                          onClick={() => setPwShown((s) => !s)}
-                          aria-label={pwShown ? 'Hide password' : 'Show password'}
-                          aria-pressed={pwShown}
-                          className={`absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[#44474d] transition-colors duration-300 hover:bg-[#0b1c30]/[0.05] hover:text-[#0b1c30] ${ring}`}
-                        >
-                          {pwShown ? (
-                            <EyeSlashIcon weight="light" className="h-[18px] w-[18px]" aria-hidden />
-                          ) : (
-                            <EyeIcon weight="light" className="h-[18px] w-[18px]" aria-hidden />
-                          )}
-                        </button>
+                        <PasswordToggle shown={pwShown} onToggle={() => setPwShown((s) => !s)} />
                       </div>
                       <ul id="password-rules" className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 pl-5">
                         {PASSWORD_RULES.map((r) => {
@@ -878,11 +785,8 @@ export default function Onboarding() {
               </PillButton>
             </div>
           </form>
-        </div>
 
-        <p className="text-[13px] text-[#44474d]">Recommendation only. Rate Radar never changes a price anywhere.</p>
-      </section>
-
+      {/* Closed it takes no space; open it sits in the top layer. */}
       <dialog
         ref={sent}
         aria-labelledby="sent-title"
@@ -906,11 +810,6 @@ export default function Onboarding() {
           </form>
         </Bezel>
       </dialog>
-
-      <aside className="relative isolate hidden min-w-0 items-center justify-center overflow-hidden px-12 lg:sticky lg:top-0 lg:flex lg:h-[100dvh] lg:self-start">
-        <HeroRadar variant="auth" />
-        <Readback a={a} channels={channels} rooms={rooms} />
-      </aside>
-    </main>
+    </AuthFrame>
   );
 }

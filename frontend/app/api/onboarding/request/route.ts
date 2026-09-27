@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createPasswordUser, deleteUserById } from '../../../../../backend/auth';
 import { AccessRequestBody, saveAccessRequest } from '../../../../../backend/lib/access-requests';
+import { isAllowed } from '../../../../../backend/lib/auth/members';
 import { getStore } from '../../../../../backend/lib/store';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,10 @@ export const dynamic = 'force-dynamic';
  * email + password account the owner will sign in with once verified. Public
  * (there is no session yet), so it is throttled per IP. The account grants
  * nothing on its own: access comes from being added to the Team.
+ *
+ * Nobody proves they own the email here, so an address that already has
+ * access (OWNER_EMAIL, a teammate) is refused: otherwise a stranger could set
+ * the password that account signs in with. Teammates use a sign-in link.
  */
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
@@ -21,6 +26,7 @@ export async function POST(req: NextRequest) {
   const parsed = AccessRequestBody.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'bad request' }, { status: 400 });
   const { password, ...details } = parsed.data;
+  if (await isAllowed(store, details.email)) return NextResponse.json({ error: 'account exists' }, { status: 409 });
 
   const userId = await createPasswordUser(details.email, password);
   if (!userId) return NextResponse.json({ error: 'account exists' }, { status: 409 });

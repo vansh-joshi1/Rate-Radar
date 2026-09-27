@@ -1,4 +1,4 @@
-import { todayIn, addDays, dateRange, dayOfWeek } from './date';
+import { todayIn, dateRange, dayOfWeek } from './date';
 import { z } from 'zod';
 import holidaysConfig from '../config/holidays.json';
 import type { Store } from './store';
@@ -8,13 +8,14 @@ import { buildReasoning } from './scoring/reason';
 import { evaluateAlerts, type HolidayEntry, type SourceHealth } from './alerts/rules';
 import { sendAlertEmail } from './alerts/email';
 import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compset';
-import { DEFAULT_PROPERTY_ID, getProperty, propKey, type Property } from './properties';
+import { DEFAULT_PROPERTY_ID, propKey, type Property } from './properties';
 import { getStore } from './store';
 import { listMembers, memberProperty } from './auth/members';
 import { loadWatchlist, saveWatchlist, watchlistKey, watchlistCompsetConfig, OPEN_PRICE_SANITY, type WatchlistHotel } from './watchlist';
 import { loadRatesConfig } from './rates-config';
+import type { RatesData } from '../collector/sources/rates';
 import type {
-  CompsetEntry, CompsetInfo, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
+  CompsetInfo, NightRecommendation, RawEvent, RateCheck, ScoredEvent, Snapshot, SourceResult, WeatherAlert,
 } from './scoring/types';
 
 /**
@@ -43,40 +44,8 @@ export const BundleSchema = z.object({
 });
 export type Bundle = z.infer<typeof BundleSchema>;
 
-/**
- * Rates-source payload has evolved; accept all three generations:
- *   v1: RateCheck[]
- *   v2: { checks, compset, compsetDate }  (single compset for tomorrow)
- *   v3: { checks, compsets: [{date, entries}] }  (tomorrow + event nights)
- */
-export function parseRatesData(
-  data: unknown,
-  fallbackDate: string
-): { parity: RateCheck[]; compsets: { date: string; entries: CompsetEntry[] }[] } {
-  if (!data) return { parity: [], compsets: [] };
-  if (Array.isArray(data)) return { parity: data as RateCheck[], compsets: [] };
-  const obj = data as {
-    checks?: RateCheck[];
-    compsets?: { date: string; entries: CompsetEntry[] }[];
-    compset?: CompsetEntry[];
-    compsetDate?: string;
-  };
-  const parity = obj.checks ?? [];
-  if (Array.isArray(obj.compsets)) return { parity, compsets: obj.compsets };
-  if (Array.isArray(obj.compset)) {
-    return { parity, compsets: [{ date: obj.compsetDate ?? fallbackDate, entries: obj.compset }] };
-  }
-  return { parity, compsets: [] };
-}
-
 const WINDOW_NIGHTS = 22; // today + 21
 const HOLIDAY_ATTENDANCE: Record<string, number> = { major: 40000, meaningful: 15000, minor: 6000 };
-
-/** Property-local today. Delegates to lib/date so client components can share
- *  the exact same rule without importing this module's server dependencies. */
-export function chicagoToday(now = new Date()): string {
-  return todayIn('America/Chicago', now);
-}
 
 /**
  * Sources a property's market has, for confidence. The original property has
@@ -91,14 +60,9 @@ export function expectedSources(property: Property): string[] | undefined {
 
 /**
  * @param store the property's own store (`storeFor`); everything written lands there.
- * @param property the hotel the bundle is for. Defaults to the original property for older callers.
+ * @param property the hotel the bundle is for.
  */
-export async function processBundle(
-  bundle: Bundle,
-  store: Store,
-  now = new Date(),
-  property: Property = getProperty(DEFAULT_PROPERTY_ID)!
-) {
+export async function processBundle(bundle: Bundle, store: Store, now: Date, property: Property) {
   const bundlePropertyId = bundle.propertyId ?? DEFAULT_PROPERTY_ID;
   const today = todayIn(property.timezone, now);
   const window = dateRange(today, WINDOW_NIGHTS);
@@ -136,21 +100,17 @@ export async function processBundle(
     src('nws')?.status === 'ok' && Array.isArray(src('nws')!.data)
       ? (src('nws')!.data as WeatherAlert[])
       : [];
-  // `bnaDisrupted` is the shape collectors sent before airports were per property.
-  const faaRaw = src('faa')?.status === 'ok'
-    ? (src('faa')!.data as { disrupted?: boolean; bnaDisrupted?: boolean; airport?: string; detail?: string })
-    : null;
-  const faaData = faaRaw
-    ? { disrupted: Boolean(faaRaw.disrupted ?? faaRaw.bnaDisrupted), airport: faaRaw.airport ?? 'BNA', detail: faaRaw.detail }
+  const faaData = src('faa')?.status === 'ok'
+    ? (src('faa')!.data as { disrupted: boolean; airport: string; detail?: string })
     : null;
 
-  const ratesData = src('rates')?.status === 'ok' ? src('rates')!.data : null;
-  const { parity, compsets: rawCompsets } = parseRatesData(ratesData, addDays(today, 1));
+  const ratesData = src('rates')?.status === 'ok' ? (src('rates')!.data as RatesData | undefined) : undefined;
+  const parity = ratesData?.checks ?? [];
+  const rawCompsets = ratesData?.compsets ?? [];
 
   // Persist collector-resolved property tokens onto the watchlist so later runs
   // match those hotels exactly instead of by name substring.
-  const resolvedTokens = (ratesData as { resolvedPropertyTokens?: Record<string, string> } | null)
-    ?.resolvedPropertyTokens;
+  const resolvedTokens = ratesData?.resolvedPropertyTokens;
   if (resolvedTokens && Object.keys(resolvedTokens).length > 0) {
     const list = await loadWatchlist(store, bundlePropertyId);
     let changed = false;
@@ -239,7 +199,7 @@ export async function processBundle(
   const healthKey = `source:health:${bundlePropertyId}`;
   const sourceHealth = (await store.get<Record<string, SourceHealth>>(healthKey)) ?? {};
 
-  const searchBudget = (ratesData as { budget?: { remaining: number; renewalDate?: string } } | null)?.budget;
+  const searchBudget = ratesData?.budget;
 
   // Parity costs a metered search, so only the first run of the day buys it.
   // Without this the 13:00 and 18:00 runs would overwrite the morning's parity
@@ -260,7 +220,6 @@ export async function processBundle(
     runAt: bundle.runAt, runId,
     confidence: conf.value, confidenceNote: conf.note,
     nights, parity: parityToStore,
-    compset: compsets[0], // back-compat for older readers
     compsets,
     sources: bundle.sources,
   };
@@ -268,12 +227,10 @@ export async function processBundle(
   // dashboard reads. `store` is already this property's own (storeFor), so
   // writing the unscoped ones for every hotel keeps them apart.
   await store.set(propKey.snapshotLatest(bundlePropertyId), snapshot);
-  await store.set(propKey.snapshotRun(bundlePropertyId, today, runId), snapshot, 30 * 86400);
   // Raw bundle kept for /api/recompute: config edits (baselines, watchlist)
   // re-run scoring on the same data without waiting for the next scrape.
   await store.set(propKey.bundleLatest(bundlePropertyId), bundle);
   await store.set('snapshot:latest', snapshot);
-  await store.set(`snapshot:${today}:${runId}`, snapshot, 30 * 86400);
 
   const todayNight = nights[0];
   const std = todayNight.tiers.find((t) => t.tierId === 'standard');

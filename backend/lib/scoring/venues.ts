@@ -9,12 +9,14 @@ export const VENUE_CAPACITY: Record<string, number> = {
   'music city center': 5000,
 };
 
-export function venueCapacity(venue: string): number | null {
+/** First table entry whose key appears in the venue name (lowercase substring). */
+function lookup<T>(table: Record<string, T>, venue: string): T | null {
   const key = venue.trim().toLowerCase();
-  for (const [name, cap] of Object.entries(VENUE_CAPACITY)) {
-    if (key.includes(name)) return cap;
-  }
-  return null;
+  return Object.entries(table).find(([name]) => key.includes(name))?.[1] ?? null;
+}
+
+export function venueCapacity(venue: string): number | null {
+  return lookup(VENUE_CAPACITY, venue);
 }
 
 /**
@@ -35,22 +37,7 @@ export const VENUE_COORDS: Record<string, { lat: number; lng: number }> = {
 };
 
 export function venueCoords(venue: string): { lat: number; lng: number } | null {
-  const key = venue.trim().toLowerCase();
-  for (const [name, coords] of Object.entries(VENUE_COORDS)) {
-    if (key.includes(name)) return coords;
-  }
-  return null;
-}
-
-/** Great-circle distance in miles — for "how far is this event from us". */
-export function milesBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 3958.8 * 2 * Math.asin(Math.sqrt(h));
+  return lookup(VENUE_COORDS, venue);
 }
 
 /**

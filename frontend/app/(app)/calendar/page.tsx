@@ -1,10 +1,10 @@
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
 import { loadSnapshot } from '../../../../backend/lib/dashboard-data';
 import ReasoningCard from '../../../components/ReasoningCard';
-import MarketIntelligence, { type MIEvent, type MINight } from '../../../components/MarketIntelligence';
+import MarketIntelligence, { type MIEvent } from '../../../components/MarketIntelligence';
+import type { CalendarNight } from '../../../components/DemandCalendar';
 import { requestProperty } from '../../../../backend/lib/demo/context';
-import { milesBetween, venueCoords } from '../../../../backend/lib/scoring/venues';
+import { venueCoords } from '../../../../backend/lib/scoring/venues';
+import { haversineMiles } from '../../../../backend/lib/geo';
 import { demoVenueCoords } from '../../../../backend/lib/demo';
 import { todayIn } from '../../../../backend/lib/date';
 
@@ -38,13 +38,13 @@ export default async function Calendar() {
         verdict: e.verdict,
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
-        miles: coords ? milesBetween(property, coords) : null,
+        miles: coords ? haversineMiles(property.lat, property.lng, coords.lat, coords.lng) : null,
       });
     }
   }
   events.sort((a, b) => a.date.localeCompare(b.date) || b.score - a.score);
 
-  const nights: MINight[] = snapshot.nights.map((n) => {
+  const nights: CalendarNight[] = snapshot.nights.map((n) => {
     const byScore = [...n.events].sort((a, b) => b.score - a.score);
     const top = byScore[0];
     const standard = n.tiers.find((t) => t.tierId === 'standard') ?? n.tiers[0];
@@ -69,7 +69,7 @@ export default async function Calendar() {
           score: e.score,
           tier: e.tier,
           verdict: e.verdict,
-          miles: coords ? milesBetween(property, coords) : null,
+          miles: coords ? haversineMiles(property.lat, property.lng, coords.lat, coords.lng) : null,
         };
       }),
     };
@@ -78,7 +78,7 @@ export default async function Calendar() {
   const tonight = snapshot.nights[0];
 
   return (
-    <div className={`${GeistSans.variable} ${GeistMono.variable} space-y-6 font-geist text-[#1a1b20] antialiased`}>
+    <div className="space-y-6 font-geist text-[#1a1b20] antialiased">
       <MarketIntelligence
         property={{ name: property.name, lat: property.lat, lng: property.lng }}
         events={events}

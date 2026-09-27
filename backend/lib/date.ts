@@ -101,10 +101,6 @@ export const fmtWeekdayLong = (d: DateLike): string =>
     weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC',
   });
 
-/** `Sep 2026` */
-export const fmtMonthYear = (d: DateLike): string =>
-  asDate(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-
 /** `September 2026` */
 export const fmtMonthYearLong = (d: DateLike): string =>
   asDate(d).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });

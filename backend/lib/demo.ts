@@ -1,6 +1,6 @@
 import type { NightRecommendation, ScoredEvent, Snapshot } from './scoring/types';
 import { DEMO_PROPERTY } from './properties';
-import { noonUTC, todayIn } from './date';
+import { noonUTC, todayIn, toIsoDate as iso } from './date';
 
 /**
  * The demo world — sample data shaped exactly like a live Snapshot, used when
@@ -67,10 +67,6 @@ export function demoVenueCoords(venue: string): { lat: number; lng: number } | n
   return DEMO_VENUE_COORDS[venue.trim().toLowerCase()] ?? null;
 }
 
-function iso(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
 function event(partial: Partial<ScoredEvent> & Pick<ScoredEvent, 'name' | 'date' | 'score' | 'tier' | 'verdict'>): ScoredEvent {
   return {
     id: `demo-${partial.name.toLowerCase().replace(/\W+/g, '-')}`,
@@ -95,7 +91,7 @@ function event(partial: Partial<ScoredEvent> & Pick<ScoredEvent, 'name' | 'date'
  * and the crafted scenarios below express their prices as multiples of the
  * baseline rather than as fixed dollars.
  */
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function dayName(d: Date): string {
   return DAY_NAMES[d.getUTCDay()];
@@ -107,21 +103,19 @@ function baseFor(d: Date): number {
   return dow === 5 || dow === 6 ? 94 : 79;
 }
 
-function night(date: Date, overrides: Partial<NightRecommendation> = {}): NightRecommendation {
-  const dow = date.getUTCDay();
-  const weekend = dow === 5 || dow === 6;
-  const base = weekend ? 94 : 79;
-  const uplift = overrides.upliftPct ?? 0;
-  const std = Math.round(base * (1 + uplift / 100));
+/** @param stdMultiplier overrides the uplift-derived standard rate (tonight's compset cap). */
+function night(date: Date, overrides: Partial<NightRecommendation> = {}, stdMultiplier?: number): NightRecommendation {
+  const base = baseFor(date);
+  const std = Math.round(base * (stdMultiplier ?? 1 + (overrides.upliftPct ?? 0) / 100));
   return {
     date: iso(date),
-    dow,
+    dow: date.getUTCDay(),
     nightScore: 0,
     upliftPct: 0,
     events: [],
     reasoning: [`${dayName(date)} baseline $${base}`, 'No demand signal for this night'],
     ...overrides,
-    tiers: overrides.tiers ?? [
+    tiers: [
       { tierId: 'standard', label: 'Standard Room', baselineMid: base, recommended: std, range: [std - 5, std + 5] },
       { tierId: 'superior', label: 'Superior Room', baselineMid: base + 15, recommended: std + 15, range: [std + 10, std + 20] },
     ],
@@ -143,8 +137,6 @@ export function demoSnapshot(): Snapshot {
     // compset bound that pulls the number back under its own baseline.
     (() => {
       const d = day(0);
-      const base = baseFor(d);
-      const std = Math.round(base * 0.95);
       return night(d, {
         nightScore: 82,
         upliftPct: 12,
@@ -152,48 +144,32 @@ export function demoSnapshot(): Snapshot {
           event({ name: 'Neon Compass @ Harborview Amphitheater', date: iso(d), score: 82, tier: 'major', verdict: 'Sellout likely — downtown fills first, overflow reaches Kestrel Bay.' }),
           event({ name: 'Cascadia State home game', date: iso(d), venue: 'Fairmount Field', capacity: 34000, attendanceEstimate: 4800, kind: 'sports', score: 11, tier: 'too-small', verdict: 'Too small to matter — shown, not applied.' }),
         ],
-        tiers: [
-          { tierId: 'standard', label: 'Standard Room', baselineMid: base, recommended: std, range: [std - 5, std + 5] },
-          { tierId: 'superior', label: 'Superior Room', baselineMid: base + 15, recommended: std + 15, range: [std + 10, std + 20] },
-        ],
         reasoning: [
-          `${dayName(d)} baseline $${base}`,
+          `${dayName(d)} baseline $${baseFor(d)}`,
           'Neon Compass @ Harborview Amphitheater (score 82, major) → +18%',
           'Downtown absorbs most, distance dampener −6%',
           'Compset median $96 caps the range',
           'Cascadia State home game (score 11) judged too small to matter — shown, not applied',
         ],
-      });
+      }, 0.95);
     })(),
     (() => {
       const d = day(1);
-      const base = baseFor(d);
-      const std = Math.round(base * 1.05);
       return night(d, {
         nightScore: 46,
         upliftPct: 5,
         events: [event({ name: 'Cascadia State vs. Ridgeline', date: iso(d), venue: 'Fairmount Field', capacity: 34000, attendanceEstimate: 26500, kind: 'sports', score: 46, tier: 'meaningful', verdict: 'Rivalry weekend — meaningful overflow expected.' })],
-        tiers: [
-          { tierId: 'standard', label: 'Standard Room', baselineMid: base, recommended: std, range: [std - 5, std + 5] },
-          { tierId: 'superior', label: 'Superior Room', baselineMid: base + 15, recommended: std + 15, range: [std + 10, std + 20] },
-        ],
-        reasoning: [`${dayName(d)} baseline $${base}`, 'Cascadia State vs. Ridgeline (score 46, meaningful) → +5%'],
+        reasoning: [`${dayName(d)} baseline $${baseFor(d)}`, 'Cascadia State vs. Ridgeline (score 46, meaningful) → +5%'],
       });
     })(),
     night(day(2)),
     (() => {
       const d = day(3);
-      const base = baseFor(d);
-      const std = Math.round(base * 1.19);
       return night(d, {
         nightScore: 55,
         upliftPct: 19,
         holidayName: 'Harbor Days',
-        tiers: [
-          { tierId: 'standard', label: 'Standard Room', baselineMid: base, recommended: std, range: [std - 5, std + 5] },
-          { tierId: 'superior', label: 'Superior Room', baselineMid: base + 15, recommended: std + 15, range: [std + 10, std + 20] },
-        ],
-        reasoning: [`${dayName(d)} baseline $${base}`, 'Harbor Days holiday uplift → +19%'],
+        reasoning: [`${dayName(d)} baseline $${baseFor(d)}`, 'Harbor Days holiday uplift → +19%'],
       });
     })(),
     night(day(4), {

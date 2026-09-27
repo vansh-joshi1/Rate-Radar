@@ -123,21 +123,27 @@ export default function RadarDemo() {
      the number the user is watching. Past its edge the pin follows with growing
      resistance, along whichever edge it pushed through, and on release the
      safe target brings it back out. */
-  const resistCard = useCallback((x: number, y: number) => {
+  /** The card's keep-out corner in surface coordinates, 18px of margin included. */
+  const cardEdge = useCallback(() => {
     const card = readoutRef.current;
     const surface = surfaceRef.current;
-    if (!card || !surface) return { x, y };
+    if (!card || !surface) return null;
     const c = card.getBoundingClientRect();
     const sr = surface.getBoundingClientRect();
-    const left = c.left - sr.left - 18;
-    const top = c.top - sr.top - 18;
+    return { left: c.left - sr.left - 18, top: c.top - sr.top - 18, width: c.width, height: c.height };
+  }, []);
+
+  const resistCard = useCallback((x: number, y: number) => {
+    const edge = cardEdge();
+    if (!edge) return { x, y };
+    const { left, top } = edge;
     if (x <= left || y <= top) return { x, y };
     const inX = x - left;
     const inY = y - top;
     return inX < inY
-      ? { x: left + rubberband(inX, c.width), y }
-      : { x, y: top + rubberband(inY, c.height) };
-  }, []);
+      ? { x: left + rubberband(inX, edge.width), y }
+      : { x, y: top + rubberband(inY, edge.height) };
+  }, [cardEdge]);
 
   /* Where the pin is allowed to come to rest: 26px inside every edge (so the
      pin and its label are never clipped), and never under the readout card in
@@ -148,20 +154,13 @@ export default function RadarDemo() {
     const pad = 26;
     let tx = Math.max(pad, Math.min(w - pad, x));
     let ty = Math.max(pad + 16, Math.min(h - pad, y));
-    const card = readoutRef.current;
-    const surface = surfaceRef.current;
-    if (card && surface) {
-      const c = card.getBoundingClientRect();
-      const sr = surface.getBoundingClientRect();
-      const left = c.left - sr.left - 18;
-      const top = c.top - sr.top - 18;
-      if (tx > left && ty > top) {
-        if (tx - left < ty - top) tx = left;
-        else ty = top;
-      }
+    const edge = cardEdge();
+    if (edge && tx > edge.left && ty > edge.top) {
+      if (tx - edge.left < ty - edge.top) tx = edge.left;
+      else ty = edge.top;
     }
     return { x: tx, y: ty };
-  }, []);
+  }, [cardEdge]);
 
   /* One rAF loop, two independent springs. X and Y are integrated separately —
      a single spring on the 2D distance desyncs the moment the two axes carry
@@ -223,18 +222,23 @@ export default function RadarDemo() {
     [paint, tick],
   );
 
-  const measure = useCallback(() => {
-    const el = surfaceRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
+  /* Carry the pin to a new surface size at the same fraction of it (home on
+     the first measure), and rest it there. */
+  const rescale = useCallback((rect: DOMRect) => {
     const prev = size.current;
     const fx = prev.w ? pos.current.x / prev.w : HOME.x;
     const fy = prev.h ? pos.current.y / prev.h : HOME.y;
     size.current = { w: rect.width, h: rect.height };
     pos.current = { x: fx * rect.width, y: fy * rect.height };
     target.current = { ...pos.current };
+  }, []);
+
+  const measure = useCallback(() => {
+    const el = surfaceRef.current;
+    if (!el) return;
+    rescale(el.getBoundingClientRect());
     paint();
-  }, [paint]);
+  }, [paint, rescale]);
 
   useLayoutEffect(() => {
     reduced.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -243,13 +247,12 @@ export default function RadarDemo() {
     // reflowing (font swap, grid settling), and a width measured mid-reflow
     // parks the pin off-centre.
     const settle = requestAnimationFrame(measure);
+    // The surface is fluid-width, so this also covers window resizes.
     const ro = new ResizeObserver(measure);
     if (surfaceRef.current) ro.observe(surfaceRef.current);
-    window.addEventListener('resize', measure);
     return () => {
       cancelAnimationFrame(settle);
       ro.disconnect();
-      window.removeEventListener('resize', measure);
       if (raf.current !== null) cancelAnimationFrame(raf.current);
     };
   }, [measure]);
@@ -258,16 +261,14 @@ export default function RadarDemo() {
      mount goes stale the moment the hero reflows (font swap, breakpoint change)
      and a stale width makes the pin rubber-band against an edge that isn't
      there. */
-  const syncSize = useCallback((rect: DOMRect) => {
-    if (!rect.width || !rect.height) return;
-    const prev = size.current;
-    if (prev.w === rect.width && prev.h === rect.height) return;
-    const fx = prev.w ? pos.current.x / prev.w : HOME.x;
-    const fy = prev.h ? pos.current.y / prev.h : HOME.y;
-    size.current = { w: rect.width, h: rect.height };
-    pos.current = { x: fx * rect.width, y: fy * rect.height };
-    target.current = { ...pos.current };
-  }, []);
+  const syncSize = useCallback(
+    (rect: DOMRect) => {
+      if (!rect.width || !rect.height) return;
+      if (size.current.w === rect.width && size.current.h === rect.height) return;
+      rescale(rect);
+    },
+    [rescale],
+  );
 
   function onPointerDown(e: React.PointerEvent) {
     const surface = surfaceRef.current;

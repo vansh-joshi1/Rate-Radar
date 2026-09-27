@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   noonUTC, toIsoDate, todayIn, addDays, dateRange, dayOfWeek,
   fmtDay, fmtDow, fmtDowDay, fmtDowDayYear, fmtWeekdayLong,
-  fmtMonthYear, fmtMonthYearLong, fmtRange,
+  fmtMonthYearLong, fmtRange,
 } from '../lib/date';
 
 /*
@@ -91,7 +91,6 @@ describe('formatters', () => {
     expect(fmtDowDay(d)).toBe('Tue, Sep 22');
     expect(fmtDowDayYear(d)).toBe('Tue, Sep 22, 2026');
     expect(fmtWeekdayLong(d)).toBe('Tuesday, September 22');
-    expect(fmtMonthYear(d)).toBe('Sep 2026');
     expect(fmtMonthYearLong(d)).toBe('September 2026');
   });
 
@@ -107,6 +106,6 @@ describe('formatters', () => {
   it('formats in UTC, not the viewer timezone', () => {
     // Late-evening UTC would be the next day east of UTC if the zone leaked in.
     expect(fmtDay('2026-12-31')).toBe('Dec 31');
-    expect(fmtMonthYear('2026-12-31')).toBe('Dec 2026');
+    expect(fmtMonthYearLong('2026-12-31')).toBe('December 2026');
   });
 });

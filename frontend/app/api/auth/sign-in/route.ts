@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   }
   if (await isAllowed(store, email)) return NextResponse.json({ ok: true });
 
-  await supabaseAuth().auth.signOut();
+  await (await supabaseAuth()).auth.signOut();
   const request = await getAccessRequest(store, email);
   return NextResponse.json({ error: request ? 'pending' : 'not invited' }, { status: 403 });
 }

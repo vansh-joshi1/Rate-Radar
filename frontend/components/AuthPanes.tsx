@@ -3,8 +3,6 @@ import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { track } from './PostHogInit';
 import { useRouter } from 'next/navigation';
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
 import { EnvelopeSimpleIcon } from '@phosphor-icons/react/dist/ssr/EnvelopeSimple';
 import { EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
@@ -12,6 +10,7 @@ import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { RadarIcon } from './RadarMark';
 import { Bezel, PillButton, SPRING } from './landing/Machined';
 import { DOT_FIELD, Grain, HeroRadar } from './landing/Backdrop';
+import { SampleReading, type Reason } from './landing/SampleReading';
 
 /*
  * Sign in and Get access, on the marketing surface's machined parts
@@ -67,8 +66,8 @@ const textLink = `rounded-full font-medium text-[#0b1c30] underline decoration-[
 
 // ---------------------------------------------------------------- readout
 
-// Same demo-world figures as the landing's reasoning preview (app/page.tsx).
-const REASONS: { text: string; delta: string; rejected?: boolean }[] = [
+// Same demo-world figures as the landing's reasoning preview (app/page.tsx), worded shorter.
+const REASONS: Reason[] = [
   { text: 'Saturday baseline', delta: '$84' },
   { text: 'Cascadia State vs. Ridgeline, meaningful', delta: '+9%' },
   { text: 'Compset median $99', delta: 'no cap' },
@@ -79,38 +78,7 @@ function Readout() {
   return (
     <div className="auth-rise w-full max-w-[440px]">
       <Bezel core="p-7 xl:p-8">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <div className="font-geist-mono text-[12px] text-[#44474d]">Saturday, Standard</div>
-            <div className="mt-2 text-[56px] font-semibold leading-none tracking-tighter tabular-nums text-[#085ac0]">
-              $92
-            </div>
-          </div>
-          <div className="text-right font-geist-mono text-[13px] tabular-nums text-[#44474d]">
-            <div>$88 to $96</div>
-            <div className="text-[#029768]">+10% vs baseline</div>
-          </div>
-        </div>
-
-        <ul className="mt-6 divide-y divide-[#0b1c30]/[0.06]">
-          {REASONS.map((r) => (
-            <li key={r.text} className="flex items-baseline justify-between gap-4 py-3 text-[14px] leading-snug">
-              <span className={`flex min-w-0 gap-3 ${r.rejected ? 'text-[#44474d]' : 'text-[#1a1b20]'}`}>
-                <span aria-hidden className={r.rejected ? 'text-[#0b1c30]/25' : 'text-[#085ac0]'}>
-                  •
-                </span>
-                {r.text}
-              </span>
-              {r.rejected ? (
-                <span className="shrink-0 rounded-full bg-[#0b1c30]/[0.05] px-2.5 py-0.5 text-[12px] font-medium text-[#44474d]">
-                  {r.delta}
-                </span>
-              ) : (
-                <span className="shrink-0 font-geist-mono text-[13px] tabular-nums">{r.delta}</span>
-              )}
-            </li>
-          ))}
-        </ul>
+        <SampleReading reasons={REASONS} rateSize="text-[56px]" />
 
         <div className="mt-2 flex items-baseline justify-between gap-4 border-t border-[#0b1c30]/[0.06] pt-4">
           <span className="font-geist-mono text-[12px] text-[#44474d]">Confidence</span>
@@ -126,6 +94,73 @@ function Readout() {
 }
 
 // ---------------------------------------------------------------- pieces
+
+/**
+ * The split screen /login, /signup and /onboarding share: the form column on
+ * the left, the range rings and a readout on the right (lg and up).
+ * `decorativeAside` hides a readout that only illustrates from screen readers.
+ */
+export function AuthFrame({
+  children,
+  aside,
+  decorativeAside = false,
+}: {
+  children: React.ReactNode;
+  aside: React.ReactNode;
+  decorativeAside?: boolean;
+}) {
+  return (
+    <main
+      className="relative isolate grid min-h-[100dvh] grid-cols-1 bg-[#f8f9ff] font-geist text-[#1a1b20] antialiased lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]"
+      style={DOT_FIELD}
+    >
+      <Grain />
+
+      <section className="flex min-w-0 flex-col px-4 pb-8 pt-6 md:px-6 lg:px-12 xl:px-20">
+        <div>
+          <Link
+            href="/"
+            className={`inline-flex items-center gap-2 rounded-full bg-white/70 py-2 pl-4 pr-5 ring-1 ring-[#0b1c30]/[0.06] ${ring}`}
+          >
+            <RadarIcon className="h-5 w-5 text-[#085ac0]" />
+            <span className="text-[15px] font-semibold tracking-tight text-[#0b1c30]">Rate Radar</span>
+          </Link>
+        </div>
+
+        <div className="flex flex-1 items-center py-10 md:py-12">{children}</div>
+
+        <p className="text-[13px] text-[#44474d]">Recommendation only. Rate Radar never changes a price anywhere.</p>
+      </section>
+
+      <aside
+        aria-hidden={decorativeAside || undefined}
+        className="relative isolate hidden min-w-0 items-center justify-center overflow-hidden px-12 lg:sticky lg:top-0 lg:flex lg:h-[100dvh] lg:self-start"
+      >
+        <HeroRadar variant="auth" />
+        {aside}
+      </aside>
+    </main>
+  );
+}
+
+/** The eye button inside a password field (the field takes `pr-14`). */
+export function PasswordToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={shown ? 'Hide password' : 'Show password'}
+      aria-pressed={shown}
+      className={`absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[#44474d] transition-colors duration-300 hover:bg-[#0b1c30]/[0.05] hover:text-[#0b1c30] ${ring}`}
+    >
+      {shown ? (
+        <EyeSlashIcon weight="light" className="h-[18px] w-[18px]" aria-hidden />
+      ) : (
+        <EyeIcon weight="light" className="h-[18px] w-[18px]" aria-hidden />
+      )}
+    </button>
+  );
+}
 
 function Heading({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -344,24 +379,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
   };
 
   return (
-    <main
-      className={`${GeistSans.variable} ${GeistMono.variable} relative isolate grid min-h-[100dvh] grid-cols-1 bg-[#f8f9ff] font-geist text-[#1a1b20] antialiased lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]`}
-      style={DOT_FIELD}
-    >
-      <Grain />
-
-      <section className="flex min-w-0 flex-col px-4 pb-8 pt-6 md:px-6 lg:px-12 xl:px-20">
-        <div>
-          <Link
-            href="/"
-            className={`inline-flex items-center gap-2 rounded-full bg-white/70 py-2 pl-4 pr-5 ring-1 ring-[#0b1c30]/[0.06] ${ring}`}
-          >
-            <RadarIcon className="h-5 w-5 text-[#085ac0]" />
-            <span className="text-[15px] font-semibold tracking-tight text-[#0b1c30]">Rate Radar</span>
-          </Link>
-        </div>
-
-        <div className="flex flex-1 items-center py-10 md:py-12">
+    <AuthFrame decorativeAside aside={<Readout />}>
           <div className="mx-auto w-full max-w-[420px] lg:mx-0">
             <Tabs tab={tab} onSelect={selectTab} />
 
@@ -457,19 +475,7 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
                       aria-invalid={pwError ? true : undefined}
                       aria-describedby={pwError ? ids.pwNote : undefined}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setPwShown((s) => !s)}
-                      aria-label={pwShown ? 'Hide password' : 'Show password'}
-                      aria-pressed={pwShown}
-                      className={`absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[#44474d] transition-colors duration-300 hover:bg-[#0b1c30]/[0.05] hover:text-[#0b1c30] ${ring}`}
-                    >
-                      {pwShown ? (
-                        <EyeSlashIcon weight="light" className="h-[18px] w-[18px]" aria-hidden />
-                      ) : (
-                        <EyeIcon weight="light" className="h-[18px] w-[18px]" aria-hidden />
-                      )}
-                    </button>
+                    <PasswordToggle shown={pwShown} onToggle={() => setPwShown((s) => !s)} />
                   </div>
                   <div aria-live="polite">{pwError && <FieldNote id={ids.pwNote}>{pwError}</FieldNote>}</div>
                   <PillButton type="submit" variant="secondary" className="mt-4 w-full" disabled={pwBusy}>
@@ -511,15 +517,6 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
               </div>
             </div>
           </div>
-        </div>
-
-        <p className="text-[13px] text-[#44474d]">Recommendation only. Rate Radar never changes a price anywhere.</p>
-      </section>
-
-      <aside aria-hidden className="relative isolate hidden min-w-0 items-center justify-center overflow-hidden px-12 lg:sticky lg:top-0 lg:flex lg:h-[100dvh] lg:self-start">
-        <HeroRadar variant="auth" />
-        <Readout />
-      </aside>
-    </main>
+    </AuthFrame>
   );
 }

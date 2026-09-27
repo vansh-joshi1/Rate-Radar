@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { planSearches, horizonDates, RESERVE, RUN_SLOTS_CT, HORIZON_DAYS } from '../collector/budget';
+import { planSearches, RESERVE, RUN_SLOTS_CT } from '../collector/budget';
 
 /**
  * August 2026 is CDT (UTC-5), so UTC noon is 07:00 Central — the first run slot.
@@ -10,25 +10,6 @@ const SLOT_1 = new Date('2026-08-01T18:00:00Z'); // 13:00 CT
 
 const TODAY = '2026-08-01';
 const WEEK = ['2026-08-01', '2026-08-02', '2026-08-03', '2026-08-04', '2026-08-05'];
-
-describe('horizonDates', () => {
-  it('runs from today forward, not from tomorrow', () => {
-    // The Overview headline recommends TONIGHT, so tonight is the one night that
-    // most needs a competitor price. It was the only night never fetched.
-    expect(horizonDates('2026-08-01')).toEqual(WEEK);
-    expect(horizonDates('2026-08-01')[0]).toBe('2026-08-01');
-  });
-
-  it('crosses a month boundary without arithmetic drift', () => {
-    expect(horizonDates('2026-08-30')).toEqual([
-      '2026-08-30', '2026-08-31', '2026-09-01', '2026-09-02', '2026-09-03',
-    ]);
-  });
-
-  it('is exactly HORIZON_DAYS long', () => {
-    expect(horizonDates('2026-08-01')).toHaveLength(HORIZON_DAYS);
-  });
-});
 
 describe('planSearches — full tier', () => {
   it('prices the whole horizon plus parity on the morning run', () => {

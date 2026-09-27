@@ -1,5 +1,3 @@
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
 import SettingsView, { type SearchBudget } from '../../../components/SettingsView';
 import { loadSnapshot } from '../../../../backend/lib/dashboard-data';
 import { demoInvoices } from '../../../../backend/lib/demo';
@@ -24,7 +22,7 @@ export default async function Settings() {
   const rates = await loadRatesConfig(await requestStore(), property.id);
 
   return (
-    <div className={`${GeistSans.variable} ${GeistMono.variable} font-geist text-[#1a1b20] antialiased`}>
+    <div className="font-geist text-[#1a1b20] antialiased">
     <SettingsView
       property={{
         id: property.id,

@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { track } from './PostHogInit';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
@@ -13,6 +13,8 @@ import { MinusIcon } from '@phosphor-icons/react/dist/ssr/Minus';
 import { useCanWrite } from './RoleProvider';
 import { Bezel, PillButton, SPRING } from './landing/Machined';
 import { fmtDay, fmtDow } from '../../backend/lib/date';
+import { DIVIDER, FOCUS, MONO_LABEL, StatusChip } from './settings/parts';
+import { SuggestList, useSuggest } from './suggest/Suggest';
 
 /*
  * Competitor Insights, on the Machined Instrument language (DESIGN.md).
@@ -69,21 +71,13 @@ interface Props {
   parity?: ReactNode;
 }
 
-export const MAX_HOTELS = 25;
+const MAX_HOTELS = 25;
 
 const money = (n: number) => `$${n}`;
 const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '-' : ''}$${Math.abs(n)}`;
-const ordinal = (n: number) => {
-  const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th';
-  return `${n}${s}`;
-};
-
-const MONO_LABEL = 'font-geist-mono text-[12px] text-[#44474d]';
-const DIVIDER = 'h-px bg-[#0b1c30]/[0.06]';
-const FOCUS =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
-const CHIP = 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-medium';
-const QUIET = 'bg-[#0b1c30]/[0.05] text-[#44474d]';
+const ORDINAL = new Intl.PluralRules('en-US', { type: 'ordinal' });
+const SUFFIX: Record<string, string> = { one: 'st', two: 'nd', few: 'rd', other: 'th' };
+const ordinal = (n: number) => `${n}${SUFFIX[ORDINAL.select(n)]}`;
 
 /* Price level across the whole grid, so a dot means the same thing in every
    row and column. Terciles rather than fixed thresholds: what counts as a
@@ -108,15 +102,17 @@ export default function CompetitorInsights({
   const canWrite = useCanWrite();
   const [watchlist, setWatchlist] = useState<string[]>(initialWatchlist);
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [open, setOpen] = useState(false);
-  /** Highlighted suggestion for arrow-key navigation; -1 is none. */
-  const [active, setActive] = useState(-1);
-  const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'warn' } | null>(null);
-  const searchAbort = useRef<AbortController | null>(null);
-  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Opens even when empty, to say Add hotel still tracks the name as typed.
+  const suggest = useSuggest<Suggestion>(
+    'watchlist',
+    async (q, signal) => {
+      const res = await fetch(`/api/hotel-search?propertyId=${propertyId}&q=${encodeURIComponent(q)}`, { signal });
+      return res.ok ? ((await res.json()) as { results: Suggestion[] }).results : null;
+    },
+    { delay: 450, openEmpty: true },
+  );
 
   const tracked = watchlist.length;
   const full = tracked >= MAX_HOTELS;
@@ -128,43 +124,6 @@ export default function CompetitorInsights({
       setWatchlist(hotels.map((h) => h.name));
     }
   }, [propertyId]);
-
-  useEffect(() => {
-    // Cancel any in-flight suggestion request when unmounting.
-    return () => searchAbort.current?.abort();
-  }, []);
-
-  function onQueryChange(value: string) {
-    setQuery(value);
-    setNotice(null);
-    if (debounce.current) clearTimeout(debounce.current);
-    if (value.trim().length < 3) {
-      setSuggestions([]);
-      setOpen(false);
-      return;
-    }
-    debounce.current = setTimeout(async () => {
-      searchAbort.current?.abort();
-      const ctrl = new AbortController();
-      searchAbort.current = ctrl;
-      setSearching(true);
-      try {
-        const res = await fetch(
-          `/api/hotel-search?propertyId=${propertyId}&q=${encodeURIComponent(value.trim())}`,
-          { signal: ctrl.signal },
-        );
-        if (res.ok) {
-          setSuggestions(((await res.json()) as { results: Suggestion[] }).results);
-          setActive(-1);
-          setOpen(true);
-        }
-      } catch {
-        /* aborted or offline: keep whatever we had */
-      } finally {
-        setSearching(false);
-      }
-    }, 450);
-  }
 
   /*
    * Runs a watchlist change with the controls locked, and always unlocks them.
@@ -190,9 +149,9 @@ export default function CompetitorInsights({
     fetch(url, { method: 'POST' }).then((r) => r.ok, () => false);
 
   function addHotel(s: Suggestion) {
-    setOpen(false);
-    setSuggestions([]);
-    setActive(-1);
+    suggest.setOpen(false);
+    suggest.setItems([]);
+    suggest.setActive(-1);
     setQuery('');
     return mutate(async () => {
       const res = await fetch(`/api/watchlist?propertyId=${propertyId}`, {
@@ -257,19 +216,16 @@ export default function CompetitorInsights({
     const matches = (entryName: string, watchName: string) =>
       entryName.toLowerCase().includes(watchName.toLowerCase());
 
+    const row = (key: string, perNight: ({ name: string; price: number } | null)[], label = key) => {
+      const prices = perNight.flatMap((e) => (e ? [e.price] : []));
+      return { key, label, perNight, avg: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null };
+    };
+
     const rows = watchlist.map((watchName) => {
       const perNight = visibleNights.map(
         (n) => n.entries.find((e) => matches(e.name, watchName)) ?? null,
       );
-      const found = perNight.filter((e): e is { name: string; price: number } => e != null);
-      const prices = found.map((e) => e.price);
-      return {
-        key: watchName,
-        label: found[0]?.name ?? watchName,
-        perNight,
-        avg: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
-        latest: found[0]?.price ?? null,
-      };
+      return row(watchName, perNight, perNight.find((e) => e)?.name ?? watchName);
     });
 
     // Anything priced that no watchlist name claims. Shouldn't normally
@@ -279,15 +235,7 @@ export default function CompetitorInsights({
       ...new Set(visibleNights.flatMap((n) => n.entries.filter((e) => !claimed(e.name)).map((e) => e.name))),
     ];
     for (const name of orphanNames) {
-      const perNight = visibleNights.map((n) => n.entries.find((e) => e.name === name) ?? null);
-      const prices = perNight.filter((e) => e != null).map((e) => e!.price);
-      rows.push({
-        key: name,
-        label: name,
-        perNight,
-        avg: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
-        latest: prices[0] ?? null,
-      });
+      rows.push(row(name, visibleNights.map((n) => n.entries.find((e) => e.name === name) ?? null)));
     }
 
     // Priced hotels first, most expensive down; unpriced names alphabetical.
@@ -403,11 +351,9 @@ export default function CompetitorInsights({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {isDemo ? (
-            <span className={`${CHIP} ${QUIET}`} title="Rendered from sample data, not a live feed">
-              Sample data
-            </span>
+            <StatusChip title="Rendered from sample data, not a live feed">Sample data</StatusChip>
           ) : (
-            <span className={`${CHIP} bg-[#029768]/[0.08] text-[#027a55]`}>Live</span>
+            <StatusChip tone="ok">Live</StatusChip>
           )}
           {nights.length > 1 && (
             <label className="block">
@@ -648,10 +594,10 @@ export default function CompetitorInsights({
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-1.5" aria-label="Price level key">
                   {LEVELS.map((l) => (
-                    <span key={l.label} className={`${CHIP} ${QUIET}`}>
+                    <StatusChip key={l.label}>
                       <span className={`h-2 w-2 rounded-full ring-1 ring-[#0b1c30]/10 ${l.dot}`} aria-hidden />
                       {l.label}
-                    </span>
+                    </StatusChip>
                   ))}
                 </div>
                 {visibleNights.length > 0 && (
@@ -683,74 +629,59 @@ export default function CompetitorInsights({
                   id="watchlist-search"
                   type="text"
                   value={query}
-                  onChange={(e) => onQueryChange(e.target.value)}
-                  onFocus={() => suggestions.length > 0 && setOpen(true)}
-                  onBlur={() => setTimeout(() => setOpen(false), 150)}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setNotice(null);
+                    suggest.search(e.target.value);
+                  }}
+                  {...suggest.inputProps}
                   onKeyDown={(e) => {
+                    const { items, open, active } = suggest;
                     if (e.key === 'Escape') {
-                      setOpen(false);
-                      setActive(-1);
-                    } else if (e.key === 'ArrowDown' && suggestions.length > 0) {
+                      suggest.setOpen(false);
+                      suggest.setActive(-1);
+                    } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && items.length > 0) {
                       e.preventDefault();
-                      setOpen(true);
-                      setActive((i) => (i + 1) % suggestions.length);
-                    } else if (e.key === 'ArrowUp' && suggestions.length > 0) {
-                      e.preventDefault();
-                      setOpen(true);
-                      setActive((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+                      suggest.setOpen(true);
+                      suggest.move(e.key === 'ArrowDown' ? 1 : -1);
                     } else if (e.key === 'Enter') {
                       e.preventDefault();
                       // A highlighted suggestion wins; otherwise Enter adds the name as typed, like the button.
-                      if (open && active >= 0 && suggestions[active] && !full) addHotel(suggestions[active]);
+                      if (open && active >= 0 && items[active] && !full) addHotel(items[active]);
                       else if (query.trim() && !full) addHotel({ name: query.trim() });
                     }
                   }}
                   placeholder="Search nearby hotels to track"
                   autoComplete="off"
                   disabled={!canWrite || busy}
-                  role="combobox"
-                  aria-expanded={open}
-                  aria-controls="watchlist-suggestions"
-                  aria-autocomplete="list"
-                  aria-activedescendant={open && active >= 0 ? `watchlist-option-${active}` : undefined}
                   className="h-12 w-full rounded-full bg-white pl-11 pr-5 text-[15px] text-[#1a1b20] shadow-[inset_0_1px_2px_rgba(11,28,48,0.06)] outline-none ring-1 ring-[#0b1c30]/[0.12] transition-shadow duration-300 placeholder:text-[#6b6e75] hover:ring-[#0b1c30]/20 focus:ring-2 focus:ring-[#085ac0]/60 disabled:opacity-60"
                 />
-                {open && (
-                  <ul
-                    id="watchlist-suggestions"
-                    role="listbox"
-                    className="absolute left-0 right-0 top-full z-30 mt-2 max-h-72 overflow-y-auto rounded-[1.25rem] bg-white p-1.5 shadow-[0_24px_48px_-24px_rgba(11,28,48,0.35)] ring-1 ring-[#0b1c30]/[0.08]"
-                  >
-                    {searching && <li className="px-4 py-2.5 text-[14px] text-[#44474d]">Searching nearby</li>}
-                    {!searching && suggestions.length === 0 && (
-                      <li className="px-4 py-2.5 text-[14px] text-[#44474d]">
-                        No nearby match. Press Add hotel to track the name as typed.
-                      </li>
-                    )}
-                    {suggestions.map((s, i) => (
-                      <li key={`${s.name}-${s.lat}`} id={`watchlist-option-${i}`} role="option" aria-selected={i === active}>
-                        <button
-                          type="button"
-                          tabIndex={-1}
-                          disabled={full}
-                          title={full ? 'The watchlist is full. Remove a hotel to add another.' : undefined}
-                          onMouseDown={(e) => e.preventDefault() /* keep focus until click fires */}
-                          onClick={() => addHotel(s)}
-                          onMouseEnter={() => setActive(i)}
-                          className={`w-full rounded-[0.875rem] px-4 py-2.5 text-left transition-colors duration-150 hover:bg-[#f3f5fc] disabled:opacity-50 ${i === active ? 'bg-[#f3f5fc]' : ''}`}
-                        >
-                          <span className="flex items-baseline justify-between gap-3">
-                            <span className="truncate text-[14.5px] font-medium text-[#1a1b20]">{s.name}</span>
-                            {s.distanceMi != null && (
-                              <span className={`${MONO_LABEL} shrink-0 tabular-nums`}>{s.distanceMi} mi</span>
-                            )}
-                          </span>
-                          {s.address && <span className="block truncate text-[13px] text-[#44474d]">{s.address}</span>}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <SuggestList
+                  s={suggest}
+                  itemKey={(s) => `${s.name}-${s.lat}`}
+                  onPick={addHotel}
+                  optionClass="disabled:opacity-50"
+                  disabled={full}
+                  title={full ? 'The watchlist is full. Remove a hotel to add another.' : undefined}
+                  render={(s) => (
+                    <>
+                      <span className="flex items-baseline justify-between gap-3">
+                        <span className="truncate text-[14.5px] font-medium text-[#1a1b20]">{s.name}</span>
+                        {s.distanceMi != null && (
+                          <span className={`${MONO_LABEL} shrink-0 tabular-nums`}>{s.distanceMi} mi</span>
+                        )}
+                      </span>
+                      {s.address && <span className="block truncate text-[13px] text-[#44474d]">{s.address}</span>}
+                    </>
+                  )}
+                >
+                  {suggest.searching && <li className="px-4 py-2.5 text-[14px] text-[#44474d]">Searching nearby</li>}
+                  {!suggest.searching && suggest.items.length === 0 && (
+                    <li className="px-4 py-2.5 text-[14px] text-[#44474d]">
+                      No nearby match. Press Add hotel to track the name as typed.
+                    </li>
+                  )}
+                </SuggestList>
               </div>
               <PillButton
                 type="button"

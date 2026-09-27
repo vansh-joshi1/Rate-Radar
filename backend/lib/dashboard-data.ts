@@ -16,7 +16,7 @@ import { requestStore, requestProperty, demoSid } from './demo/context';
  * than show an invented town's events under a real hotel's name.
  */
 export async function loadSnapshot(): Promise<{ snapshot: Snapshot; isDemo: boolean; awaitingFirstRun: boolean }> {
-  const inDemo = demoSid() !== null;
+  const inDemo = (await demoSid()) !== null;
   const real = await (await requestStore()).get<Snapshot>('snapshot:latest');
   if (real) return { snapshot: real, isDemo: inDemo, awaitingFirstRun: false };
   const awaitingFirstRun = !inDemo && Boolean((await requestProperty()).collect);

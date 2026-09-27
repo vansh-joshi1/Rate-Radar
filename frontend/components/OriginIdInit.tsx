@@ -17,31 +17,22 @@ import Script from 'next/script';
  * Docs: https://docs.digitalfingerprintjs.com/#quickstart
  */
 
-interface OriginIdResult {
-  originId: string;
-  eventId: string;
-}
-
 declare global {
   interface Window {
     OriginID?: {
-      init(config: {
-        endpoint: string;
-        apiKey: string;
-        onIdentify?: (result: OriginIdResult) => void;
-      }): { ready(): Promise<OriginIdResult> };
+      init(config: { endpoint: string; apiKey: string }): {
+        ready(): Promise<{ originId: string; eventId: string }>;
+      };
     };
   }
 }
 
 const ENDPOINT = 'https://api.digitalfingerprintjs.com/api/identify';
 const CDN_SRC = 'https://cdn.digitalfingerprintjs.com/v1/originid.global.js';
-const CDN_SRI = 'sha384-hiZM5NfgVQJBuaP7+6/cfJT+HzOn7kz2Fcc2jLj18bOKFFfl2uNsBANohwwadgva';
 const SCRIPT_SRC = process.env.NEXT_PUBLIC_ORIGINID_SCRIPT_URL || CDN_SRC;
 
 export default function OriginIdInit() {
-  const apiKey =
-    process.env.NEXT_PUBLIC_ORIGINID_PUBLIC_KEY || process.env.NEXT_PUBLIC_ORIGINID_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_ORIGINID_PUBLIC_KEY;
   if (!apiKey) return null;
 
   const start = () => {
@@ -62,9 +53,8 @@ export default function OriginIdInit() {
   // NOTE: SRI (integrity + crossorigin) is intentionally OFF for now — the
   // vendor CDN doesn't send Access-Control-Allow-Origin, and browsers refuse
   // integrity-checked cross-origin scripts without it (verified 2026-07-18).
-  // Reinstate {integrity: CDN_SRI, crossOrigin: 'anonymous'} once the CDN
-  // sends ACAO. Hash for that day: see CDN_SRI above.
-  void CDN_SRI;
+  // Reinstate {integrity, crossOrigin: 'anonymous'} once the CDN sends ACAO.
+  // Hash for that day: sha384-hiZM5NfgVQJBuaP7+6/cfJT+HzOn7kz2Fcc2jLj18bOKFFfl2uNsBANohwwadgva
   return (
     <Script
       src={SCRIPT_SRC}

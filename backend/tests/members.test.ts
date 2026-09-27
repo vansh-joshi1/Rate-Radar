@@ -3,7 +3,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FileStore } from '../lib/store';
-import { isAllowed, roleFor, saveMembers } from '../lib/auth/members';
+import { isAllowed, membershipFor, saveMembers } from '../lib/auth/members';
 
 function freshStore(): FileStore {
   return new FileStore(join(mkdtempSync(join(tmpdir(), 'rr-auth-')), 'store.json'));
@@ -20,14 +20,14 @@ describe('members gate for magic-link sign-in', () => {
 
   it('OWNER_EMAIL is always allowed as owner; strangers are not', async () => {
     const store = freshStore();
-    expect(await roleFor(store, 'Owner@Hotel.com')).toBe('owner');
+    expect((await membershipFor(store, 'Owner@Hotel.com'))?.role).toBe('owner');
     expect(await isAllowed(store, 'stranger@example.com')).toBe(false);
   });
 
   it('invited members get their assigned role', async () => {
     const store = freshStore();
     await saveMembers(store, [{ email: 'desk@hotel.com', role: 'manager', invitedAt: 'x' }]);
-    expect(await roleFor(store, 'desk@hotel.com')).toBe('manager');
+    expect((await membershipFor(store, 'desk@hotel.com'))?.role).toBe('manager');
     expect(await isAllowed(store, 'desk@hotel.com')).toBe(true);
   });
 });
