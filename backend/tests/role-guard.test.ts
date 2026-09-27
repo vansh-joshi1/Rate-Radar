@@ -48,6 +48,7 @@ describe('every mutating API route is role-guarded', () => {
     'auth/signout/route.ts': 'ends whatever session the caller has',
     'cron/heartbeat/route.ts': 'Vercel cron secret',
     'onboarding/discover/route.ts': 'public, read-only onboarding discovery behind a daily SerpApi cap',
+    'billing/webhook/route.ts': 'Stripe signature (STRIPE_WEBHOOK_SECRET)',
   };
 
   function routeFiles(dir: string): string[] {

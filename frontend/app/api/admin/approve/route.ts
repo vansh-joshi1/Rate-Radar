@@ -11,6 +11,7 @@ import { baselineFromRooms, saveRatesConfig } from '../../../../../backend/lib/r
 import { locateAddress } from '../../../../../backend/lib/geo';
 import { verifiedEmail } from '../../../../../backend/lib/email/messages';
 import { sendEmail } from '../../../../../backend/lib/email/send';
+import { accountFor } from '../../../../../backend/lib/billing/accounts';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,6 +92,8 @@ export async function POST(req: NextRequest) {
   await saveRatesConfig(tenant, id, baselineFromRooms(request.roomTypes));
   if (!existing) await addProperty(store, property);
   if (!member) await saveMembers(store, [...members, { email, role: 'owner', invitedAt: now, propertyId: id }]);
+  // The 14-day trial starts at approval. A retry keeps the account the first attempt made.
+  await accountFor(store, id);
   await saveAccessRequest(store, { ...request, propertyId: id, status: 'approved' });
 
   // The approval stands even if the email fails; the page says so, and the owner can be told directly.

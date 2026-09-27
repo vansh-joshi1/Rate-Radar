@@ -93,12 +93,13 @@ It is enforced in three places:
 
 | File | Responsibility |
 |---|---|
-| `backend/lib/billing/accounts.ts` | `Account` type, `accountFor(propertyId)` (creates the account with a fresh trial when missing), `saveAccount`, `access()`, `trialDaysLeft()`. |
+| `backend/lib/billing/accounts.ts` | `Account` type, `accountFor(propertyId)` (creates the account with a fresh trial when missing), `saveAccount`, `access()`, `trialDaysLeft()`, `billingView()` (the Billing tab's plan and status lines). |
+| `backend/lib/billing/plans.ts` | Displayed plan prices, shared by the landing page, plan wall and Billing tab. Browser-safe (no store import). |
 | `backend/lib/billing/stripe.ts` | The only file importing the `stripe` SDK. Client from `STRIPE_SECRET_KEY`; plan ↔ price-id map from the four price env vars; `accountFromSubscription(sub)` turning a Stripe subscription into the `Account` fields above. |
 | `frontend/app/api/admin/approve/route.ts` | Creates the approved hotel's account (`trialEndsAt` = now + 14 days) beside `addProperty`. |
 | `frontend/app/api/billing/checkout/route.ts` | POST `{ plan, interval }`, zod-validated. `requireRole('owner', { allowLocked: true })`. Creates the Stripe customer on first use (saved on the account), then a Checkout Session in `subscription` mode with `client_reference_id` = account id and the trial carry-over above. Returns `{ url }`. Refuses exempt properties and demo callers. |
 | `frontend/app/api/billing/portal/route.ts` | POST. `requireRole('owner', { allowLocked: true })`. Returns a Customer Portal session `{ url }`, return URL `/settings#billing`. 409 when the account has no Stripe customer. |
-| `frontend/app/api/billing/webhook/route.ts` | Not behind auth. Verifies `stripe-signature` against `STRIPE_WEBHOOK_SECRET` using the raw body. Handles `checkout.session.completed` (links subscription to the account via `client_reference_id`) and `customer.subscription.created/updated/deleted`. Each event re-fetches the subscription from Stripe and overwrites the account's billing fields, so duplicate or out-of-order events land on the same final state. Node runtime. |
+| `frontend/app/api/billing/webhook/route.ts` | Not behind auth. Verifies `stripe-signature` against `STRIPE_WEBHOOK_SECRET` using the raw body. Handles `customer.subscription.created/updated/deleted`, finding the account from `metadata.accountId`, which checkout stamps on the subscription and Stripe keeps through portal changes. An event for an old, ended subscription never overwrites a newer live one. Each event re-fetches the subscription from Stripe and overwrites the account's billing fields, so duplicate or out-of-order events land on the same final state. Node runtime. |
 | `frontend/components/PlanWall.tsx` | The locked screen described above. |
 | `frontend/components/SettingsView.tsx` | Billing tab reads the account: plan and interval with its price, status ("Trial, 9 days left", "Active, renews 12 Nov", "Cancels 12 Nov", "Payment failed, Stripe is retrying"), and a Manage billing button (owner, when a customer exists) or plan buttons (owner, still on trial). Drops the fake card and the invoice list. Demo keeps its sample figures. Exempt property shows "Not billed". |
 
@@ -112,7 +113,7 @@ and `docs/SETUP.md`:
 
 Stripe dashboard setup (documented in SETUP.md): two products, four prices matching
 PRODUCT.md, the Customer Portal enabled with plan switching between the four prices,
-and a webhook endpoint for the four events above.
+and a webhook endpoint for the three subscription events above.
 
 With `STRIPE_SECRET_KEY` unset (local demo), billing routes return 503 and the wall
 still applies, so the lock can be tested without Stripe.
@@ -135,7 +136,7 @@ still applies, so the lock can be tested without Stripe.
 - Vitest: `access()` across every status, trial boundary and exemption.
 - Vitest: `accountFromSubscription()` against saved Stripe subscription payloads
   (monthly/yearly, both plans, cancel-at-period-end, unknown price throws).
-- Vitest: webhook route rejects a bad signature and ignores unhandled event types.
+- Vitest: webhook route rejects a bad signature.
 - Manual, once: Stripe test keys + `stripe listen --forward-to localhost:3000/api/billing/webhook`
   — subscribe mid-trial, cancel in the portal, fail a payment with test card
   `4000 0000 0000 0341`, confirm lock and unlock.

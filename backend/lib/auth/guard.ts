@@ -25,7 +25,7 @@ export type RoleGate = { ok: true; role: Role } | { ok: false; response: NextRes
  * The session import is deferred so this module stays importable from route
  * files without hoisting the Supabase client graph into every one of them.
  */
-export async function requireRole(required: Role): Promise<RoleGate> {
+export async function requireRole(required: Role, opts: { allowLocked?: boolean } = {}): Promise<RoleGate> {
   // A demo visitor is an owner OF THEIR OWN SANDBOX. Granting the top role here
   // is safe only because it is paired with `requestStore()`: every write this
   // unlocks lands under the sandbox's key prefix. Routes that reach outside the
@@ -49,6 +49,18 @@ export async function requireRole(required: Role): Promise<RoleGate> {
         { status: 403 }
       ),
     };
+  }
+
+  // A lapsed trial or subscription stops every gated route here, in one place.
+  // Only the billing routes, which are how a hotel gets unlocked, skip it.
+  const { isExempt } = await import('../billing/accounts');
+  if (!opts.allowLocked && !isExempt(session.user.propertyId)) {
+    const { getStore } = await import('../store');
+    const { accountFor, access } = await import('../billing/accounts');
+    const { propertyId } = session.user;
+    if (access(await accountFor(getStore(), propertyId), propertyId, new Date()) === 'locked') {
+      return { ok: false, response: NextResponse.json({ error: 'plan required' }, { status: 402 }) };
+    }
   }
   return { ok: true, role };
 }

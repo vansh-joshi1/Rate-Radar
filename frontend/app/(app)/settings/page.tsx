@@ -1,10 +1,12 @@
 import SettingsView, { type SearchBudget } from '../../../components/SettingsView';
 import { loadSnapshot } from '../../../../backend/lib/dashboard-data';
-import { demoInvoices } from '../../../../backend/lib/demo';
 import { requestProperty, requestStore } from '../../../../backend/lib/demo/context';
 import { loadRatesConfig } from '../../../../backend/lib/rates-config';
 import { ALERT_THRESHOLDS } from '../../../../backend/lib/alerts/rules';
 import { RUN_SLOTS_CT } from '../../../../backend/collector/budget';
+import { getStore } from '../../../../backend/lib/store';
+import { accountFor, billingView, isExempt } from '../../../../backend/lib/billing/accounts';
+import { PLAN_PRICES } from '../../../../backend/lib/billing/plans';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,10 +18,15 @@ export const dynamic = 'force-dynamic';
  */
 export default async function Settings() {
   const { snapshot, isDemo: sample, awaitingFirstRun } = await loadSnapshot();
-  // A hotel waiting on its first run is not a demo: it gets no sample sources or invoices.
+  // A hotel waiting on its first run is not a demo: it gets no sample sources.
   const isDemo = sample && !awaitingFirstRun;
   const property = await requestProperty();
   const rates = await loadRatesConfig(await requestStore(), property.id);
+  const billing = isExempt(property.id)
+    ? isDemo
+      ? { plan: `Starter, ${PLAN_PRICES.starter.month} per month`, status: 'Active', canSubscribe: false, canManage: false }
+      : { plan: 'Not billed', status: 'The original hotel is never billed', canSubscribe: false, canManage: false }
+    : billingView(await accountFor(getStore(), property.id), new Date());
 
   return (
     <div className="font-geist text-[#1a1b20] antialiased">
@@ -46,7 +53,7 @@ export default async function Settings() {
       }
       thresholds={ALERT_THRESHOLDS}
       runSlots={RUN_SLOTS_CT}
-      invoices={isDemo ? demoInvoices : []}
+      billing={billing}
       isDemo={isDemo}
     />
     </div>

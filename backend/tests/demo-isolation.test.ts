@@ -160,6 +160,12 @@ describe('no browser-facing handler touches the production store directly', () =
     'api/members/route.ts': 'branches to the sandbox first; the global Team list (filtered to the caller\'s hotel) is the non-demo path',
     '(app)/admin/page.tsx': 'OWNER_EMAIL only, and a demo visitor gets the sample portfolio before any store read',
     'api/admin/approve/route.ts': 'OWNER_EMAIL only, refuses demo callers; approving writes the global property list and Team list',
+    // Billing accounts are global: the Stripe webhook has no session to scope by. The demo hotel is exempt, so none reads one.
+    '(app)/layout.tsx': 'reads the billing account only for a non-demo, non-exempt hotel',
+    '(app)/settings/page.tsx': 'reads the billing account only for a non-exempt hotel; the demo hotel is exempt',
+    'api/billing/checkout/route.ts': 'refuses demo callers before it touches the store',
+    'api/billing/portal/route.ts': 'refuses demo callers before it touches the store',
+    'api/billing/webhook/route.ts': 'Stripe signature, never a demo caller',
   };
 
   function sourceFiles(dir: string): string[] {
