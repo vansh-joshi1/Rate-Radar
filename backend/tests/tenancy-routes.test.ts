@@ -16,10 +16,17 @@ import { UNKNOWN_LOCAL_VENUE_CAPACITY } from '../collector/sources/ticketmaster'
 const h = vi.hoisted(() => ({
   store: null as unknown as FileStore,
   user: { email: 'gm@maple.com', role: 'owner', propertyId: 'maple-lodge', isAdmin: false },
+  revoked: [] as string[],
+  created: [] as string[],
 }));
 
 vi.mock('../lib/store', async (orig) => ({ ...(await orig<typeof import('../lib/store')>()), getStore: () => h.store }));
-vi.mock('../auth', () => ({ auth: async () => ({ user: { id: 'u', name: null, ...h.user } }), revokeUser: async () => {} }));
+vi.mock('../auth', () => ({
+  auth: async () => ({ user: { id: 'u', name: null, ...h.user } }),
+  revokeUser: async (email: string) => void h.revoked.push(email),
+  createPasswordUser: async (email: string) => (h.created.push(email), 'new-user-id'),
+  deleteUserById: async () => {},
+}));
 vi.mock('../lib/auth/guard', () => ({ requireRole: async () => ({ ok: true, role: 'owner' }) }));
 vi.mock('../lib/demo/context', () => ({ demoSid: () => null, requestStore: async () => h.store, demoRefusal: () => null }));
 vi.mock('../lib/geo', () => ({
@@ -62,6 +69,31 @@ describe('team route', () => {
     expect((await DELETE(json('DELETE', { email: 'gm@maple.com' }) as never)).status).toBe(400);
     expect((await DELETE(json('DELETE', { email: 'fd@maple.com' }) as never)).status).toBe(200);
     expect((await listMembers(h.store)).map((m) => m.email)).toEqual(['desk@rri.com', 'gm@maple.com']);
+  });
+});
+
+describe('account pre-hijack', () => {
+  const onboarding = (email: string) => json('POST', {
+    email, password: 'Correct-horse-battery-9', phone: '5555555555', name: 'Pine Court', address: '9 Elm St, Asheville, NC',
+    rooms: 30, type: 'Hotel', token: null, channels: [], listings: { direct: '', expedia: '', booking: '' }, roomTypes: [], competitors: ['a'],
+  });
+
+  it('onboarding cannot set a password for an email that already has access', async () => {
+    h.created.length = 0;
+    const { POST } = await import('../../frontend/app/api/onboarding/request/route');
+    expect((await POST(onboarding('fd@maple.com') as never)).status).toBe(409);
+    expect((await POST(onboarding('vansh@rri.com') as never)).status).toBe(409);
+    expect(h.created).toEqual([]);
+    // Control: a genuinely new email still gets through, so the 409s above are the gate, not bad fixtures.
+    expect((await POST(onboarding('new@pine.com') as never)).status).toBe(200);
+    expect(h.created).toEqual(['new@pine.com']);
+  });
+
+  it('inviting a teammate drops any account someone else made under that email', async () => {
+    h.revoked.length = 0;
+    const { POST } = await import('../../frontend/app/api/members/route');
+    expect((await POST(json('POST', { email: 'jane@maple.com', role: 'viewer' }) as never)).status).toBe(200);
+    expect(h.revoked).toEqual(['jane@maple.com']);
   });
 });
 

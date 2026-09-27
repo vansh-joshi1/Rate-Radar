@@ -84,6 +84,10 @@ export async function POST(req: NextRequest) {
   if (members.filter(t.mine).length >= 20) return NextResponse.json({ error: 'team is capped at 20 members' }, { status: 400 });
 
   const member: Member = { email, role, invitedAt: new Date().toISOString(), ...(t.propertyId ? { propertyId: t.propertyId } : {}) };
+  // Any account already under this email was made by someone who never proved
+  // they own it (an unreviewed /onboarding request): drop it, or its password
+  // would sign in as the new teammate. The teammate signs in by link instead.
+  if (!demoSid()) await revokeUser(email);
   await saveMembers(t.store, [...members, member]);
   return NextResponse.json({ ok: true, member });
 }
