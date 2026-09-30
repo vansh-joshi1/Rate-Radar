@@ -6,7 +6,7 @@ import { GoogleGenAI, type GenerateContentResponse, type GroundingMetadata } fro
  */
 const MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
 
-/** Appended when search was asked for but every grounded attempt failed (quota, error). */
+/** Appended whenever the model answers without search: in the demo, or when the grounded attempt failed. */
 const SEARCH_OFF =
   'WEB SEARCH IS OFF for this answer. For anything outside the DATA, say you cannot look that up right now.';
 
@@ -37,8 +37,8 @@ export function groundingFrom(meta: GroundingMetadata | undefined): Grounding | 
 
 /**
  * Throws before the first part on a missing key or when every attempt fails,
- * so the route can answer with a status. With `search`, grounded attempts go
- * first; if all of them fail, Bellhop still answers rate questions without it.
+ * so the route can answer with a status. With `search`, one grounded attempt
+ * goes first; if it fails, Bellhop still answers rate questions without it.
  */
 export async function streamReply(
   system: string,
@@ -49,8 +49,10 @@ export async function streamReply(
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
   const ai = new GoogleGenAI({ apiKey });
   const contents = turns.map((t) => ({ role: t.role === 'user' ? 'user' : 'model', parts: [{ text: t.text }] }));
+  // One grounded try: the search quota is shared across models, so a 429 on Flash is a 429 on Lite.
+  // ponytail: an overloaded (503) Flash drops search too; add a Lite + search attempt if that shows up.
   const attempts = [
-    ...(search ? MODELS.map((model) => ({ model, grounded: true })) : []),
+    ...(search ? [{ model: MODELS[0], grounded: true }] : []),
     ...MODELS.map((model) => ({ model, grounded: false })),
   ];
   let stream: AsyncGenerator<GenerateContentResponse> | undefined;
@@ -62,7 +64,7 @@ export async function streamReply(
         contents,
         config: grounded
           ? { systemInstruction: system, tools: [{ googleSearch: {} }] }
-          : { systemInstruction: search ? `${system}\n\n${SEARCH_OFF}` : system },
+          : { systemInstruction: `${system}\n\n${SEARCH_OFF}` },
       });
       break;
     } catch (err) {

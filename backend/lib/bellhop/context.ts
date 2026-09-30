@@ -11,12 +11,7 @@ export interface BellhopContext {
   history: HistoryRecord[];
   actuals: Record<string, Record<string, number>>;
   bookings: Bookings;
-  /** False in the demo: its town is invented, so there is nothing real to search. */
-  web: boolean;
 }
-
-const DEMO_NO_SEARCH =
-  'WEB SEARCH IS OFF: this is the public demo, and the hotel and its town are invented. For anything outside the DATA, say that outside questions work for a real hotel, not the demo.';
 
 const RULES = `You are Bellhop, the assistant inside Rate Radar, a revenue tool for small independent hotels.
 You answer the hotel's staff: about the rate recommendations Rate Radar has already computed, and about the outside world, often a question a guest just asked at the desk.
@@ -60,7 +55,6 @@ export function buildSystemPrompt(ctx: BellhopContext): string {
 
   return [
     RULES,
-    ...(ctx.web ? [] : [DEMO_NO_SEARCH]),
     header,
     `LATEST SNAPSHOT:\n${data}`,
     `RECENT HISTORY (what was recommended per night):\n${JSON.stringify(ctx.history)}`,

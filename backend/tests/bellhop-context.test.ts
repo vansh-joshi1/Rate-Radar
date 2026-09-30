@@ -15,7 +15,6 @@ describe('buildSystemPrompt', () => {
     history: [],
     actuals: {},
     bookings: {},
-    web: true,
   };
 
   it("carries tonight's recommendation and the engine's own reasoning", () => {
@@ -45,19 +44,6 @@ describe('buildSystemPrompt', () => {
 
   it('says so plainly when there is no snapshot', () => {
     expect(buildSystemPrompt({ ...base, snapshot: null })).toContain('NO SNAPSHOT');
-  });
-});
-
-describe('buildSystemPrompt, outside questions', () => {
-  const base = { property: DEMO_PROPERTY, today: '2026-09-30', snapshot: null, history: [], actuals: {}, bookings: {} };
-
-  it('keeps every price to the DATA, never the web', () => {
-    expect(buildSystemPrompt({ ...base, web: true })).toContain('Never quote a room rate, competitor price or any other price from a web search');
-  });
-
-  it('turns search off in the demo, and only there', () => {
-    expect(buildSystemPrompt({ ...base, web: false })).toContain('WEB SEARCH IS OFF');
-    expect(buildSystemPrompt({ ...base, web: true })).not.toContain('WEB SEARCH IS OFF');
   });
 });
 

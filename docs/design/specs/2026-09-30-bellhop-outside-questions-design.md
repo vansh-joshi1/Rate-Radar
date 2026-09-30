@@ -31,9 +31,10 @@ Bellhop directly; a public guest-facing surface is a different product.
 
 - **Demo:** no search tool. Kestrel Bay is invented; a search would find nothing, or
   real businesses near the demo's coordinates, and break the fiction. Outside questions
-  get "that works for a real hotel, not the demo". It also keeps demo traffic off the
+  get the same "search is off" answer as below. It also keeps demo traffic off the
   shared quota.
-- **Quota exhausted or grounding error:** one retry without search, with a line in the
+- **Quota exhausted or grounding error:** one grounded attempt only (the quota is shared,
+  so a 429 on Flash is a 429 on Lite), then a retry without search, with a line in the
   system prompt saying search is off for this answer. Rate questions still work; outside
   questions get "I can't look that up right now".
 
@@ -55,14 +56,13 @@ Bellhop directly; a public guest-facing surface is a different product.
 
 | File | Change |
 |---|---|
-| `lib/bellhop/gemini.ts` | `streamReply(system, turns, { search })`. Order: Flash + search, Flash-Lite + search, then Flash without search and the "search is off" line. Yields text, then one final `grounding` — sources `{ title, uri }`, one per site, and the suggestions HTML. Still the only file that knows the provider. |
-| `lib/bellhop/context.ts` | RULES splits into the two kinds of answer. `web: false` (demo) adds the no-search line. |
+| `lib/bellhop/gemini.ts` | `streamReply(system, turns, { search })`. Order: Flash + search, then Flash and Flash-Lite without search and with the "search is off" line. Yields text, then one final `grounding` — sources `{ title, uri }`, one per site, and the suggestions HTML. Still the only file that knows the provider. |
+| `lib/bellhop/context.ts` | RULES splits into the two kinds of answer, and says how short an answer is. |
 | `app/api/bellhop/route.ts` | `search` is off for demo callers. Streams text as before, then `\x1e` and the grounding as JSON. Still `text/plain`. |
-| `components/Bellhop.tsx` | Splits the stream at `\x1e`. A grounded answer shows a "Sources" row of links and Google's suggestions block as given, in a sandboxed `srcdoc` iframe (its CSS can't leak; `<base target="_blank">` so a click never loses the chat). A fourth starter, "Where can a guest get dinner nearby?", outside the demo; outside the demo the intro message also offers guest lookups. Under the composer: "Don't include guest names or personal details." Every question goes to Google. |
+| `components/Bellhop.tsx` | Splits the stream at `\x1e`. A grounded answer shows a "Sources" row of links and Google's suggestions block as given, in a sandboxed `srcdoc` iframe (its CSS can't leak; `<base target="_blank">` so a click never loses the chat). A fourth starter, "Where can a guest eat nearby?", outside the demo. Under the composer: "Leave out guest names and details." Every question goes to Google. |
 
 ## Tests
 
 - Grounding extraction against the SDK metadata shape: one source per site, the
   suggestions HTML passed through untouched, nothing when there is no metadata.
-- `buildSystemPrompt`: carries the prices-only-from-DATA rule; the demo prompt says search is off.
 - `tests/role-guard.test.ts` keeps covering the route.

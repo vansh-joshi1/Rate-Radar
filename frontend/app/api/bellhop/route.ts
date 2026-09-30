@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   // The public demo spends the real key's quota. The counter lives in the
   // sandbox (it expires with it), so this is per sandbox per day.
   // ponytail: a visitor who clears cookies gets a fresh sandbox and a fresh 10; add an IP limit if the demo gets abused.
-  if (demo &&(await store.incr('bellhop:asked', 86400)) > DEMO_DAILY_QUESTIONS) {
+  if (demo && (await store.incr('bellhop:asked', 86400)) > DEMO_DAILY_QUESTIONS) {
     return NextResponse.json(
       { error: `The demo allows ${DEMO_DAILY_QUESTIONS} Bellhop questions a day. The real product has no such cap.` },
       { status: 429 }
@@ -55,7 +55,6 @@ export async function POST(req: Request) {
     history: history.filter((h): h is HistoryRecord => h !== null),
     actuals: actuals ?? {},
     bookings: bookings ?? {},
-    web: !demo,
   });
 
   let parts: AsyncGenerator<ReplyPart>;
