@@ -8,17 +8,14 @@ import { loadProperty } from '../properties';
 import { sendEmail } from '../email/send';
 import { compsTrimmedEmail } from '../email/messages';
 
-/**
- * What a hotel's plan lets it use. Locked or open is access()'s call, not this.
- * Design: docs/design/specs/2026-09-30-plan-limits-design.md
- */
+/** What a hotel's plan lets it use. Design: docs/design/specs/2026-09-30-plan-limits-design.md */
 
-/** Hard ceiling on any watchlist, whatever the plan: the cap before plans existed. */
+/** Hard ceiling on any watchlist, whatever the plan. */
 export const MAX_COMPS = 25;
 
 export type Limits = { plan: Plan; bellhop: boolean; maxComps: number; historyDays: number };
 
-/** The original property and the demo: Growth, with only the hard ceiling on competitors. */
+/** The original property and the demo. */
 export const EXEMPT_LIMITS: Limits = { plan: 'growth', ...PLAN_LIMITS.growth, maxComps: MAX_COMPS };
 
 /** A trial runs on Growth. */
@@ -28,7 +25,7 @@ export function limitsFor(account: Account, propertyId: string): Limits {
   return { plan, ...PLAN_LIMITS[plan] };
 }
 
-/** The hotel's account, read once per page render (the layout and the page both need it). */
+/** Read once per page render; the layout and the page both need it. */
 export const requestAccount = cache((propertyId: string) => accountFor(getStore(), propertyId));
 
 export async function limitsForProperty(propertyId: string): Promise<Limits> {
@@ -36,12 +33,8 @@ export async function limitsForProperty(propertyId: string): Promise<Limits> {
 }
 
 /**
- * Hold one hotel's watchlist to its plan's competitor cap and tell its owners
- * what went. Runs after a plan change (the billing webhook) and on every
- * ingest, before the list bounds that run's compset, which also catches lists
- * that predate the caps or that a concurrent write put back. A repeat finds
- * nothing over the cap and sends nothing. A failed email is only logged: the
- * Competitors page shows the same note.
+ * Trim a hotel's watchlist to its plan's cap and email its owners what went.
+ * Idempotent. A failed email is only logged; the Competitors page shows the note.
  */
 export async function enforceCompCap(account: Account, propertyId: string, store: Store = storeFor(propertyId)): Promise<void> {
   if (isExempt(propertyId)) return;

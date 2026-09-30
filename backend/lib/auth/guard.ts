@@ -14,7 +14,7 @@ import type { Limits } from '../billing/limits';
  * Levels and their meanings live in ./roles.
  */
 
-/** On success, also what the caller's plan allows, so a route needs no second account read. */
+/** On success, also the caller's plan limits. */
 export type RoleGate = { ok: true; role: Role; limits: Limits } | { ok: false; response: NextResponse };
 
 /**

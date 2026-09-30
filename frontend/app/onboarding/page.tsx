@@ -15,7 +15,7 @@ import { AuthFrame, FIELD, LABEL, PasswordToggle, ring } from '../../components/
 import { SuggestList, useSuggest } from '../../components/suggest/Suggest';
 import { assignTiers, nearbyHotels, type Candidate, type Nearby, type RoomTier, type RoomType } from '../../../backend/lib/onboarding';
 
-/** The trial runs on Growth, so it starts with Growth's competitor cap. */
+/** The trial runs on Growth. */
 const MAX_COMPS = PLAN_LIMITS.growth.maxComps;
 
 /*

@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 
   const now = new Date().toISOString();
   const tenant = storeFor(id);
-  // Requests saved before the trial's cap existed can list more than Growth allows.
+  // Older requests can list more than Growth allows.
   const competitors = request.competitors.slice(0, PLAN_LIMITS.growth.maxComps);
   await saveWatchlist(tenant, id, competitors.map((name) => ({ name, addedAt: now })));
   await saveRatesConfig(tenant, id, baselineFromRooms(request.roomTypes));

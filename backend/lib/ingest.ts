@@ -127,10 +127,8 @@ export async function processBundle(bundle: Bundle, store: Store, now: Date, pro
     if (changed) await saveWatchlist(store, bundlePropertyId, list);
   }
 
-  // Hold the list to the plan's cap before it bounds this run's compset. This is where
-  // lists from before the caps, or a trim the token write above just undid, get cut.
-  // Only a real ingest reaches here: a collector dry run never POSTs. A failed trim must
-  // not fail the ingest, whether the account read or the trim fails; the next one tries again.
+  // Cap the list before it bounds this run's compset; also redoes a trim the token write
+  // above undid. A dry run never gets here. Failure must not fail the ingest.
   try {
     await enforceCompCap(await accountFor(getStore(), bundlePropertyId, now), bundlePropertyId, store);
   } catch (err) {
@@ -265,8 +263,7 @@ export async function processBundle(bundle: Bundle, store: Store, now: Date, pro
   if (!historyDates.includes(today)) {
     const dates = [today, ...historyDates];
     await store.set('history:dates', dates.slice(0, HISTORY_KEPT));
-    // Drop the records that fell off the list too, so the hash the Competitors page reads stays bounded.
-    // Pruning is housekeeping: a failure must not fail the ingest.
+    // Prune dropped days from the hash too; a failure must not fail the ingest.
     const dropped = dates.slice(HISTORY_KEPT);
     if (dropped.length > 0) await store.hdel('history', dropped).catch((err) => console.error('[ingest] history prune failed:', err));
   }

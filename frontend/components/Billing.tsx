@@ -87,7 +87,7 @@ export function ManageBilling() {
   );
 }
 
-/** The Bellhop page on Starter. Starter means a Stripe customer exists, so the portal is where the owner switches plan. */
+/** The Bellhop page on Starter. The owner switches plan in the Stripe portal. */
 export function BellhopUpgrade() {
   const isOwner = useCanWrite('owner');
   return (

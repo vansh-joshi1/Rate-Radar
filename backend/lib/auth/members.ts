@@ -40,7 +40,7 @@ export async function listMembers(store: Store): Promise<Member[]> {
   return (await store.get<Member[]>(KEY)) ?? [];
 }
 
-/** Emails of a hotel's invited owners: who hears about that hotel. OWNER_EMAIL is not a member, so the original property's mail is addressed separately. */
+/** Emails of a hotel's owners. OWNER_EMAIL is not a member; the original property is mailed separately. */
 export async function ownersOf(store: Store, propertyId: string): Promise<string[]> {
   return (await listMembers(store)).filter((m) => m.role === 'owner' && memberProperty(m) === propertyId).map((m) => m.email);
 }

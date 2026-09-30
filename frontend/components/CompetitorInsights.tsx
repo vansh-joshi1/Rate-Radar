@@ -68,9 +68,8 @@ interface Props {
   yourRate: number | null;
   /** Watchlist names as of render: the grid's row source. */
   initialWatchlist: string[];
-  /** The plan's watchlist cap. */
   maxComps: number;
-  /** What the last move to a smaller plan removed, if anything. */
+  /** What the last plan-cap trim removed, if anything. */
   trimNote: TrimNote | null;
   isDemo: boolean;
   /** The parity panel, rendered by the page. Null when no channel is tracked. */
@@ -121,7 +120,7 @@ export default function CompetitorInsights({
   const tracked = watchlist.length;
   const full = tracked >= maxComps;
 
-  // Each viewer dismisses the downgrade note in their own browser; a later trim has a new `at` and shows again.
+  // Dismissed per browser; a later trim has a new `at` and shows again.
   const [trimSeen, setTrimSeen] = useState(true);
   useEffect(() => {
     try {

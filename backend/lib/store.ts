@@ -12,7 +12,7 @@ export interface Store {
   hget<T>(key: string, field: string): Promise<T | null>;
   hset(key: string, field: string, value: unknown): Promise<void>;
   hdel(key: string, fields: string[]): Promise<void>;
-  /** Every field of a hash, in one read. Keep the hash bounded (see `history`, pruned by ingest). */
+  /** Every field of a hash, in one read. Keep the hash bounded. */
   hgetall<T>(key: string): Promise<Record<string, T>>;
   /** Atomic counter with TTL set on first increment — used for rate limiting. */
   incr(key: string, ttlSeconds: number): Promise<number>;

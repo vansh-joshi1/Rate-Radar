@@ -134,7 +134,7 @@ export function verifiedEmail(opts: { loginUrl: string; hotelName: string }): Em
   return { subject, html, text };
 }
 
-/** Sent when a hotel's competitor watchlist is cut down to its plan's cap (after a move to Starter, or a list from before the caps). */
+/** Sent when a hotel's watchlist is trimmed to its plan's cap. */
 export function compsTrimmedEmail(opts: { hotelName: string; removed: string[]; max: number; dashboardUrl?: string }): EmailMessage {
   const base = opts.dashboardUrl?.replace(/\/$/, '') || undefined;
   const subject = `Rate Radar: ${opts.hotelName} now tracks ${opts.max} competitors`;

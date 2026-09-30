@@ -41,8 +41,7 @@ export default async function Competitors() {
     address: h.address,
   }));
 
-  // Recorded history, one point per day, as far back as the plan shows. The
-  // chart plots the window that actually exists rather than padding it out.
+  // History as far back as the plan shows.
   const limits = await limitsForProperty(property.id);
   const since = addDays(todayIn(property.timezone), -limits.historyDays);
   const history: HistoryPoint[] = (await recentHistory(store, since)).map((rec) => ({
@@ -50,7 +49,7 @@ export default async function Competitors() {
     recommended: rec.recommendedStandard,
     compsetMedian: rec.compsetMedian ?? null,
   }));
-  // A note from a trim to another cap is stale: the hotel has changed plan since.
+  // A note from another cap is stale.
   const note = await store.get<TrimNote>(trimNoteKey(property.id));
   const trimNote = note?.max === limits.maxComps ? note : null;
 

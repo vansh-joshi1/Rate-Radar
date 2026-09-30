@@ -8,7 +8,7 @@ export const PLAN_PRICES = {
   growth: { name: 'Growth', month: '$249', year: '$2,490' },
 } as const;
 
-/** What each plan unlocks within one hotel. Enforced through limitsFor() in ./limits. */
+/** What each plan unlocks within one hotel. */
 export const PLAN_LIMITS = {
   starter: { bellhop: false, maxComps: 4, historyDays: 90 },
   growth: { bellhop: true, maxComps: 8, historyDays: 365 },
