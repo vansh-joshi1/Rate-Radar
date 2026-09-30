@@ -39,8 +39,12 @@ Bellhop directly; a public guest-facing surface is a different product.
 
 ## Provider facts (verified 2026-09-30)
 
-- Free tier: 5,000 grounded search requests a month, shared across all Gemini 3.x models
-  and every hotel on the key; then $14 per 1,000. Flash-Lite supports grounding.
+- **Grounding is not on the free tier** ("Not available" in the pricing page's free
+  column; a free-tier key gets 429 on every grounded call). It needs Cloud Billing on
+  the Gemini project. The paid tier includes 5,000 grounded search requests a month,
+  shared across all Gemini 3.x models and every hotel on the key; then $14 per 1,000.
+  Flash-Lite supports grounding. Until billing is on, every outside question takes the
+  "search is off" path below, which works on the free key.
 - Terms: grounded results are shown **with their Search Suggestions**, unmodified, with
   nothing interspersed; links go straight to their destination.
 - `@google/genai` 2.24.0: `config.tools: [{ googleSearch: {} }]`; sources in
@@ -51,14 +55,14 @@ Bellhop directly; a public guest-facing surface is a different product.
 
 | File | Change |
 |---|---|
-| `lib/bellhop/gemini.ts` | `streamReply(system, turns, { search })`. Order: Flash + search, Flash-Lite + search, then Flash without search and the "search is off" line. Yields text, then one final `grounding` — sources `{ title, uri }` de-duplicated by uri, and the suggestions HTML. Still the only file that knows the provider. |
+| `lib/bellhop/gemini.ts` | `streamReply(system, turns, { search })`. Order: Flash + search, Flash-Lite + search, then Flash without search and the "search is off" line. Yields text, then one final `grounding` — sources `{ title, uri }`, one per site, and the suggestions HTML. Still the only file that knows the provider. |
 | `lib/bellhop/context.ts` | RULES splits into the two kinds of answer. `web: false` (demo) adds the no-search line. |
 | `app/api/bellhop/route.ts` | `search` is off for demo callers. Streams text as before, then `\x1e` and the grounding as JSON. Still `text/plain`. |
-| `components/Bellhop.tsx` | Splits the stream at `\x1e`. A grounded answer shows a "Sources" row of links and Google's suggestions block as given, in a sandboxed `srcdoc` iframe (its CSS can't leak; `<base target="_blank">` so a click never loses the chat). A fourth starter, "Where can a guest get dinner nearby?", outside the demo. Header copy covers guest questions. Under the composer: "Don't include guest names or personal details." — the free tier lets Google train on prompts. |
+| `components/Bellhop.tsx` | Splits the stream at `\x1e`. A grounded answer shows a "Sources" row of links and Google's suggestions block as given, in a sandboxed `srcdoc` iframe (its CSS can't leak; `<base target="_blank">` so a click never loses the chat). A fourth starter, "Where can a guest get dinner nearby?", outside the demo; outside the demo the intro message also offers guest lookups. Under the composer: "Don't include guest names or personal details." Every question goes to Google. |
 
 ## Tests
 
-- Grounding extraction against a captured metadata shape: de-duplicated sources, the
+- Grounding extraction against the SDK metadata shape: one source per site, the
   suggestions HTML passed through untouched, nothing when there is no metadata.
 - `buildSystemPrompt`: carries the prices-only-from-DATA rule; the demo prompt says search is off.
 - `tests/role-guard.test.ts` keeps covering the route.

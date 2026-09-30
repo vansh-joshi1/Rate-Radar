@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSystemPrompt } from '../lib/bellhop/context';
+import { groundingFrom } from '../lib/bellhop/gemini';
 import { demoSnapshot } from '../lib/demo';
 import { DEMO_PROPERTY } from '../lib/properties';
 import { fmtDowDay } from '../lib/date';
@@ -14,6 +15,7 @@ describe('buildSystemPrompt', () => {
     history: [],
     actuals: {},
     bookings: {},
+    web: true,
   };
 
   it("carries tonight's recommendation and the engine's own reasoning", () => {
@@ -43,5 +45,46 @@ describe('buildSystemPrompt', () => {
 
   it('says so plainly when there is no snapshot', () => {
     expect(buildSystemPrompt({ ...base, snapshot: null })).toContain('NO SNAPSHOT');
+  });
+});
+
+describe('buildSystemPrompt, outside questions', () => {
+  const base = { property: DEMO_PROPERTY, today: '2026-09-30', snapshot: null, history: [], actuals: {}, bookings: {} };
+
+  it('keeps every price to the DATA, never the web', () => {
+    expect(buildSystemPrompt({ ...base, web: true })).toContain('Never quote a room rate, competitor price or any other price from a web search');
+  });
+
+  it('turns search off in the demo, and only there', () => {
+    expect(buildSystemPrompt({ ...base, web: false })).toContain('WEB SEARCH IS OFF');
+    expect(buildSystemPrompt({ ...base, web: true })).not.toContain('WEB SEARCH IS OFF');
+  });
+});
+
+describe('groundingFrom', () => {
+  const chip = '<style>.chip{color:red}</style><div class="container"><a class="chip" href="https://www.google.com/search?q=bbq">bbq</a></div>';
+
+  it('lists one source per site and passes the suggestions through untouched', () => {
+    const g = groundingFrom({
+      groundingChunks: [
+        { web: { uri: 'https://vertexaisearch.cloud.google.com/r/1', title: 'tripadvisor.com' } },
+        { web: { uri: 'https://vertexaisearch.cloud.google.com/r/2', title: 'tripadvisor.com' } },
+        { web: { uri: 'https://vertexaisearch.cloud.google.com/r/3', title: 'yelp.com' } },
+        { web: { title: 'no-uri.com' } },
+      ],
+      searchEntryPoint: { renderedContent: chip },
+    });
+    expect(g).toEqual({
+      sources: [
+        { title: 'tripadvisor.com', uri: 'https://vertexaisearch.cloud.google.com/r/1' },
+        { title: 'yelp.com', uri: 'https://vertexaisearch.cloud.google.com/r/3' },
+      ],
+      suggestions: chip,
+    });
+  });
+
+  it('is null for an answer that was not searched', () => {
+    expect(groundingFrom(undefined)).toBeNull();
+    expect(groundingFrom({})).toBeNull();
   });
 });
