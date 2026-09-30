@@ -1,7 +1,7 @@
 import type { NightRecommendation, ScoredEvent, Snapshot } from './scoring/types';
 import { DEMO_PROPERTY } from './properties';
 import { noonUTC, todayIn, toIsoDate as iso } from './date';
-import { compsetMedian } from './scoring/compset';
+import { applyCompsetBound, compsetMedian } from './scoring/compset';
 
 /**
  * The demo world — sample data shaped exactly like a live Snapshot, used when
@@ -122,10 +122,9 @@ function baseFor(d: Date): number {
   return dow === 5 || dow === 6 ? 94 : 79;
 }
 
-/** @param stdMultiplier overrides the uplift-derived standard rate (tonight's compset cap). */
-function night(date: Date, overrides: Partial<NightRecommendation> = {}, stdMultiplier?: number): NightRecommendation {
+function night(date: Date, overrides: Partial<NightRecommendation> = {}): NightRecommendation {
   const base = baseFor(date);
-  const std = Math.round(base * (stdMultiplier ?? 1 + (overrides.upliftPct ?? 0) / 100));
+  const std = Math.round(base * (1 + (overrides.upliftPct ?? 0) / 100));
   return {
     date: iso(date),
     dow: date.getUTCDay(),
@@ -151,9 +150,22 @@ export function demoSnapshot(): Snapshot {
   const day = (n: number) => new Date(tonight.getTime() + n * 86400_000);
   const ago = (mins: number) => new Date(now.getTime() - mins * 60_000).toISOString();
 
+  const compsets = DEMO_COMPSET[DEMO_WATCHED[0]].map((_, n) => {
+    const entries = DEMO_WATCHED.map((name) => ({ name, price: DEMO_COMPSET[name][n] }));
+    return { date: iso(day(n)), median: compsetMedian(entries), entries };
+  });
+  // Competitor prices bound each night the way a live run does (lib/ingest.ts), so the
+  // demo's reasoning says what the engine would: event nights are never capped.
+  const medianOn = new Map(compsets.map((c) => [c.date, c.median]));
+  const withCompset = (n: NightRecommendation): NightRecommendation => {
+    const median = medianOn.get(n.date);
+    if (median == null) return n;
+    const { tiers, note } = applyCompsetBound(n.tiers, n.nightScore, median);
+    return { ...n, tiers, reasoning: note ? [...n.reasoning, note] : n.reasoning };
+  };
+
   const nights: NightRecommendation[] = [
-    // Tonight: a major act, one event judged too small to matter, and a
-    // compset bound that pulls the number back under its own baseline.
+    // Tonight: a major act, and one event judged too small to matter.
     (() => {
       const d = day(0);
       return night(d, {
@@ -167,10 +179,9 @@ export function demoSnapshot(): Snapshot {
           `${dayName(d)} baseline $${baseFor(d)}`,
           'Neon Compass @ Harborview Amphitheater (score 82, major) → +18%',
           'Downtown absorbs most, distance dampener −6%',
-          'Compset median $96 caps the range',
           'Cascadia State home game (score 11) judged too small to matter — shown, not applied',
         ],
-      }, 0.95);
+      });
     })(),
     (() => {
       const d = day(1);
@@ -196,7 +207,7 @@ export function demoSnapshot(): Snapshot {
       events: [event({ name: 'Harbor Run 5K', date: iso(day(4)), venue: 'Mill Creek Park', capacity: 2000, attendanceEstimate: 1400, kind: 'other', score: 8, tier: 'too-small', verdict: 'Too small to matter — shown, not applied.' })],
     }),
     ...Array.from({ length: 16 }, (_, i) => night(day(5 + i))),
-  ];
+  ].map(withCompset);
 
   return {
     runAt: now.toISOString(),
@@ -229,10 +240,7 @@ export function demoSnapshot(): Snapshot {
       { source: 'Super.com', status: 'ok', price: 76, fetchedAt: ago(2) },
       { source: 'Traveluro', status: 'ok', price: 84, fetchedAt: ago(2) },
     ],
-    compsets: [0, 1, 2, 3, 4].map((n) => {
-      const entries = Object.entries(DEMO_COMPSET).map(([name, prices]) => ({ name, price: prices[n] }));
-      return { date: iso(day(n)), median: compsetMedian(entries), entries };
-    }),
+    compsets,
     sources: [
       { source: 'events-api', status: 'ok', fetchedAt: ago(2) },
       { source: 'college-sports', status: 'ok', fetchedAt: ago(2) },

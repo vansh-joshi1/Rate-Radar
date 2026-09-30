@@ -85,6 +85,9 @@ export function demoRefusal(message: string): NextResponse {
   return NextResponse.json({ ok: false, demo: true, message }, { status: 200 });
 }
 
+/** Bump when the demo fixture changes, so sandboxes seeded from an older one are reseeded. */
+const FIXTURE_VERSION = 2;
+
 /**
  * Fill a fresh sandbox with the demo world.
  *
@@ -112,10 +115,11 @@ export async function seedDemoSandbox(store: Store): Promise<void> {
     // The legacy unscoped key the dashboard still reads.
     store.set('snapshot:latest', snapshot),
     store.set(watchlistKey(id), watchlist),
+    store.set('fixture', FIXTURE_VERSION),
   ]);
 }
 
-/** True when the sandbox has no snapshot yet (fresh or expired). */
+/** True when the sandbox is fresh, expired, or seeded from an older fixture. */
 export async function sandboxNeedsSeed(store: Store): Promise<boolean> {
-  return (await store.get('snapshot:latest')) === null;
+  return (await store.get<number>('fixture')) !== FIXTURE_VERSION;
 }

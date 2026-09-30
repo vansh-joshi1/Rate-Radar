@@ -8,7 +8,7 @@ import PostHogInit from '../../components/PostHogInit';
 import { redirect } from 'next/navigation';
 import { auth } from '../../../backend/auth';
 import { loadSnapshot } from '../../../backend/lib/dashboard-data';
-import { demoSid, requestProperty } from '../../../backend/lib/demo/context';
+import { demoSid, requestProperty, requestStore, sandboxNeedsSeed } from '../../../backend/lib/demo/context';
 import { DEMO_PROPERTY } from '../../../backend/lib/properties';
 import type { ShellProperty } from '../../components/shell/AppShell';
 import type { Role } from '../../../backend/lib/auth/roles';
@@ -24,6 +24,8 @@ const DEMO_SHELL_PROPERTY: ShellProperty = { id: DEMO_PROPERTY.id, label: DEMO_P
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const inDemo = (await demoSid()) !== null;
+  // An expired sandbox, or one seeded from an older fixture: /demo reseeds it and comes back.
+  if (inDemo && (await sandboxNeedsSeed(await requestStore()))) redirect('/demo');
   const [{ snapshot, isDemo, awaitingFirstRun }, session] = await Promise.all([loadSnapshot(), inDemo ? null : auth()]);
   // Signed in to Supabase but no longer on the team: the middleware can't know that, auth() does.
   if (!inDemo && !session) redirect('/login');
