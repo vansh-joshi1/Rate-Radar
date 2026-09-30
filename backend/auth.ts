@@ -5,6 +5,7 @@ import { getStore } from './lib/store';
 import { noStoreFetch, supabaseAdmin } from './lib/supabase';
 import { membershipFor, ownerEmail } from './lib/auth/members';
 import { DEFAULT_PROPERTY_ID } from './lib/properties';
+import { DEMO_COOKIE } from './lib/demo/session';
 import type { Role } from './lib/auth/roles';
 import { signInEmail } from './lib/email/messages';
 import { sendEmail } from './lib/email/send';
@@ -141,16 +142,26 @@ export async function deleteUserById(id: string): Promise<void> {
   await supabaseAdmin().auth.admin.deleteUser(id);
 }
 
+/**
+ * A demo cookie outranks a session on every request (lib/demo/context), so a
+ * sign-in from a browser that visited the demo would land in the sandbox.
+ * Every way in ends here, so this is where the sandbox is left.
+ */
+async function signedIn(error: unknown): Promise<boolean> {
+  if (!error) (await cookies()).set(DEMO_COOKIE, '', { path: '/', maxAge: 0 });
+  return !error;
+}
+
 /** Email + password → session cookies on the current response. */
 export async function signInWithPassword(email: string, password: string): Promise<boolean> {
   const { error } = await (await supabaseAuth()).auth.signInWithPassword({ email, password });
-  return !error;
+  return signedIn(error);
 }
 
 /** Exchange a token hash for session cookies on the current response. */
 export async function verifyMagicLink(tokenHash: string): Promise<boolean> {
   const { error } = await (await supabaseAuth()).auth.verifyOtp({ type: 'magiclink', token_hash: tokenHash });
-  return !error;
+  return signedIn(error);
 }
 
 /** Sign the current request in as the shared front-desk identity. Caller has checked the password. */
