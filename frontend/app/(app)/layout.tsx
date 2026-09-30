@@ -94,9 +94,8 @@ function DemoBar() {
       <div className="flex items-start gap-3">
         <FlaskIcon weight="light" className="mt-0.5 h-5 w-5 shrink-0 text-[#44474d]" aria-hidden />
         <p className="max-w-[80ch] text-[14.5px] leading-relaxed text-[#44474d]">
-          <span className="font-semibold text-[#1a1b20]">Demo sandbox.</span> Harbor Pine Inn is an invented hotel in
-          an invented town, and every rate, competitor and event here is sample data. Edit anything: changes stay in
-          your own sandbox and clear after a day.
+          <span className="font-semibold text-[#1a1b20]">Demo sandbox.</span> An invented hotel with sample data. Edit
+          anything; it resets after a day.
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">

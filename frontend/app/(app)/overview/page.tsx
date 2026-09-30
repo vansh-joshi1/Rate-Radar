@@ -192,9 +192,6 @@ export default async function Overview() {
           <h1 className="text-balance text-[30px] font-semibold leading-[1.1] tracking-tighter md:text-[40px]">
             {fmtWeekdayLong(night.date)}
           </h1>
-          <p className="mt-2 max-w-[56ch] text-pretty text-[15px] leading-relaxed text-[#44474d]">
-            Tonight&apos;s suggested rate, what the neighbours charge, and the demand behind it.
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {isDemo ? <StatusChip tone="quiet">Sample data</StatusChip> : <StatusChip tone="ok">Live</StatusChip>}
@@ -403,7 +400,7 @@ export default async function Overview() {
               ))}
             </ol>
             <p className="mt-4 text-[13px] leading-relaxed text-[#44474d]">
-              Scores run 0 to 100. Darker cells are nights with more draw from events, holidays and weather.
+              Scores run 0 to 100.
             </p>
           </div>
         </Bezel>

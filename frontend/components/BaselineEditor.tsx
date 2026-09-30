@@ -97,8 +97,8 @@ export default function BaselineEditor({ propertyId }: { propertyId: string }) {
       const re = await fetch(`/api/recompute?propertyId=${propertyId}`, { method: 'POST' }).catch(() => null);
       setStatus(
         re?.ok
-          ? { tone: 'ok', text: 'Saved and applied. Recommendations were recomputed from the latest collected data.' }
-          : { tone: 'ok', text: 'Saved. It applies on the next collection run, as there is no collected data to recompute yet.' },
+          ? { tone: 'ok', text: 'Saved. Recommendations are updated.' }
+          : { tone: 'ok', text: 'Saved. It applies from the next collection run.' },
       );
       track('baseline_rates_saved', { tier_count: config.tiers.length, recommendations_recomputed: !!re?.ok });
     } catch {

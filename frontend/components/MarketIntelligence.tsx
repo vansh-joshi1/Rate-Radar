@@ -111,9 +111,6 @@ export default function MarketIntelligence({ property, events, nights, weather, 
           <h1 className="text-balance text-[30px] font-semibold leading-[1.1] tracking-tighter md:text-[40px]">
             Market intelligence
           </h1>
-          <p className="mt-2 max-w-[56ch] text-pretty text-[15px] leading-relaxed text-[#44474d]">
-            The events and alerts that move demand near you, and how close each one is.
-          </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-3 lg:flex-nowrap">
           {isDemo ? (
@@ -215,7 +212,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
                 icon={<CheckCircleIcon weight="light" className="h-5 w-5 text-[#84f9c3]" />}
                 label="Weather and airport"
               >
-                No active alerts. This records advisories, not a temperature forecast.
+                No active alerts.
               </AlertReading>
             )}
           </div>
@@ -325,7 +322,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
           )}
 
           <p className="border-t border-[#0b1c30]/[0.06] px-6 py-4 text-[13px] leading-relaxed text-[#44474d] md:px-8">
-            Figures are expected attendance. Hover or tap an event to find it on the map.
+            Figures are expected attendance.
           </p>
         </Bezel>
 
