@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { auth } from '../../../../../backend/auth';
 import { requireRole } from '../../../../../backend/lib/auth/guard';
 import { demoRefusal, demoSid, requestProperty } from '../../../../../backend/lib/demo/context';
 import { getStore } from '../../../../../backend/lib/store';
@@ -39,11 +40,7 @@ export async function POST(req: Request) {
   const origin = new URL(req.url).origin;
   try {
     if (!account.stripeCustomerId) {
-      const customer = await client.customers.create({
-        email: account.ownerEmail || undefined,
-        name: property.name,
-        metadata: { accountId: account.id },
-      });
+      const customer = await client.customers.create({ email: (await auth())?.user.email ?? undefined, name: property.name });
       account.stripeCustomerId = customer.id;
       await saveAccount(store, account);
     }
@@ -52,7 +49,6 @@ export async function POST(req: Request) {
     const session = await client.checkout.sessions.create({
       mode: 'subscription',
       customer: account.stripeCustomerId,
-      client_reference_id: account.id,
       line_items: [{ price, quantity: 1 }],
       // The webhook finds the account from this; Stripe keeps it through portal changes.
       subscription_data: { metadata: { accountId: account.id }, ...(keepTrial ? { trial_end: Math.floor(trialEnd / 1000) } : {}) },

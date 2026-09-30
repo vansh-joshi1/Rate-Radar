@@ -4,21 +4,20 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type Stripe from 'stripe';
 import { FileStore } from '../lib/store';
-import { saveMembers } from '../lib/auth/members';
 import { DEFAULT_PROPERTY_ID, DEMO_PROPERTY } from '../lib/properties';
 import { access, accountFor, billingView, newAccount, type Account } from '../lib/billing/accounts';
 import { accountFromSubscription } from '../lib/billing/stripe';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
 const trial = (daysFromNow: number): Account => ({
-  ...newAccount('hotel-a', 'gm@a.com', NOW),
+  ...newAccount('hotel-a', NOW),
   trialEndsAt: new Date(NOW.getTime() + daysFromNow * 86_400_000).toISOString(),
 });
 
 describe('access', () => {
   it('never locks the original hotel or the demo', () => {
-    expect(access(null, DEFAULT_PROPERTY_ID, NOW)).toBe('open');
-    expect(access(null, DEMO_PROPERTY.id, NOW)).toBe('open');
+    expect(access(trial(-1), DEFAULT_PROPERTY_ID, NOW)).toBe('open');
+    expect(access(trial(-1), DEMO_PROPERTY.id, NOW)).toBe('open');
   });
 
   it('opens during the trial and locks after it', () => {
@@ -38,17 +37,19 @@ describe('access', () => {
 });
 
 describe('accountFor', () => {
-  it('creates a 14-day trial for the hotel owner once, then returns the same account', async () => {
+  it('creates a 14-day trial once, then returns the same account', async () => {
     const store = new FileStore(join(mkdtempSync(join(tmpdir(), 'rr-bill-')), 'store.json'));
-    await saveMembers(store, [
-      { email: 'desk@a.com', role: 'viewer', invitedAt: '', propertyId: 'hotel-a' },
-      { email: 'gm@a.com', role: 'owner', invitedAt: '', propertyId: 'hotel-a' },
-    ]);
     const first = await accountFor(store, 'hotel-a', NOW);
-    expect(first.ownerEmail).toBe('gm@a.com');
     expect(first.trialEndsAt).toBe('2026-10-15T12:00:00.000Z');
     const later = await accountFor(store, 'hotel-a', new Date('2026-12-01T00:00:00Z'));
     expect(later.trialEndsAt).toBe(first.trialEndsAt);
+  });
+
+  it('stores nothing for the exempt hotels', async () => {
+    const store = new FileStore(join(mkdtempSync(join(tmpdir(), 'rr-bill-')), 'store.json'));
+    await accountFor(store, DEFAULT_PROPERTY_ID, NOW);
+    await accountFor(store, DEMO_PROPERTY.id, NOW);
+    expect(await store.hgetall('accounts')).toEqual({});
   });
 });
 

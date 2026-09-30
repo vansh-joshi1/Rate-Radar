@@ -17,14 +17,9 @@ export function priceId(plan: Plan, interval: Interval): string | undefined {
   return process.env[`STRIPE_PRICE_${plan.toUpperCase()}_${interval === 'month' ? 'MONTHLY' : 'YEARLY'}`];
 }
 
-export function planForPrice(id: string): { plan: Plan; interval: Interval } | null {
-  for (const plan of ['starter', 'growth'] as const) {
-    for (const interval of ['month', 'year'] as const) {
-      if (priceId(plan, interval) === id) return { plan, interval };
-    }
-  }
-  return null;
-}
+const PAIRS = (['starter', 'growth'] as const).flatMap((plan) => (['month', 'year'] as const).map((interval) => ({ plan, interval })));
+
+export const planForPrice = (id: string) => PAIRS.find((p) => priceId(p.plan, p.interval) === id) ?? null;
 
 const iso = (unix: number | null | undefined): string | undefined =>
   unix ? new Date(unix * 1000).toISOString() : undefined;

@@ -53,8 +53,7 @@ export async function requireRole(required: Role, opts: { allowLocked?: boolean 
 
   // A lapsed trial or subscription stops every gated route here, in one place.
   // Only the billing routes, which are how a hotel gets unlocked, skip it.
-  const { isExempt } = await import('../billing/accounts');
-  if (!opts.allowLocked && !isExempt(session.user.propertyId)) {
+  if (!opts.allowLocked) {
     const { getStore } = await import('../store');
     const { accountFor, access } = await import('../billing/accounts');
     const { propertyId } = session.user;

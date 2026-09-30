@@ -45,7 +45,6 @@ and a hotel keeps full access forever whether or not it pays.
 ```ts
 interface Account {
   id: string;
-  ownerEmail: string;
   propertyIds: string[];
   trialEndsAt: string;              // ISO
   stripeCustomerId?: string;
@@ -97,7 +96,7 @@ It is enforced in three places:
 | `backend/lib/billing/plans.ts` | Displayed plan prices, shared by the landing page, plan wall and Billing tab. Browser-safe (no store import). |
 | `backend/lib/billing/stripe.ts` | The only file importing the `stripe` SDK. Client from `STRIPE_SECRET_KEY`; plan ↔ price-id map from the four price env vars; `accountFromSubscription(sub)` turning a Stripe subscription into the `Account` fields above. |
 | `frontend/app/api/admin/approve/route.ts` | Creates the approved hotel's account (`trialEndsAt` = now + 14 days) beside `addProperty`. |
-| `frontend/app/api/billing/checkout/route.ts` | POST `{ plan, interval }`, zod-validated. `requireRole('owner', { allowLocked: true })`. Creates the Stripe customer on first use (saved on the account), then a Checkout Session in `subscription` mode with `client_reference_id` = account id and the trial carry-over above. Returns `{ url }`. Refuses exempt properties and demo callers. |
+| `frontend/app/api/billing/checkout/route.ts` | POST `{ plan, interval }`, zod-validated. `requireRole('owner', { allowLocked: true })`. Creates the Stripe customer on first use with the owner's session email (saved on the account), then a Checkout Session in `subscription` mode stamping `metadata.accountId` on the subscription, with the trial carry-over above. Returns `{ url }`. Refuses exempt properties and demo callers. |
 | `frontend/app/api/billing/portal/route.ts` | POST. `requireRole('owner', { allowLocked: true })`. Returns a Customer Portal session `{ url }`, return URL `/settings#billing`. 409 when the account has no Stripe customer. |
 | `frontend/app/api/billing/webhook/route.ts` | Not behind auth. Verifies `stripe-signature` against `STRIPE_WEBHOOK_SECRET` using the raw body. Handles `customer.subscription.created/updated/deleted`, finding the account from `metadata.accountId`, which checkout stamps on the subscription and Stripe keeps through portal changes. An event for an old, ended subscription never overwrites a newer live one. Each event re-fetches the subscription from Stripe and overwrites the account's billing fields, so duplicate or out-of-order events land on the same final state. Node runtime. |
 | `frontend/components/PlanWall.tsx` | The locked screen described above. |

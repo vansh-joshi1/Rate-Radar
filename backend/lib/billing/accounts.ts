@@ -1,6 +1,5 @@
 import type { Store } from '../store';
 import { DEFAULT_PROPERTY_ID, DEMO_PROPERTY } from '../properties';
-import { listMembers, memberProperty } from '../auth/members';
 import { PLAN_PRICES } from './plans';
 
 /**
@@ -19,7 +18,6 @@ export type Interval = 'month' | 'year';
 
 export interface Account {
   id: string;
-  ownerEmail: string;
   propertyIds: string[];
   trialEndsAt: string;
   stripeCustomerId?: string;
@@ -45,9 +43,8 @@ export const isExempt = (propertyId: string): boolean =>
 /** Subscription statuses that keep the app open. Stripe retries the card while past_due, so access holds until it gives up. */
 export const LIVE_STATUSES = new Set(['active', 'trialing', 'past_due']);
 
-export function access(account: Account | null, propertyId: string, now: Date): 'open' | 'locked' {
+export function access(account: Account, propertyId: string, now: Date): 'open' | 'locked' {
   if (isExempt(propertyId)) return 'open';
-  if (!account) return 'locked';
   if (account.status) return LIVE_STATUSES.has(account.status) ? 'open' : 'locked';
   return now < new Date(account.trialEndsAt) ? 'open' : 'locked';
 }
@@ -56,10 +53,9 @@ export function trialDaysLeft(account: Account, now: Date): number {
   return Math.max(0, Math.ceil((new Date(account.trialEndsAt).getTime() - now.getTime()) / DAY));
 }
 
-export function newAccount(propertyId: string, ownerEmail: string, now: Date): Account {
+export function newAccount(propertyId: string, now: Date): Account {
   return {
     id: propertyId,
-    ownerEmail,
     propertyIds: [propertyId],
     trialEndsAt: new Date(now.getTime() + TRIAL_DAYS * DAY).toISOString(),
   };
@@ -76,14 +72,15 @@ export async function getAccount(store: Store, id: string): Promise<Account | nu
 
 /**
  * The hotel's account. A hotel approved before billing shipped has none; it
- * gets one here, on first lookup, with a fresh trial from that moment.
+ * gets one here, on first lookup, with a fresh trial from that moment. Exempt
+ * hotels get an unsaved one: access() never locks them, so nothing is stored.
  */
 export async function accountFor(store: Store, propertyId: string, now = new Date()): Promise<Account> {
+  if (isExempt(propertyId)) return newAccount(propertyId, now);
   const id = await store.hget<string>(BY_PROPERTY, propertyId);
   const found = id ? await getAccount(store, id) : null;
   if (found) return found;
-  const owner = (await listMembers(store)).find((m) => memberProperty(m) === propertyId && m.role === 'owner');
-  const account = newAccount(propertyId, owner?.email ?? '', now);
+  const account = newAccount(propertyId, now);
   await saveAccount(store, account);
   return account;
 }

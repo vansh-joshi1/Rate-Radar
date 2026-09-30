@@ -15,7 +15,7 @@ import type { Role } from '../../../backend/lib/auth/roles';
 import { ago } from '../../lib/ago';
 import { PlanWall } from '../../components/Billing';
 import { getStore } from '../../../backend/lib/store';
-import { access, accountFor, isExempt } from '../../../backend/lib/billing/accounts';
+import { access, accountFor } from '../../../backend/lib/billing/accounts';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,8 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Signed in to Supabase but no longer on the team: the middleware can't know that, auth() does.
   if (!inDemo && !session) redirect('/login');
   const property = inDemo ? null : await requestProperty();
-  // Exempt hotels never read an account, so the original property costs no extra lookups.
-  const account = property && !isExempt(property.id) ? await accountFor(getStore(), property.id) : null;
+  const account = property && (await accountFor(getStore(), property.id));
   const locked = Boolean(property && account && access(account, property.id, new Date()) === 'locked');
   const freshness = awaitingFirstRun
     ? 'Waiting for the first collection'
