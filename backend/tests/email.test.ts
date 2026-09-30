@@ -3,27 +3,48 @@ import { alertDigestEmail, pipelineStaleEmail, signInEmail } from '../lib/email/
 import type { Trigger } from '../lib/alerts/rules';
 
 const TRIGGERS: Trigger[] = [
-  { type: 'source-health', line: 'Data source "ticketmaster" has failed 3 consecutive runs — its data is going stale.' },
-  { type: 'rate-change', date: '2026-09-26', line: 'Sat, Sep 26: recommended $112 (was $94) — Titans vs <Colts>, likely overflow.' },
+  { type: 'source-health', line: 'ticketmaster failing since 2026-09-20' },
+  { type: 'new-event', date: '2026-09-26', line: 'Titans vs <Colts>, Sat, Sep 26', event: 'Titans vs <Colts>' },
+  { type: 'rate-change', date: '2026-09-27', line: 'Sun, Sep 27: $90, was $96', rate: { now: 90, was: 96 } },
+  { type: 'rate-change', date: '2026-09-26', line: 'Sat, Sep 26: $112, was $94', rate: { now: 112, was: 94, driver: 'Titans vs <Colts>' } },
+  { type: 'new-event', date: '2026-10-02', line: 'Fall Fest, Fri, Oct 2', event: 'Fall Fest' },
+  { type: 'parity-gap', line: 'Parity: expedia $89 vs booking $109, $20 spread' },
 ];
 
 describe('alertDigestEmail', () => {
   const msg = alertDigestEmail(TRIGGERS, 'https://rr.example.com/');
 
-  it('keeps the subject short and dated by the earliest dated trigger', () => {
-    expect(msg.subject).toBe('Rate Radar: 2 updates · Sat, Sep 26');
+  it('leads the subject and headline with the biggest move, and counts the rest', () => {
+    // 2 nights + parity + Fall Fest + data = 5 items; the lead is one of them.
+    expect(msg.subject).toBe('Sat, Sep 26 → $112 (+$18) · 4 more');
+    expect(msg.html).toContain('Raise Sat, Sep 26 to $112');
+    expect(msg.text.split('\n')[0]).toBe('Raise Sat, Sep 26 to $112');
   });
 
-  it('escapes feed text and never shows the rules joiner dash', () => {
+  it('lists nights in date order and folds the driving event into its row', () => {
+    expect(msg.text).toContain('Sat, Sep 26  $112  was $94  Titans vs <Colts>');
+    expect(msg.text.indexOf('Sat, Sep 26  $112')).toBeLessThan(msg.text.indexOf('Sun, Sep 27  $90'));
+    expect(msg.text).not.toContain('Titans vs <Colts>, Sat, Sep 26');
+  });
+
+  it('puts parity before other events under Also, and data after the button', () => {
+    expect(msg.text.indexOf('Parity:')).toBeLessThan(msg.text.indexOf('Fall Fest'));
+    expect(msg.html.indexOf('Open dashboard')).toBeLessThan(msg.html.indexOf('Data: ticketmaster failing'));
+  });
+
+  it('escapes feed text', () => {
     expect(msg.html).toContain('Titans vs &lt;Colts&gt;');
     expect(msg.html).not.toContain('<Colts>');
-    expect(msg.html).not.toContain('—');
-    expect(msg.text).not.toContain('—');
   });
 
-  it('orders groups rates first, data health last', () => {
-    expect(msg.html.indexOf('Rate changes')).toBeLessThan(msg.html.indexOf('Data health'));
-    expect(msg.text).toContain('https://rr.example.com/overview');
+  it('without a rate move, heads with the first item and does not list it twice', () => {
+    const quiet = alertDigestEmail(TRIGGERS.filter((t) => t.type !== 'rate-change'));
+    expect(quiet.subject).toBe('Parity: expedia $89 vs booking $109, $20 spread · 3 more');
+    expect(quiet.text.split('Parity:').length).toBe(2);
+  });
+
+  it('with only data problems, says so', () => {
+    expect(alertDigestEmail([TRIGGERS[0]]).subject).toBe('Data problem: ticketmaster failing since 2026-09-20');
   });
 
   it('drops the button and the mark when there is no dashboard URL', () => {

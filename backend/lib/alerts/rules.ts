@@ -11,8 +11,12 @@ export interface HolidayEntry {
 export interface Trigger {
   type: 'rate-change' | 'parity-gap' | 'new-event' | 'weather' | 'holiday' | 'source-health' | 'search-budget';
   date?: string;
-  /** The final one-line sentence used in the email. */
+  /** Short enough to read at a glance. */
   line: string;
+  /** rate-change: the standard-tier move and the event behind it. */
+  rate?: { now: number; was: number; driver?: string };
+  /** new-event: the event's name, so the email can fold it into its night's row. */
+  event?: string;
 }
 
 /** Consecutive-failure tracking per data source (and per parity check as `rate:{source}`). */
@@ -105,7 +109,8 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
         fire(`rate:${n.date}:${bucket(std.recommended, RATE_DELTA_USD)}`, {
           type: 'rate-change',
           date: n.date,
-          line: `${fmtDowDay(n.date)}: recommended $${std.recommended} (was $${prev})${driver ? ` — ${driver.name}, ${driver.verdict.toLowerCase()}` : ''}.`,
+          line: `${fmtDowDay(n.date)}: $${std.recommended}, was $${prev}${driver ? `, ${driver.name}` : ''}`,
+          rate: { now: std.recommended, was: prev, ...(driver && { driver: driver.name }) },
         });
         newEmailedState[n.date] = std.recommended;
       }
@@ -129,7 +134,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
     if (gap >= PARITY_GAP_USD || (gap / lo.price!) * 100 >= PARITY_GAP_PCT) {
       fire(`parity:${bucket(gap, 4)}`, {
         type: 'parity-gap',
-        line: `Rate parity gap: ${lo.source} shows $${lo.price} but ${hi.source} shows $${hi.price} ($${gap} spread) — worth checking listings.`,
+        line: `Parity: ${lo.source} $${lo.price} vs ${hi.source} $${hi.price}, $${gap} spread`,
       });
     }
   }
@@ -142,7 +147,8 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
         fire(`event:${e.id}`, {
           type: 'new-event',
           date: n.date,
-          line: `New demand driver ${fmtDowDay(n.date)}: ${e.name} at ${e.venue} (score ${e.score})${e.verdict ? ` — ${e.verdict.toLowerCase()}` : ''}.`,
+          line: `${e.name}, ${fmtDowDay(n.date)}`,
+          event: e.name,
         });
       }
     }
@@ -153,7 +159,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
     if (SEVERE.has(w.severity)) {
       fire(`weather:${w.event}:${w.area}`, {
         type: 'weather',
-        line: `${w.event} (${w.severity}) for ${w.area}: ${w.headline}${w.isWinter ? ' — winter weather can INCREASE short-notice demand (stranded travelers).' : ''}`,
+        line: `${w.event}, ${w.area}`,
       });
     }
   }
@@ -168,12 +174,13 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
     ...parity.map((p) => ({ name: `rate:${p.source}`, ok: p.status === 'ok' })),
   ];
   for (const { name, ok } of observations) {
+    const label = name.startsWith('rate:') ? `${name.slice(5)} rates` : name;
     const prev = input.sourceHealth?.[name] ?? { consecutiveFails: 0 };
     if (ok) {
       if (prev.alerting) {
         fire(`source-recovered:${name}`, {
           type: 'source-health',
-          line: `Data source "${name}" is healthy again after ${prev.consecutiveFails} failed runs.`,
+          line: `${label} working again after ${prev.consecutiveFails} failed runs`,
         });
       }
       newSourceHealth[name] = { consecutiveFails: 0, lastOkAt: input.now };
@@ -184,7 +191,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
         health.alerting = true;
         fire(`source-health:${name}`, {
           type: 'source-health',
-          line: `Data source "${name}" has failed ${fails} consecutive runs${prev.lastOkAt ? ` (last good data ${prev.lastOkAt.slice(0, 10)})` : ''} — its data is going stale; the scraper/selectors may need a refresh.`,
+          line: prev.lastOkAt ? `${label} failing since ${prev.lastOkAt.slice(0, 10)}` : `${label} failing, ${fails} runs in a row`,
         });
       }
       newSourceHealth[name] = health;
@@ -198,9 +205,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
     const { remaining, renewalDate } = input.searchBudget;
     fire('search-budget:low', {
       type: 'search-budget',
-      line:
-        `Only ${remaining} SerpApi searches left — competitor and parity prices stop updating when they run out` +
-        `${renewalDate ? `; the allowance resets ${renewalDate}` : ''}.`,
+      line: `${remaining} SerpApi searches left${renewalDate ? `, resets ${renewalDate}` : ''}`,
     });
   }
 
@@ -211,7 +216,7 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
       fire(`holiday:${h.name}:${h.date}`, {
         type: 'holiday',
         date: h.date,
-        line: `${h.name} is coming up (${fmtDowDay(h.date)}) — expect ${h.drawProfile} travel demand.`,
+        line: `${h.name}, ${fmtDowDay(h.date)}`,
       }, true);
     }
   }
