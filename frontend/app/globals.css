@@ -43,7 +43,8 @@
   --level-mid-rgb: 173 198 255;
   --level-high-rgb: 242 154 142;
 
-  --ok-rgb: 2 151 104;
+  /* #047857, not DESIGN.md's #029768: that is 3.7:1 as text on white, under WCAG AA. */
+  --ok-rgb: 4 120 87;
   --warn-rgb: 180 83 9;
   --bad-rgb: 186 26 26;
 
@@ -98,7 +99,7 @@
 body {
   background: var(--bg-paper);
   color: rgb(var(--ink-rgb));
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import AuthPanes from '../../components/AuthPanes';
+
+export const metadata: Metadata = { title: 'Get access' };
 
 /**
  * Access is invite-gated (this is a real hotel's revenue data): the owner adds

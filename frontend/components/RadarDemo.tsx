@@ -459,7 +459,7 @@ export default function RadarDemo() {
           <div className="mt-1.5 text-[34px] font-semibold leading-none tracking-tighter tabular-nums text-[#085ac0]">
             ${readout.rate}
           </div>
-          <div className="mt-1.5 font-geist-mono text-[11px] tabular-nums text-[#029768]">
+          <div className="mt-1.5 font-geist-mono text-[11px] tabular-nums text-[#047857]">
             {uplift >= 0 ? '+' : ''}
             {uplift}% vs ${BASELINE} baseline
           </div>

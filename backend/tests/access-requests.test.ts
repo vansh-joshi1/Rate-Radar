@@ -19,6 +19,7 @@ const valid = {
   listings: { direct: '', expedia: '', booking: '' },
   roomTypes: [{ name: 'King', tier: 'standard', price: 99 }],
   competitors: ['Seabreeze Motel'],
+  terms: true,
 };
 
 describe('AccessRequestBody', () => {
@@ -41,9 +42,18 @@ describe('AccessRequestBody', () => {
     expect(AccessRequestBody.safeParse({ ...valid, competitors: [] }).success).toBe(false);
   });
 
+  it('refuses a request without the terms box ticked, and non-http listing links', () => {
+    expect(AccessRequestBody.safeParse({ ...valid, terms: undefined }).success).toBe(false);
+    expect(AccessRequestBody.safeParse({ ...valid, terms: false }).success).toBe(false);
+    const listings = (direct: string) => ({ ...valid, listings: { ...valid.listings, direct } });
+    expect(AccessRequestBody.safeParse(listings('javascript:alert(1)')).success).toBe(false);
+    expect(AccessRequestBody.safeParse(listings('data:text/html,hi')).success).toBe(false);
+    expect(AccessRequestBody.safeParse(listings('https://harborpine.example')).success).toBe(true);
+  });
+
   it('round-trips through the store without the password', async () => {
     const store = new FileStore(join(mkdtempSync(join(tmpdir(), 'rr-')), 'store.json'));
-    const { password: _, ...details } = AccessRequestBody.parse(valid);
+    const { password: _, terms: __, ...details } = AccessRequestBody.parse(valid);
     await saveAccessRequest(store, { ...details, status: 'pending', submittedAt: '2026-09-25T00:00:00Z' });
     const saved = await getAccessRequest(store, 'GM@hotel.com');
     expect(saved?.status).toBe('pending');

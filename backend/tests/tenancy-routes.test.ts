@@ -75,7 +75,7 @@ describe('team route', () => {
 describe('account pre-hijack', () => {
   const onboarding = (email: string) => json('POST', {
     email, password: 'Correct-horse-battery-9', phone: '5555555555', name: 'Pine Court', address: '9 Elm St, Asheville, NC',
-    rooms: 30, type: 'Hotel', token: null, channels: [], listings: { direct: '', expedia: '', booking: '' }, roomTypes: [], competitors: ['a'],
+    rooms: 30, type: 'Hotel', token: null, channels: [], listings: { direct: '', expedia: '', booking: '' }, roomTypes: [], competitors: ['a'], terms: true,
   });
 
   it('onboarding cannot set a password for an email that already has access', async () => {

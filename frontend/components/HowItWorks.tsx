@@ -181,14 +181,14 @@ export default function HowItWorks() {
                   />
                   <h3
                     className={`text-[18px] font-semibold tracking-tight transition-colors duration-500 ${
-                      i === stage ? 'text-[#0b1c30]' : 'text-[#44474d]/70'
+                      i === stage ? 'text-[#0b1c30]' : 'text-[#44474d]/80'
                     }`}
                   >
                     {s.title}
                   </h3>
                   <p
                     className={`mt-1.5 text-[13.5px] leading-relaxed transition-colors duration-500 ${
-                      i === stage ? 'text-[#44474d]' : 'text-[#44474d]/60'
+                      i === stage ? 'text-[#44474d]' : 'text-[#44474d]/80'
                     }`}
                   >
                     {s.body}
@@ -367,7 +367,7 @@ function AlertEmail({ visible }: { visible: boolean }) {
         Neon Compass at Harborview Amphitheater is a major event. Downtown absorbs part of the draw.
       </p>
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#0b1c30]/[0.06] pt-3">
-        <span className="font-geist-mono text-[12px] tabular-nums text-[#029768]">+$5, 3 reasons</span>
+        <span className="font-geist-mono text-[12px] tabular-nums text-[#047857]">+$5, 3 reasons</span>
         <span className="text-[12px] text-[#44474d]">Nothing was changed</span>
       </div>
     </div>

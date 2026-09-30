@@ -11,6 +11,7 @@ import CompetitorInsights, {
 import type { HistoryRecord } from '../../../../backend/lib/scoring/types';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Competitor insights' };
 
 export default async function Competitors() {
   const { snapshot, isDemo } = await loadSnapshot();

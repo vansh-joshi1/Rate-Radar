@@ -11,6 +11,7 @@ import HonestStates from '../components/landing/HonestStates';
 import WatchDemo from '../components/landing/WatchDemo';
 import { SampleReading, type Reason } from '../components/landing/SampleReading';
 import { PLAN_PRICES } from '../../backend/lib/billing/plans';
+import { LEGAL_PAGES } from '../components/Legal';
 
 /*
  * Marketing landing in the "Machined Instrument" language (DESIGN.md →
@@ -252,7 +253,7 @@ export default function Landing() {
       style={DOT_FIELD}
     >
       <Grain />
-      {/* Visitor identification runs on the public landing page only. */}
+      {/* Visitor identification runs on the public landing page only, once the visitor accepts. */}
       <OriginIdInit />
 
       {/* Skip link: first stop for keyboard users, invisible until focused.
@@ -548,6 +549,11 @@ export default function Landing() {
             <Link href="/login" className={textLink}>
               Sign in
             </Link>
+            {LEGAL_PAGES.map((p) => (
+              <Link key={p.href} href={p.href} className={textLink}>
+                {p.label}
+              </Link>
+            ))}
           </nav>
           <p>&copy; 2026 Rate Radar</p>
         </div>

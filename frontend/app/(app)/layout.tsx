@@ -53,14 +53,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const alerts = awaitingFirstRun ? 0 : snapshot.sources.filter((s) => s.status !== 'ok').length;
   return (
     <RoleProvider role={role}>
-      {!inDemo && session && (
-        <PostHogInit
-          distinctId={session.user.id}
-          email={session.user.email ?? undefined}
-          name={session.user.name ?? undefined}
-          role={session.user.role}
-        />
-      )}
+      {!inDemo && session && <PostHogInit distinctId={session.user.id} role={session.user.role} />}
       <AppShell
         freshness={freshness}
         user={user}

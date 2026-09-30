@@ -57,10 +57,10 @@ const config: Config = {
         // elements only; the app still renders Sora + Inter until it migrates.
         geist: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
         'geist-mono': ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
-        display: ['Sora', 'Inter', 'system-ui', 'sans-serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['var(--font-sora)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         // ---- design-system aliases (match the Figma token names 1:1) ----
-        'body-md': ['Inter', 'system-ui', 'sans-serif'],
+        'body-md': ['var(--font-inter)', 'system-ui', 'sans-serif'],
       },
       // Named steps from the design system. Additive — the numeric scale is
       // untouched, so nothing existing shifts.

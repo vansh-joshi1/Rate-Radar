@@ -1,10 +1,12 @@
 'use client';
 import Script from 'next/script';
+import { useConsent } from './Consent';
 
 /**
  * DigitalFingerprint (OriginID) visitor identification — official CDN
  * script-tag integration. Mounted on the public landing page ONLY (owner
- * request) — signed-in app pages are not fingerprinted.
+ * request) — signed-in app pages are not fingerprinted. Loads only after the
+ * visitor accepts analytics (components/Consent.tsx).
  *
  * Script: the vendor CDN build, SRI-pinned (hash verified against the served
  * file 2026-07-18). NEXT_PUBLIC_ORIGINID_SCRIPT_URL overrides the source
@@ -33,7 +35,8 @@ const SCRIPT_SRC = process.env.NEXT_PUBLIC_ORIGINID_SCRIPT_URL || CDN_SRC;
 
 export default function OriginIdInit() {
   const apiKey = process.env.NEXT_PUBLIC_ORIGINID_PUBLIC_KEY;
-  if (!apiKey) return null;
+  const consent = useConsent();
+  if (!apiKey || consent !== 'granted') return null;
 
   const start = () => {
     if (!window.OriginID) {

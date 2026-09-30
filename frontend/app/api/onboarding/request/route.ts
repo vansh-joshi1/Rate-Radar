@@ -25,14 +25,15 @@ export async function POST(req: NextRequest) {
 
   const parsed = AccessRequestBody.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'bad request' }, { status: 400 });
-  const { password, ...details } = parsed.data;
+  const { password, terms: _, ...details } = parsed.data;
   if (await isAllowed(store, details.email)) return NextResponse.json({ error: 'account exists' }, { status: 409 });
 
   const userId = await createPasswordUser(details.email, password);
   if (!userId) return NextResponse.json({ error: 'account exists' }, { status: 409 });
 
   try {
-    await saveAccessRequest(store, { ...details, status: 'pending', submittedAt: new Date().toISOString() });
+    const now = new Date().toISOString();
+    await saveAccessRequest(store, { ...details, status: 'pending', submittedAt: now, termsAcceptedAt: now });
   } catch (e) {
     // No request on file means nobody will ever review it: don't leave an orphan account behind.
     await deleteUserById(userId).catch(() => {});

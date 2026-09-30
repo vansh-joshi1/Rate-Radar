@@ -25,6 +25,12 @@ export async function GET(req: Request) {
 
   const store = new PrefixedStore(getStore(), demoPrefix(sid), DEMO_TTL_SECONDS);
   if (reset || (await sandboxNeedsSeed(store))) {
+    // Every seed writes a sandbox's worth of rows to the real database: a loop
+    // on this public URL would otherwise fill it.
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    if ((await getStore().incr(`demo-seed:${ip}`, 3600)) > 20) {
+      return new NextResponse('Too many demo sandboxes from here. Try again in an hour.', { status: 429 });
+    }
     await seedDemoSandbox(store);
   }
 
