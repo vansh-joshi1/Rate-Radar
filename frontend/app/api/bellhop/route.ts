@@ -24,6 +24,8 @@ export async function POST(req: Request) {
   const gate = await requireRole('viewer');
   if (!gate.ok) return gate.response;
 
+  if (!gate.limits.bellhop) return NextResponse.json({ error: 'Bellhop is on the Growth plan' }, { status: 402 });
+
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'invalid' }, { status: 400 });
 

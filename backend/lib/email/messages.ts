@@ -1,6 +1,7 @@
 import type { Trigger } from '../alerts/rules';
 import { fmtDowDay } from '../date';
 import { emailShell, linkFallback, section } from './template';
+import { PLAN_LIMITS } from '../billing/plans';
 
 export interface EmailMessage {
   subject: string;
@@ -130,5 +131,26 @@ export function verifiedEmail(opts: { loginUrl: string; hotelName: string }): Em
   });
 
   const text = [heading, '', intro, '', opts.loginUrl, '', FOOTER_TEXT].join('\n');
+  return { subject, html, text };
+}
+
+/** Sent when a hotel's watchlist is trimmed to its plan's cap. */
+export function compsTrimmedEmail(opts: { hotelName: string; removed: string[]; max: number; dashboardUrl?: string }): EmailMessage {
+  const base = opts.dashboardUrl?.replace(/\/$/, '') || undefined;
+  const subject = `Rate Radar: ${opts.hotelName} now tracks ${opts.max} competitors`;
+  const heading = `Now tracking ${opts.max} competitors`;
+  const intro = `${opts.hotelName}'s plan tracks up to ${opts.max} competitors, so we kept the ${opts.max} you added first and stopped tracking the rest.${opts.max < PLAN_LIMITS.growth.maxComps ? ` Growth tracks ${PLAN_LIMITS.growth.maxComps}.` : ''}`;
+
+  const html = emailShell({
+    preheader: `We stopped tracking ${opts.removed.length} competitor${opts.removed.length === 1 ? '' : 's'}.`,
+    heading,
+    intro,
+    bodyHtml: section('No longer tracked', opts.removed),
+    cta: base ? { label: 'Open competitors', href: `${base}/competitors` } : undefined,
+    reason: "You're an owner of this hotel on Rate Radar, and it was tracking more competitors than its plan includes.",
+    origin: base,
+  });
+
+  const text = [heading, '', intro, '', 'No longer tracked:', ...opts.removed.map((n) => `  • ${n}`), '', FOOTER_TEXT].join('\n');
   return { subject, html, text };
 }

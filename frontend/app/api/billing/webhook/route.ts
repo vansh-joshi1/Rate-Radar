@@ -3,6 +3,7 @@ import type Stripe from 'stripe';
 import { getStore } from '../../../../../backend/lib/store';
 import { getAccount, LIVE_STATUSES, saveAccount } from '../../../../../backend/lib/billing/accounts';
 import { accountFromSubscription, stripe } from '../../../../../backend/lib/billing/stripe';
+import { enforceCompCap } from '../../../../../backend/lib/billing/limits';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -41,7 +42,9 @@ export async function POST(req: Request) {
     // After a cancel and re-subscribe, a late event for the old, dead subscription must not overwrite the new one.
     const stale = account.subscriptionId && account.subscriptionId !== sub.id && !LIVE_STATUSES.has(sub.status);
     if (stale) return NextResponse.json({ received: true });
-    await saveAccount(store, { ...account, ...accountFromSubscription(sub) });
+    const updated = { ...account, ...accountFromSubscription(sub) };
+    await saveAccount(store, updated);
+    for (const propertyId of updated.propertyIds) await enforceCompCap(updated, propertyId);
   } catch (err) {
     // Unknown price (a missing env var) or Stripe unreachable: fail, so Stripe retries and the dashboard shows it.
     console.error(`[billing] ${event.type} for ${sent.id} failed:`, err);

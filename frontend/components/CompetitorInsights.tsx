@@ -1,5 +1,7 @@
 'use client';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { TrimNote } from '../../backend/lib/watchlist';
+import { PLAN_LIMITS } from '../../backend/lib/billing/plans';
 import { track } from './PostHogInit';
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
@@ -66,12 +68,13 @@ interface Props {
   yourRate: number | null;
   /** Watchlist names as of render: the grid's row source. */
   initialWatchlist: string[];
+  maxComps: number;
+  /** What the last plan-cap trim removed, if anything. */
+  trimNote: TrimNote | null;
   isDemo: boolean;
   /** The parity panel, rendered by the page. Null when no channel is tracked. */
   parity?: ReactNode;
 }
-
-const MAX_HOTELS = 25;
 
 const money = (n: number) => `$${n}`;
 const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '-' : ''}$${Math.abs(n)}`;
@@ -94,7 +97,7 @@ function levelDot(price: number, min: number, max: number): string {
 }
 
 export default function CompetitorInsights({
-  propertyId, propertyName, nights, history, yourRate, initialWatchlist, isDemo, parity,
+  propertyId, propertyName, nights, history, yourRate, initialWatchlist, maxComps, trimNote, isDemo, parity,
 }: Props) {
   const [dateFrom, setDateFrom] = useState(nights[0]?.date ?? '');
 
@@ -115,7 +118,23 @@ export default function CompetitorInsights({
   );
 
   const tracked = watchlist.length;
-  const full = tracked >= MAX_HOTELS;
+  const full = tracked >= maxComps;
+
+  // Dismissed per browser; a later trim has a new `at` and shows again.
+  const [trimSeen, setTrimSeen] = useState(true);
+  useEffect(() => {
+    try {
+      setTrimSeen(!trimNote || localStorage.getItem('rr:trim-seen') === trimNote.at);
+    } catch {
+      setTrimSeen(!trimNote);
+    }
+  }, [trimNote]);
+  function dismissTrim() {
+    setTrimSeen(true);
+    try {
+      localStorage.setItem('rr:trim-seen', trimNote!.at);
+    } catch {}
+  }
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/watchlist?propertyId=${propertyId}`);
@@ -582,7 +601,7 @@ export default function CompetitorInsights({
               <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
                 <h2 className="text-[22px] font-semibold tracking-tight">Watchlist</h2>
                 <span className={`${MONO_LABEL} tabular-nums`}>
-                  {tracked} of {MAX_HOTELS} tracked
+                  {tracked} of {maxComps} tracked
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-3">
@@ -607,6 +626,22 @@ export default function CompetitorInsights({
                 )}
               </div>
             </div>
+
+            {trimNote && !trimSeen && (
+              <div role="status" className="flex items-start justify-between gap-4 rounded-xl bg-[#fff7ed] px-4 py-3 text-[14px] leading-relaxed text-[#1a1b20]">
+                <p>
+                  Your plan tracks up to {trimNote.max} competitors, so we stopped tracking {trimNote.removed.join(', ')}.
+                  {trimNote.max < PLAN_LIMITS.growth.maxComps && ` Growth tracks ${PLAN_LIMITS.growth.maxComps}.`}
+                </p>
+                <button
+                  type="button"
+                  onClick={dismissTrim}
+                  className={`shrink-0 rounded-full px-2 text-[13px] font-medium text-[#44474d] underline decoration-current/30 underline-offset-2 hover:text-[#1a1b20] ${FOCUS}`}
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
 
             {/* Add a hotel */}
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -681,7 +716,7 @@ export default function CompetitorInsights({
                 type="button"
                 onClick={() => query.trim() && addHotel({ name: query.trim() })}
                 disabled={!canWrite || busy || !query.trim() || full}
-                title={full ? `The watchlist is full at ${MAX_HOTELS}. Remove a hotel to add another.` : undefined}
+                title={full ? `The watchlist is full at ${maxComps}. Remove a hotel to add another.` : undefined}
                 icon={<PlusIcon weight="light" className="h-4 w-4" />}
                 className="self-start sm:self-auto"
               >

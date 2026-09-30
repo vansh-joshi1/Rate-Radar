@@ -7,3 +7,9 @@ export const PLAN_PRICES = {
   starter: { name: 'Starter', month: '$99', year: '$990' },
   growth: { name: 'Growth', month: '$249', year: '$2,490' },
 } as const;
+
+/** What each plan unlocks within one hotel. */
+export const PLAN_LIMITS = {
+  starter: { bellhop: false, maxComps: 4, historyDays: 90 },
+  growth: { bellhop: true, maxComps: 8, historyDays: 365 },
+} as const;

@@ -44,6 +44,34 @@ export async function saveWatchlist(store: Store, propertyId: string, hotels: Wa
   await store.set(watchlistKey(propertyId), hotels);
 }
 
+/** What the last plan-cap trim removed, for the note on the Competitors page. */
+export interface TrimNote {
+  removed: string[];
+  /** The cap trimmed to. */
+  max: number;
+  at: string;
+}
+export const trimNoteKey = (propertyId: string) => `${watchlistKey(propertyId)}:trimmed`;
+const TRIM_NOTE_TTL = 30 * 86_400;
+
+/**
+ * Trim a watchlist to `max`, keeping the oldest. Returns the names removed.
+ * Clears a note from a lower cap once the list fits a higher one.
+ */
+export async function trimWatchlist(store: Store, propertyId: string, max: number, now = new Date()): Promise<string[]> {
+  const hotels = await loadWatchlist(store, propertyId);
+  if (hotels.length <= max) {
+    const note = await store.get<TrimNote>(trimNoteKey(propertyId));
+    if (note && note.max < max) await store.del(trimNoteKey(propertyId));
+    return [];
+  }
+  const kept = new Set([...hotels].sort((a, b) => a.addedAt.localeCompare(b.addedAt)).slice(0, max));
+  const removed = hotels.filter((h) => !kept.has(h)).map((h) => h.name);
+  await saveWatchlist(store, propertyId, hotels.filter((h) => kept.has(h)));
+  await store.set(trimNoteKey(propertyId), { removed, max, at: now.toISOString() } satisfies TrimNote, TRIM_NOTE_TTL);
+  return removed;
+}
+
 export function normalizeName(name: string): string {
   return name.trim().replace(/\s+/g, ' ');
 }

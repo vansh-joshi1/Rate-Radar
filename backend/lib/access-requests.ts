@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Store } from './store';
 import { passwordOk } from './password';
+import { PLAN_LIMITS } from './billing/plans';
 
 /**
  * Access requests: what /onboarding collects, saved for OWNER_EMAIL to review
@@ -34,7 +35,7 @@ export const AccessRequestBody = z.object({
   roomTypes: z
     .array(z.object({ name: z.string().max(200), tier: z.enum(['standard', 'superior']), price: z.number().nullable() }))
     .max(60),
-  competitors: z.array(z.string().trim().min(1).max(120)).min(1).max(40),
+  competitors: z.array(z.string().trim().min(1).max(120)).min(1).max(PLAN_LIMITS.growth.maxComps),
   /** The Terms + Privacy Policy checkbox. Required: this request creates an account. */
   terms: z.literal(true),
 });

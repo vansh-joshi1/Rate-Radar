@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr/LockSimple';
 import { Bezel, PillButton } from './landing/Machined';
 import { StatusLine } from './settings/parts';
-import { PLAN_PRICES } from '../../backend/lib/billing/plans';
+import { PLAN_LIMITS, PLAN_PRICES } from '../../backend/lib/billing/plans';
+import { useCanWrite } from './RoleProvider';
 
 /**
  * Billing controls. Both go to Stripe-hosted pages: Checkout to subscribe, the
@@ -83,6 +84,25 @@ export function ManageBilling() {
       </PillButton>
       <StatusLine status={status} />
     </div>
+  );
+}
+
+/** The Bellhop page on Starter. The owner switches plan in the Stripe portal. */
+export function BellhopUpgrade() {
+  const isOwner = useCanWrite('owner');
+  return (
+    <Bezel className="mx-auto mt-10 max-w-[640px]" core="space-y-6 p-8 md:p-10">
+      <LockSimpleIcon weight="light" className="h-7 w-7 text-[#44474d]" aria-hidden />
+      <div className="space-y-3">
+        <h1 className="text-[28px] font-semibold tracking-tight text-[#0b1c30]">Bellhop is on the Growth plan</h1>
+        <p className="max-w-[56ch] text-pretty text-[15px] leading-relaxed text-[#44474d]">
+          {isOwner
+            ? `Growth adds Bellhop, ${PLAN_LIMITS.growth.maxComps} competitors and a year of history for ${PLAN_PRICES.growth.month} a month. Switch plans in billing.`
+            : "Ask your hotel's owner to move to Growth. The recommendations and their reasoning are on the dashboard either way."}
+        </p>
+      </div>
+      {isOwner && <ManageBilling />}
+    </Bezel>
   );
 }
 

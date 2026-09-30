@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { roleAtLeast, type Role } from './roles';
+import type { Limits } from '../billing/limits';
 
 /**
  * Server-side role enforcement.
@@ -13,7 +14,8 @@ import { roleAtLeast, type Role } from './roles';
  * Levels and their meanings live in ./roles.
  */
 
-export type RoleGate = { ok: true; role: Role } | { ok: false; response: NextResponse };
+/** On success, also the caller's plan limits. */
+export type RoleGate = { ok: true; role: Role; limits: Limits } | { ok: false; response: NextResponse };
 
 /**
  * Gate a route handler on a minimum role. Returns the 401/403 response to
@@ -32,7 +34,7 @@ export async function requireRole(required: Role, opts: { allowLocked?: boolean 
   // store — spending metered API searches, sending mail — are not covered by
   // that, and each one refuses demo callers explicitly at its own door.
   const { demoSid } = await import('../demo/context');
-  if (await demoSid()) return { ok: true, role: 'owner' };
+  if (await demoSid()) return { ok: true, role: 'owner', limits: (await import('../billing/limits')).EXEMPT_LIMITS };
 
   const { auth } = await import('../../auth');
   const session = await auth();
@@ -53,13 +55,13 @@ export async function requireRole(required: Role, opts: { allowLocked?: boolean 
 
   // A lapsed trial or subscription stops every gated route here, in one place.
   // Only the billing routes, which are how a hotel gets unlocked, skip it.
-  if (!opts.allowLocked) {
-    const { getStore } = await import('../store');
-    const { accountFor, access } = await import('../billing/accounts');
-    const { propertyId } = session.user;
-    if (access(await accountFor(getStore(), propertyId), propertyId, new Date()) === 'locked') {
-      return { ok: false, response: NextResponse.json({ error: 'plan required' }, { status: 402 }) };
-    }
+  const { getStore } = await import('../store');
+  const { accountFor, access } = await import('../billing/accounts');
+  const { limitsFor } = await import('../billing/limits');
+  const { propertyId } = session.user;
+  const account = await accountFor(getStore(), propertyId);
+  if (!opts.allowLocked && access(account, propertyId, new Date()) === 'locked') {
+    return { ok: false, response: NextResponse.json({ error: 'plan required' }, { status: 402 }) };
   }
-  return { ok: true, role };
+  return { ok: true, role, limits: limitsFor(account, propertyId) };
 }

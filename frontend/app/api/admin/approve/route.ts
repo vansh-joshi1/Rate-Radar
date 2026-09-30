@@ -7,6 +7,7 @@ import { getAccessRequest, saveAccessRequest } from '../../../../../backend/lib/
 import { listMembers, ownerEmail, saveMembers } from '../../../../../backend/lib/auth/members';
 import { addProperty, DEMO_PROPERTY, listProperties, loadProperty, newPropertyId, type Property } from '../../../../../backend/lib/properties';
 import { saveWatchlist } from '../../../../../backend/lib/watchlist';
+import { PLAN_LIMITS } from '../../../../../backend/lib/billing/plans';
 import { baselineFromRooms, saveRatesConfig } from '../../../../../backend/lib/rates-config';
 import { locateAddress } from '../../../../../backend/lib/geo';
 import { verifiedEmail } from '../../../../../backend/lib/email/messages';
@@ -88,7 +89,9 @@ export async function POST(req: NextRequest) {
 
   const now = new Date().toISOString();
   const tenant = storeFor(id);
-  await saveWatchlist(tenant, id, request.competitors.map((name) => ({ name, addedAt: now })));
+  // Older requests can list more than Growth allows.
+  const competitors = request.competitors.slice(0, PLAN_LIMITS.growth.maxComps);
+  await saveWatchlist(tenant, id, competitors.map((name) => ({ name, addedAt: now })));
   await saveRatesConfig(tenant, id, baselineFromRooms(request.roomTypes));
   if (!existing) await addProperty(store, property);
   if (!member) await saveMembers(store, [...members, { email, role: 'owner', invitedAt: now, propertyId: id }]);
