@@ -6,10 +6,11 @@ import { FileStore, PrefixedStore } from '../lib/store';
 import { demoPrefix, isValidDemoSid } from '../lib/demo/session';
 import { demoSnapshot, DEMO_NEARBY_HOTELS } from '../lib/demo';
 import { DEMO_PROPERTY, PROPERTIES, getProperty } from '../lib/properties';
-import { seedDemoSandbox } from '../lib/demo/context';
+import { sandboxNeedsSeed, seedDemoSandbox } from '../lib/demo/context';
 import { isTrackedChannel } from '../lib/parity/channels';
 import { loadWatchlist } from '../lib/watchlist';
 import defaultCompset from '../config/compset.json';
+import { HORIZON_DAYS } from '../collector/budget';
 
 function freshStore(): FileStore {
   return new FileStore(join(mkdtempSync(join(tmpdir(), 'rr-demo-')), 'store.json'));
@@ -122,11 +123,55 @@ describe('the demo world is invented', () => {
     await seedDemoSandbox(sandbox);
 
     const list = await loadWatchlist(sandbox, DEMO_PROPERTY.id);
-    expect(list.length).toBe(DEMO_NEARBY_HOTELS.length);
-    expect(list.map((h) => h.name).sort()).toEqual(DEMO_NEARBY_HOTELS.map((h) => h.name).sort());
+    const directory = DEMO_NEARBY_HOTELS.map((h) => h.name);
+    for (const h of list) expect(directory).toContain(h.name);
     for (const real of defaultCompset.competitors as string[]) {
       expect(list.map((h) => h.name)).not.toContain(real);
     }
+  });
+
+  /**
+   * Regression: the watchlist was seeded with the whole add-a-competitor
+   * directory, three of which the fixture never priced, and the fixture
+   * priced two nights (the second for two hotels). The grid read half empty.
+   */
+  it('prices every watched hotel on every night of the horizon, and leaves hotels to add', async () => {
+    const sandbox = new PrefixedStore(freshStore(), demoPrefix(SID));
+    await seedDemoSandbox(sandbox);
+    const watched = (await loadWatchlist(sandbox, DEMO_PROPERTY.id)).map((h) => h.name).sort();
+    const { compsets = [] } = demoSnapshot();
+
+    expect(compsets).toHaveLength(HORIZON_DAYS);
+    for (const night of compsets) {
+      expect(night.entries.map((e) => e.name).sort()).toEqual(watched);
+    }
+    expect(DEMO_NEARBY_HOTELS.length).toBeGreaterThan(watched.length);
+  });
+
+  /**
+   * Regression: tonight read "Compset median $96 caps the range" beside a $95
+   * median, on a score-82 night the engine never caps.
+   */
+  it('quotes each night its own median, and leaves event nights uncapped', () => {
+    const { nights, compsets = [] } = demoSnapshot();
+    for (const c of compsets) {
+      const night = nights.find((n) => n.date === c.date)!;
+      const quoted = night.reasoning.join(' ').match(/median[^$]*\$\d+(?:\.\d+)?/g) ?? [];
+      expect(quoted.length).toBeGreaterThan(0);
+      for (const q of quoted) expect(q.endsWith(`$${c.median}`)).toBe(true);
+      if (night.nightScore >= 40) {
+        const std = night.tiers.find((t) => t.tierId === 'standard')!;
+        expect(std.recommended).toBe(Math.round(std.baselineMid * (1 + night.upliftPct / 100)));
+      }
+    }
+  });
+
+  it('reseeds a sandbox seeded from an older fixture', async () => {
+    const sandbox = new PrefixedStore(freshStore(), demoPrefix(SID));
+    await sandbox.set('snapshot:latest', demoSnapshot()); // what an older seed left: data, no fixture stamp
+    expect(await sandboxNeedsSeed(sandbox)).toBe(true);
+    await seedDemoSandbox(sandbox);
+    expect(await sandboxNeedsSeed(sandbox)).toBe(false);
   });
 });
 

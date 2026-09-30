@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { getStore, PrefixedStore, storeFor, type Store } from '../store';
 import { DEFAULT_PROPERTY_ID, DEMO_PROPERTY, getProperty, loadProperty, propKey, type Property } from '../properties';
 import { DEMO_COOKIE, DEMO_TTL_SECONDS, demoPrefix, isValidDemoSid } from './session';
-import { demoSnapshot, DEMO_NEARBY_HOTELS } from '../demo';
+import { demoSnapshot, DEMO_NEARBY_HOTELS, DEMO_WATCHED } from '../demo';
 import { watchlistKey, type WatchlistHotel } from '../watchlist';
 
 /**
@@ -85,6 +85,9 @@ export function demoRefusal(message: string): NextResponse {
   return NextResponse.json({ ok: false, demo: true, message }, { status: 200 });
 }
 
+/** Bump when the demo fixture changes, so sandboxes seeded from an older one are reseeded. */
+const FIXTURE_VERSION = 2;
+
 /**
  * Fill a fresh sandbox with the demo world.
  *
@@ -99,7 +102,8 @@ export async function seedDemoSandbox(store: Store): Promise<void> {
   // default: that default is config/compset.json, the real property's actual
   // competitor whitelist, which would put a dozen real hotel brands into a
   // market that is otherwise entirely invented.
-  const watchlist: WatchlistHotel[] = DEMO_NEARBY_HOTELS.map((h) => ({
+  // Only the hotels the fixture prices; the rest of the directory is there to add.
+  const watchlist: WatchlistHotel[] = DEMO_NEARBY_HOTELS.filter((h) => DEMO_WATCHED.includes(h.name)).map((h) => ({
     name: h.name,
     lat: h.lat,
     lng: h.lng,
@@ -111,10 +115,11 @@ export async function seedDemoSandbox(store: Store): Promise<void> {
     // The legacy unscoped key the dashboard still reads.
     store.set('snapshot:latest', snapshot),
     store.set(watchlistKey(id), watchlist),
+    store.set('fixture', FIXTURE_VERSION),
   ]);
 }
 
-/** True when the sandbox has no snapshot yet (fresh or expired). */
+/** True when the sandbox is fresh, expired, or seeded from an older fixture. */
 export async function sandboxNeedsSeed(store: Store): Promise<boolean> {
-  return (await store.get('snapshot:latest')) === null;
+  return (await store.get<number>('fixture')) !== FIXTURE_VERSION;
 }
