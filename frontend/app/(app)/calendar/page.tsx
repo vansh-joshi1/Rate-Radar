@@ -79,7 +79,7 @@ export default async function Calendar() {
   const tonight = snapshot.nights[0];
 
   return (
-    <div className="space-y-6 font-geist text-[#1a1b20] antialiased">
+    <div className="space-y-6 font-sans text-[#1a1b20] antialiased">
       <MarketIntelligence
         property={{ name: property.name, lat: property.lat, lng: property.lng }}
         events={events}

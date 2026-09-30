@@ -160,7 +160,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
 
   // One thumb slides under the active tab, as on the pricing toggle and the
   // sign-in tabs. Tabs differ in width, so it is measured, and re-measured when
-  // the bar resizes (Geist loading, a narrower window).
+  // the bar resizes (the font loading, a narrower window).
   const [thumb, setThumb] = useState<{ x: number; w: number } | null>(null);
   // Off until the first switch, so opening /settings#team places the thumb
   // rather than sliding it across from Property.
@@ -376,7 +376,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                     <p className="mt-1 max-w-[64ch] text-pretty text-[13.5px] leading-relaxed text-[#44474d]">{rule.desc}</p>
                   </div>
                   <div className="flex items-start gap-3 sm:flex-col sm:items-end">
-                    <span className="font-geist-mono text-[14px] tabular-nums text-[#1a1b20]">{rule.trigger}</span>
+                    <span className="font-mono text-[14px] tabular-nums text-[#1a1b20]">{rule.trigger}</span>
                     <StatusChip tone="ok">Active</StatusChip>
                   </div>
                 </li>
@@ -467,7 +467,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                     { label: 'Resets', value: budget.renewalDate ?? 'Unknown' },
                   ].map((stat) => (
                     <div key={stat.label} className="min-w-0">
-                      <dt className="font-geist-mono text-[12px] text-[#adc6ff]">{stat.label}</dt>
+                      <dt className="font-mono text-[12px] text-[#adc6ff]">{stat.label}</dt>
                       <dd className="mt-1 text-[26px] font-semibold tracking-tight tabular-nums">{stat.value}</dd>
                     </div>
                   ))}
@@ -493,7 +493,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                   </div>
                 )}
 
-                <p className="font-geist-mono text-[12px] leading-relaxed text-white/50">
+                <p className="font-mono text-[12px] leading-relaxed text-white/50">
                   Price searches come from a monthly allowance. When it runs low, fewer nights are checked.
                 </p>
               </Bezel>
@@ -517,7 +517,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                     key={path}
                     className="grid gap-x-6 gap-y-1 rounded-[1rem] bg-[#0b1c30]/[0.035] px-4 py-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]"
                   >
-                    <span className="min-w-0 break-all font-geist-mono text-[13px]">
+                    <span className="min-w-0 break-all font-mono text-[13px]">
                       <span className="text-[#085ac0]">GET</span> {path}
                     </span>
                     <span className="text-[13.5px] text-[#44474d]">{returns}</span>
@@ -536,7 +536,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                 <p className={MONO_LABEL}>Runs each day, {property.timezone.replace(/_/g, ' ')}</p>
                 <ul className="mt-2 flex flex-wrap gap-2">
                   {runSlots.map((h) => (
-                    <li key={h} className="rounded-full bg-[#0b1c30]/[0.05] px-3 py-1 font-geist-mono text-[13px] tabular-nums">
+                    <li key={h} className="rounded-full bg-[#0b1c30]/[0.05] px-3 py-1 font-mono text-[13px] tabular-nums">
                       {h}:00
                     </li>
                   ))}
@@ -570,7 +570,7 @@ function Fact({
           big
             ? 'text-[26px] font-semibold leading-tight tracking-tight'
             : mono
-              ? 'font-geist-mono text-[14px] tabular-nums'
+              ? 'font-mono text-[14px] tabular-nums'
               : 'text-[16px] font-medium'
         }`}
       >

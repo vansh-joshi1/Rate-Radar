@@ -124,7 +124,7 @@ export default function TeamManager() {
         </p>
       ) : rows.length === 0 ? (
         <p className="rounded-[1.25rem] bg-[#0b1c30]/[0.05] px-5 py-4 text-[14.5px] leading-relaxed text-[#44474d]">
-          Nobody is on the team yet. Set <span className="font-geist-mono text-[13px]">OWNER_EMAIL</span> for the first
+          Nobody is on the team yet. Set <span className="font-mono text-[13px]">OWNER_EMAIL</span> for the first
           owner, then invite teammates below.
         </p>
       ) : (

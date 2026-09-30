@@ -104,7 +104,7 @@ function Stepper({ step }: { step: number }) {
           >
             <span
               aria-hidden
-              className={`flex h-5 w-5 items-center justify-center rounded-full font-geist-mono text-[11px] tabular-nums ${
+              className={`flex h-5 w-5 items-center justify-center rounded-full font-mono text-[11px] tabular-nums ${
                 done || current ? 'bg-[#085ac0] text-white' : 'bg-[#0b1c30]/[0.08] text-[#44474d]'
               }`}
             >
@@ -270,7 +270,7 @@ function Readback({ a, channels, rooms }: { a: Answers; channels: Channel[]; roo
         <dl className="mt-5 divide-y divide-[#0b1c30]/[0.06]">
           {rows.map((r) => (
             <div key={r.label} className="flex items-baseline justify-between gap-4 py-3">
-              <dt className="font-geist-mono text-[12px] text-[#44474d]">{r.label}</dt>
+              <dt className="font-mono text-[12px] text-[#44474d]">{r.label}</dt>
               <dd
                 className={`min-w-0 truncate text-right text-[14px] tabular-nums ${
                   r.value ? 'font-medium text-[#1a1b20]' : 'text-[#44474d]/70'
@@ -598,12 +598,12 @@ export default function Onboarding() {
                               {r.name}
                             </span>
                             {r.price !== null && (
-                              <span className="block font-geist-mono text-[12px] tabular-nums text-[#44474d] sm:hidden">
+                              <span className="block font-mono text-[12px] tabular-nums text-[#44474d] sm:hidden">
                                 ${r.price}
                               </span>
                             )}
                           </span>
-                          <span className="hidden w-12 text-right font-geist-mono text-[12.5px] tabular-nums text-[#44474d] sm:block">
+                          <span className="hidden w-12 text-right font-mono text-[12.5px] tabular-nums text-[#44474d] sm:block">
                             {r.price !== null && `$${r.price}`}
                           </span>
                           <span
@@ -658,7 +658,7 @@ export default function Onboarding() {
                               {on && <CheckIcon weight="bold" aria-hidden className="h-3.5 w-3.5" />}
                               {n.name}
                               {!Number.isNaN(n.distanceMi) && (
-                                <span className="font-geist-mono text-[12px] tabular-nums">{n.distanceMi} mi</span>
+                                <span className="font-mono text-[12px] tabular-nums">{n.distanceMi} mi</span>
                               )}
                             </button>
                           );

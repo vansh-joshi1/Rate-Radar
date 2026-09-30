@@ -381,7 +381,7 @@ export default function CompetitorInsights({
                 <select
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className={`h-10 cursor-pointer appearance-none rounded-full bg-white pl-4 pr-10 font-geist-mono text-[13px] tabular-nums text-[#1a1b20] ring-1 ring-[#0b1c30]/[0.12] outline-none transition-shadow duration-300 hover:ring-[#0b1c30]/20 focus:ring-2 focus:ring-[#085ac0]/60`}
+                  className={`h-10 cursor-pointer appearance-none rounded-full bg-white pl-4 pr-10 font-mono text-[13px] tabular-nums text-[#1a1b20] ring-1 ring-[#0b1c30]/[0.12] outline-none transition-shadow duration-300 hover:ring-[#0b1c30]/20 focus:ring-2 focus:ring-[#085ac0]/60`}
                 >
                   {nights.map((n, i) => (
                     <option key={n.date} value={n.date}>
@@ -471,7 +471,7 @@ export default function CompetitorInsights({
 
         {/* Tonight's prices: every figure here was scraped, so the core is navy. */}
         <Bezel tone="data" className="lg:col-span-5" core="flex h-full flex-col p-6 text-white md:p-8">
-          <span className="font-geist-mono text-[12px] text-[#adc6ff]">
+          <span className="font-mono text-[12px] text-[#adc6ff]">
             Prices {tonight ? `for ${fmtDow(tonight.date)}, ${fmtDay(tonight.date)}` : 'by hotel'}
           </span>
           {pulse.length > 0 ? (
@@ -489,20 +489,20 @@ export default function CompetitorInsights({
                       <span className="flex shrink-0 items-baseline gap-3">
                         {median != null && (
                           <span
-                            className="inline-flex items-center gap-1 font-geist-mono text-[12px] tabular-nums text-white/50"
+                            className="inline-flex items-center gap-1 font-mono text-[12px] tabular-nums text-white/50"
                             title={`Against the median of ${money(median)}`}
                           >
                             <Arrow weight="light" aria-hidden className="h-3 w-3 self-center" />
                             {vs === 0 ? '$0' : signed(vs)}
                           </span>
                         )}
-                        <span className="w-12 text-right font-geist-mono text-[14px] tabular-nums">{money(e.price)}</span>
+                        <span className="w-12 text-right font-mono text-[14px] tabular-nums">{money(e.price)}</span>
                       </span>
                     </li>
                   );
                 })}
               </ol>
-              <p className="mt-auto pt-6 font-geist-mono text-[12px] leading-relaxed text-white/50">
+              <p className="mt-auto pt-6 font-mono text-[12px] leading-relaxed text-white/50">
                 {pulse.length > PULSE_SHOWN
                   ? `${pulse.length - PULSE_SHOWN} more in the watchlist below. `
                   : ''}
@@ -527,7 +527,7 @@ export default function CompetitorInsights({
             <>
               <div className="mt-6 flex flex-1 gap-3">
                 <div
-                  className="flex min-h-[240px] flex-col justify-between py-0 font-geist-mono text-[11.5px] tabular-nums text-[#44474d]"
+                  className="flex min-h-[240px] flex-col justify-between py-0 font-mono text-[11.5px] tabular-nums text-[#44474d]"
                   aria-hidden
                 >
                   {chart.ticks.map((t, i) => (
@@ -570,7 +570,7 @@ export default function CompetitorInsights({
                   </svg>
                 </div>
               </div>
-              <div className="mt-2 flex justify-between pl-12 font-geist-mono text-[11.5px] text-[#44474d]">
+              <div className="mt-2 flex justify-between pl-12 font-mono text-[11.5px] text-[#44474d]">
                 <span>{fmtDay(chart.pts[0].date)}</span>
                 <span>{fmtDay(chart.pts[chart.pts.length - 1].date)}</span>
               </div>
@@ -742,14 +742,14 @@ export default function CompetitorInsights({
               <table className="w-full border-separate border-spacing-0 text-left">
                 <thead>
                   <tr>
-                    <th scope="col" className="sticky left-0 min-w-[200px] max-w-[280px] bg-white px-6 py-3 font-geist-mono text-[12px] font-normal text-[#44474d] md:px-8">
+                    <th scope="col" className="sticky left-0 min-w-[200px] max-w-[280px] bg-white px-6 py-3 font-mono text-[12px] font-normal text-[#44474d] md:px-8">
                       Hotel
                     </th>
                     {visibleNights.map((n) => (
                       <th
                         key={n.date}
                         scope="col"
-                        className="whitespace-nowrap px-3 py-3 text-center font-geist-mono text-[12px] font-normal text-[#44474d]"
+                        className="whitespace-nowrap px-3 py-3 text-center font-mono text-[12px] font-normal text-[#44474d]"
                       >
                         <span className="block text-[#1a1b20]">{fmtDow(n.date)}</span>
                         {fmtDay(n.date)}
@@ -757,15 +757,15 @@ export default function CompetitorInsights({
                     ))}
                   </tr>
                 </thead>
-                <tbody className="font-geist-mono text-[14px] tabular-nums">
+                <tbody className="font-mono text-[14px] tabular-nums">
                   {/* Your own property: the one cobalt row. */}
                   <tr className="bg-[#e5eeff]">
                     <th
                       scope="row"
-                      className="sticky left-0 max-w-[280px] bg-[#e5eeff] px-6 py-3 text-left font-geist text-[14.5px] font-medium text-[#085ac0] md:px-8"
+                      className="sticky left-0 max-w-[280px] bg-[#e5eeff] px-6 py-3 text-left font-sans text-[14.5px] font-medium text-[#085ac0] md:px-8"
                     >
                       <span className="block truncate">{propertyName}</span>
-                      <span className="block font-geist-mono text-[11.5px] font-normal text-[#085ac0]">Suggested</span>
+                      <span className="block font-mono text-[11.5px] font-normal text-[#085ac0]">Suggested</span>
                     </th>
                     {visibleNights.map((n) => (
                       <td key={n.date} className="px-3 py-3 text-center" title={`Suggested for ${n.date}`}>
@@ -784,7 +784,7 @@ export default function CompetitorInsights({
                     <tr key={h.key} className="group/row">
                       <th
                         scope="row"
-                        className="sticky left-0 max-w-[280px] border-t border-[#0b1c30]/[0.06] bg-white px-6 py-3 text-left font-geist text-[14.5px] font-normal text-[#1a1b20] transition-colors duration-150 group-hover/row:bg-[#f7f8fd] md:px-8"
+                        className="sticky left-0 max-w-[280px] border-t border-[#0b1c30]/[0.06] bg-white px-6 py-3 text-left font-sans text-[14.5px] font-normal text-[#1a1b20] transition-colors duration-150 group-hover/row:bg-[#f7f8fd] md:px-8"
                       >
                         <span className="flex items-center justify-between gap-3">
                           <span className="min-w-0 truncate" title={h.label !== h.key ? `Tracked as "${h.key}"` : h.label}>
@@ -832,7 +832,7 @@ export default function CompetitorInsights({
                     <tr>
                       <td
                         colSpan={visibleNights.length + 1}
-                        className="border-t border-[#0b1c30]/[0.06] px-6 py-5 font-geist text-[14.5px] text-[#44474d] md:px-8"
+                        className="border-t border-[#0b1c30]/[0.06] px-6 py-5 font-sans text-[14.5px] text-[#44474d] md:px-8"
                       >
                         The watchlist is empty. Search above for the hotels you compete with.
                       </td>
@@ -920,7 +920,7 @@ function PositionStrip({
         {yourRate != null && mark(yourRate, 'h-3.5 w-3.5 bg-white ring-2 ring-[#1a1b20]')}
         {mark(suggested, 'h-3.5 w-3.5 bg-[#085ac0] ring-2 ring-white')}
       </div>
-      <div className="mt-1 flex justify-between font-geist-mono text-[11.5px] tabular-nums text-[#44474d]">
+      <div className="mt-1 flex justify-between font-mono text-[11.5px] tabular-nums text-[#44474d]">
         <span>{money(lo)}</span>
         <span>{money(hi)}</span>
       </div>

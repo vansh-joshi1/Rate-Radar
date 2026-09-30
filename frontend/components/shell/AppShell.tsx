@@ -21,7 +21,7 @@ const FOCUS =
 /*
  * App chrome on the Machined Instrument language (DESIGN.md): a 280px rail
  * with the brand lockup, property badge and pill nav; a 64px top bar with
- * section links, alerts and account. Geist, Phosphor Light, and the landing's
+ * section links, alerts and account. IBM Plex, Phosphor Light, and the landing's
  * hex values directly, like every other migrated surface.
  */
 
@@ -106,7 +106,7 @@ export default function AppShell({
     <div className="flex min-h-[100dvh] bg-paper">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-[#085ac0] focus:px-4 focus:py-2 focus:font-geist focus:text-[13px] focus:font-medium focus:text-white"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-[#085ac0] focus:px-4 focus:py-2 focus:font-sans focus:text-[13px] focus:font-medium focus:text-white"
       >
         Skip to content
       </a>
@@ -115,7 +115,7 @@ export default function AppShell({
           system's one spring: fast out of the gate, long settle. */}
       <nav
         aria-label="App"
-        className={`fixed left-0 top-0 z-50 flex h-[100dvh] w-sidebar-width flex-col border-r border-[#0b1c30]/[0.06] bg-[#f8f9ff] font-geist text-[#1a1b20] antialiased transition-[transform,visibility] duration-300 ${SPRING} motion-reduce:duration-150 ${
+        className={`fixed left-0 top-0 z-50 flex h-[100dvh] w-sidebar-width flex-col border-r border-[#0b1c30]/[0.06] bg-[#f8f9ff] font-sans text-[#1a1b20] antialiased transition-[transform,visibility] duration-300 ${SPRING} motion-reduce:duration-150 ${
           open ? 'max-md:shadow-[0_12px_40px_-16px_rgba(11,28,48,0.22)]' : 'max-md:invisible max-md:-translate-x-full'
         }`}
       >
@@ -137,7 +137,7 @@ export default function AppShell({
               <BuildingsIcon weight="light" className="h-[18px] w-[18px]" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block font-geist-mono text-[11.5px] leading-tight text-[#44474d]">Property</span>
+              <span className="block font-mono text-[11.5px] leading-tight text-[#44474d]">Property</span>
               <span className="block truncate text-[14px] font-semibold leading-snug">{property.label}</span>
             </span>
           </div>
@@ -212,7 +212,7 @@ export default function AppShell({
         {/* The top bar is on the Machined Instrument language (DESIGN.md);
             the rail beside it has not migrated yet. A solid canvas rather than
             a blur: it is sticky over scrolling content. */}
-        <header className="sticky top-0 z-40 w-full bg-[#f8f9ff] font-geist text-[#1a1b20] antialiased">
+        <header className="sticky top-0 z-40 w-full bg-[#f8f9ff] font-sans text-[#1a1b20] antialiased">
           <div className="flex h-16 items-center gap-3 px-4 md:px-6 lg:px-8">
             <button
               aria-label="Open menu"
@@ -246,7 +246,7 @@ export default function AppShell({
             <div className="flex-1" />
 
             {freshness && (
-              <span className="hidden whitespace-nowrap font-geist-mono text-[12px] text-[#44474d] 2xl:block">
+              <span className="hidden whitespace-nowrap font-mono text-[12px] text-[#44474d] 2xl:block">
                 {freshness}
               </span>
             )}

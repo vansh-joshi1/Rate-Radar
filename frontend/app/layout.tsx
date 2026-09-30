@@ -1,14 +1,12 @@
 import type { Metadata } from 'next';
-import { Inter, Sora } from 'next/font/google';
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
+import { IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
 import './globals.css';
 import PostHogInit from '../components/PostHogInit';
 import CookieBanner from '../components/Consent';
 
 // Downloaded at build and served from our own domain: no visitor request reaches Google.
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const sora = Sora({ subsets: ['latin'], weight: ['600', '700'], variable: '--font-sora' });
+const sans = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-sans' });
+const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-mono' });
 
 export const metadata: Metadata = {
   title: { default: 'Rate Radar — Know what to charge tonight', template: '%s · Rate Radar' },
@@ -26,8 +24,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // Font variables once for the whole app; surfaces opt in with `font-geist`.
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${inter.variable} ${sora.variable}`}>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
       <body>
         <PostHogInit />
         {children}

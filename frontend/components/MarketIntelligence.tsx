@@ -121,7 +121,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
             <span className={`${CHIP} bg-[#029768]/[0.08] text-[#027a55]`}>Live</span>
           )}
           {first && (
-            <span className={`${CHIP} ${QUIET} font-geist-mono tabular-nums`}>
+            <span className={`${CHIP} ${QUIET} font-mono tabular-nums`}>
               {nights.length} nights from {fmtDow(first)}, {fmtDay(first)}
             </span>
           )}
@@ -135,7 +135,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
         <Bezel tone="data" className="xl:col-span-7" core="flex h-full flex-col p-6 text-white md:p-8">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <h2 id="event-map" className="scroll-mt-24 text-[22px] font-semibold tracking-tight">Event map</h2>
-            <span className="font-geist-mono text-[12px] tabular-nums text-[#adc6ff]">
+            <span className="font-mono text-[12px] tabular-nums text-[#adc6ff]">
               {located.length} of {visible.length} placed, rings every {step} mi
             </span>
           </div>
@@ -248,7 +248,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
                       }`}
                     >
                       {f.label}
-                      <span className="font-geist-mono text-[12px] tabular-nums">{count}</span>
+                      <span className="font-mono text-[12px] tabular-nums">{count}</span>
                     </button>
                   );
                 })}
@@ -290,7 +290,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
                       }`}
                     >
                       <span className="text-center">
-                        <span className="block font-geist-mono text-[12px] text-[#44474d]">{fmtDow(e.date)}</span>
+                        <span className="block font-mono text-[12px] text-[#44474d]">{fmtDow(e.date)}</span>
                         <span className="block text-[22px] font-semibold leading-tight tracking-tight tabular-nums">
                           {noonUTC(e.date).getUTCDate()}
                         </span>
@@ -298,7 +298,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
                       <span className={`min-w-0 ${small ? 'opacity-80' : ''}`}>
                         <span className="flex items-start justify-between gap-3">
                           <span className="min-w-0 text-[15px] font-medium leading-snug">{e.name}</span>
-                          <span className="shrink-0 text-right font-geist-mono text-[14px] tabular-nums">
+                          <span className="shrink-0 text-right font-mono text-[14px] tabular-nums">
                             {e.attendance.toLocaleString()}
                           </span>
                         </span>
@@ -306,7 +306,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
                           <span className="flex min-w-0 max-w-full items-baseline gap-2 text-[13px] text-[#44474d]">
                             <span className="min-w-0 truncate">{e.venue}</span>
                             {e.miles != null && (
-                              <span className="shrink-0 font-geist-mono text-[12px] tabular-nums">
+                              <span className="shrink-0 font-mono text-[12px] tabular-nums">
                                 {fmtMi(e.miles)} mi
                               </span>
                             )}
@@ -379,7 +379,7 @@ function NightScrubber({
     <div className="mt-6">
       <div className="flex min-h-7 items-center justify-between gap-4">
         <p className="min-w-0 truncate text-[13px] text-white/60">
-          <span className="font-geist-mono text-[12px] text-[#adc6ff]">
+          <span className="font-mono text-[12px] text-[#adc6ff]">
             {sel ? `${fmtDow(sel.date)}, ${fmtDay(sel.date)}` : 'Demand by night'}
           </span>
           <span className="tabular-nums">
@@ -431,7 +431,7 @@ function NightScrubber({
           );
         })}
       </div>
-      <div className="mt-2 flex justify-between font-geist-mono text-[11px] tabular-nums text-white/50">
+      <div className="mt-2 flex justify-between font-mono text-[11px] tabular-nums text-white/50">
         <span>Tonight</span>
         <span>{fmtDay(nights[nights.length - 1].date)}</span>
       </div>
@@ -446,7 +446,7 @@ function AlertReading({ icon, label, children }: { icon: React.ReactNode; label:
         {icon}
       </span>
       <div className="min-w-0">
-        <span className="block font-geist-mono text-[12px] text-[#adc6ff]">{label}</span>
+        <span className="block font-mono text-[12px] text-[#adc6ff]">{label}</span>
         <p className="mt-0.5 text-[14px] leading-relaxed text-white/80">{children}</p>
       </div>
     </div>

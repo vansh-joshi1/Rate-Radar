@@ -10,7 +10,7 @@ import { Bezel, Eyebrow, PillCta } from '../components/landing/Machined';
 export default function NotFound() {
   return (
     <main
-      className="flex min-h-[100dvh] flex-col bg-[#f8f9ff] px-4 font-geist text-[#1a1b20] antialiased md:px-6"
+      className="flex min-h-[100dvh] flex-col bg-[#f8f9ff] px-4 font-sans text-[#1a1b20] antialiased md:px-6"
     >
       <div className="mx-auto flex w-full max-w-[1200px] pt-6">
         <Link

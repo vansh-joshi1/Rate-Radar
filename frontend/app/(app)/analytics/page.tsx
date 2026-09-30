@@ -15,7 +15,7 @@ export default async function BellhopPage() {
   const tonight = bookings[todayIn(property.timezone)]?.at(-1) ?? null;
 
   return (
-    <div className="font-geist text-[#1a1b20] antialiased">
+    <div className="font-sans text-[#1a1b20] antialiased">
       <Bellhop
         totalRooms={property.totalRooms}
         tonight={tonight}

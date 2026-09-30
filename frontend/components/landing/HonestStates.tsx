@@ -118,11 +118,11 @@ export default function HonestStates() {
       >
           <div className="flex items-end justify-between gap-6 pb-6 pt-7 md:pt-8">
             <div>
-              <div className="font-geist-mono text-[12px] text-[#44474d]">Tonight, Standard</div>
+              <div className="font-mono text-[12px] text-[#44474d]">Tonight, Standard</div>
               <div className="mt-2 text-[44px] font-semibold leading-none tracking-tighter tabular-nums text-[#085ac0]">$89</div>
             </div>
             <div className="w-32 text-right">
-              <div className="font-geist-mono text-[12px] text-[#44474d]">Confidence</div>
+              <div className="font-mono text-[12px] text-[#44474d]">Confidence</div>
               <div className="mt-1 text-[20px] font-semibold tabular-nums text-[#1a1b20]">64%</div>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#0b1c30]/[0.08]">
                 <span className="block h-full w-[64%] rounded-full bg-[#029768]" />
@@ -134,8 +134,8 @@ export default function HonestStates() {
             <div key={row.name} className="border-t border-[#0b1c30]/[0.06] py-3.5 lg:flex lg:items-center lg:py-0">
               <div className="flex w-full items-center justify-between gap-4">
                 <span className="min-w-0">
-                  <span className="block truncate text-[14.5px] font-medium text-[#1a1b20]">{row.name}</span>
-                  <span className="block truncate font-geist-mono text-[12px] text-[#44474d]">{row.note}</span>
+                  <span className="block text-[14.5px] font-medium text-[#1a1b20]">{row.name}</span>
+                  <span className="block font-mono text-[12px] text-[#44474d]">{row.note}</span>
                 </span>
                 <span className={`${chip} ${row.tone}`}>{row.label}</span>
               </div>

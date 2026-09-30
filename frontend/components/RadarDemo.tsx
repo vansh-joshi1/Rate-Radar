@@ -370,7 +370,7 @@ export default function RadarDemo() {
       <div className="flex h-14 items-center justify-between gap-3 px-5">
         <div className="min-w-0">
           <div className="truncate text-[14px] font-semibold tracking-tight text-[#0b1c30]">Harbor Pine Inn</div>
-          <div className="font-geist-mono text-[11.5px] text-[#44474d]">Compset, tonight</div>
+          <div className="font-mono text-[11.5px] text-[#44474d]">Compset, tonight</div>
         </div>
       </div>
 
@@ -399,7 +399,7 @@ export default function RadarDemo() {
                 style={{ transform: `translate(-50%, -50%) scale(${near ? 1.35 : 1})` }}
               />
               <span
-                className={`absolute -top-7 left-0 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-px font-geist-mono text-[11px] tabular-nums transition-colors duration-300 ${
+                className={`absolute -top-7 left-0 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-px font-mono text-[11px] tabular-nums transition-colors duration-300 ${
                   near ? 'bg-white text-[#1a1b20]' : 'bg-white/10 text-[#d8e2ff]'
                 }`}
               >
@@ -443,7 +443,7 @@ export default function RadarDemo() {
               style={{ width: 14, height: 14, transform: active ? 'scale(1.35)' : 'scale(1)' }}
             />
             <span
-              className={`pointer-events-none absolute whitespace-nowrap rounded-full bg-[#085ac0] px-2 py-px font-geist-mono text-[11.5px] text-white ${
+              className={`pointer-events-none absolute whitespace-nowrap rounded-full bg-[#085ac0] px-2 py-px font-mono text-[11.5px] text-white ${
                 crowded ? 'top-[calc(100%+2px)]' : '-top-7'
               }`}
             >
@@ -455,17 +455,17 @@ export default function RadarDemo() {
         {/* the recommendation itself, recomputed on every frame of the drag,
             so the number leads the gesture instead of reporting on it. */}
         <div ref={readoutRef} className="pointer-events-none absolute bottom-4 right-4 min-w-[156px] rounded-2xl bg-white px-4 py-3.5 text-right shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_16px_32px_-16px_rgba(5,12,24,0.55)]">
-          <div className="font-geist-mono text-[11.5px] text-[#44474d]">Tonight, Standard</div>
+          <div className="font-mono text-[11.5px] text-[#44474d]">Tonight, Standard</div>
           <div className="mt-1.5 text-[34px] font-semibold leading-none tracking-tighter tabular-nums text-[#085ac0]">
             ${readout.rate}
           </div>
-          <div className="mt-1.5 font-geist-mono text-[11px] tabular-nums text-[#047857]">
+          <div className="mt-1.5 font-mono text-[11px] tabular-nums text-[#047857]">
             {uplift >= 0 ? '+' : ''}
             {uplift}% vs ${BASELINE} baseline
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-5 left-4 max-w-[45%] font-geist-mono text-[11.5px] text-[#adc6ff]">
+        <div className="pointer-events-none absolute bottom-5 left-4 max-w-[45%] font-mono text-[11.5px] text-[#adc6ff]">
           {touched ? `Anchored by ${COMPETITORS[readout.nearest].name}` : 'Drag your property'}
         </div>
 
@@ -479,19 +479,19 @@ export default function RadarDemo() {
       {/* reasoning strip: the honest states, on the marketing page too */}
       <ul className="divide-y divide-[#0b1c30]/[0.06] px-5 text-[13.5px]">
         <li className="flex items-center justify-between gap-3 py-2.5">
-          <span className="min-w-0 truncate text-[#1a1b20]">Neon Compass, Harborview Amphitheater</span>
+          <span className="min-w-0 text-[#1a1b20]">Neon Compass, Harborview Amphitheater</span>
           <span className="shrink-0 rounded-full bg-[#085ac0] px-2.5 py-0.5 text-[12px] font-medium text-white">
             Major
           </span>
         </li>
         <li className="flex items-center justify-between gap-3 py-2.5">
-          <span className="min-w-0 truncate text-[#44474d]">Cascadia State home game</span>
+          <span className="min-w-0 text-[#44474d]">Cascadia State home game</span>
           <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[12px] font-medium text-[#44474d] bg-[#0b1c30]/[0.05]">
             Too small to matter
           </span>
         </li>
         <li className="flex items-center justify-between gap-3 py-2.5">
-          <span className="min-w-0 truncate text-[#1a1b20]">Expedia lists $101, direct is $89</span>
+          <span className="min-w-0 text-[#1a1b20]">Expedia lists $101, direct is $89</span>
           <span className="shrink-0 rounded-full bg-[#b45309]/[0.08] px-2.5 py-0.5 text-[12px] font-medium text-[#b45309]">
             $12 gap
           </span>

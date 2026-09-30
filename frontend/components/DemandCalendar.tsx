@@ -364,7 +364,7 @@ export default function DemandCalendar({
               {next && (
                 <span>
                   {next.short}
-                  <span className="ml-1.5 font-geist-mono text-[12px] tabular-nums text-[#085ac0]">{next.count}</span>
+                  <span className="ml-1.5 font-mono text-[12px] tabular-nums text-[#085ac0]">{next.count}</span>
                 </span>
               )}
               <CaretRightIcon weight="light" aria-hidden className="h-4 w-4" />
@@ -403,7 +403,7 @@ export default function DemandCalendar({
             <div className="min-w-[560px]">
               <div className="mb-2 grid grid-cols-7 gap-1.5">
                 {WEEKDAYS.map((d) => (
-                  <div key={d} className="text-center font-geist-mono text-[12px] text-[#44474d]">
+                  <div key={d} className="text-center font-mono text-[12px] text-[#44474d]">
                     {d}
                   </div>
                 ))}
@@ -433,7 +433,7 @@ export default function DemandCalendar({
                         title={isToday ? `${date}, today, outside the forecast window` : `${date}, outside the forecast window`}
                       >
                         <span
-                          className={`font-geist-mono text-[13px] tabular-nums ${
+                          className={`font-mono text-[13px] tabular-nums ${
                             isToday ? 'font-medium text-[#085ac0]' : 'text-[#6b6e75]'
                           }`}
                         >
@@ -469,9 +469,9 @@ export default function DemandCalendar({
                       } ${tier.text} ${todayRing} ${shown ? 'outline outline-2 outline-offset-2 outline-[#0b1c30]' : ''}`}
                     >
                       <span className="flex items-baseline justify-between gap-1">
-                        <span className="font-geist-mono text-[13px] font-medium tabular-nums">{dayLabel}</span>
+                        <span className="font-mono text-[13px] font-medium tabular-nums">{dayLabel}</span>
                         {n.rate != null && (
-                          <span className={`font-geist-mono text-[12px] tabular-nums ${tier.sub}`}>${n.rate}</span>
+                          <span className={`font-mono text-[12px] tabular-nums ${tier.sub}`}>${n.rate}</span>
                         )}
                       </span>
 
@@ -593,7 +593,7 @@ function NightDetail({
             {night.rate != null ? `$${night.rate}` : <span className="text-[15px] font-normal tracking-normal text-[#44474d]">Not set</span>}
           </dd>
           {vsBase != null && (
-            <dd className="mt-1.5 font-geist-mono text-[12px] tabular-nums text-[#44474d]">
+            <dd className="mt-1.5 font-mono text-[12px] tabular-nums text-[#44474d]">
               {vsBase === 0 ? 'At' : `${vsBase > 0 ? '+' : ''}${vsBase}% vs`} the ${night.baseline} baseline
             </dd>
           )}
@@ -644,7 +644,7 @@ function NightDetail({
                     {small ? 'Too small to matter' : t.label}
                   </span>
                 </div>
-                <p className="mt-1.5 font-geist-mono text-[13px] tabular-nums">
+                <p className="mt-1.5 font-mono text-[13px] tabular-nums">
                   {e.attendance.toLocaleString()} <span className="text-[#44474d]">expected</span>
                 </p>
                 <p className="mt-0.5 text-pretty text-[13px] text-[#44474d]">

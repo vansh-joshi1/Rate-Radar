@@ -12,7 +12,7 @@ const DARK = 'rounded-[0.5rem] bg-white/[0.06] motion-safe:animate-pulse';
 
 export default function MarketIntelligenceLoading() {
   return (
-    <div className="space-y-8 font-geist" aria-busy="true" aria-label="Loading market intelligence">
+    <div className="space-y-8 font-sans" aria-busy="true" aria-label="Loading market intelligence">
       <div className="space-y-3">
         <div className={`${BLOCK} h-10 w-64 max-w-full`} />
         <div className={`${BLOCK} h-4 w-96 max-w-full`} />

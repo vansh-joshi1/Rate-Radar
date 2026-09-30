@@ -12,12 +12,12 @@ export function SampleReading({ reasons, rateSize }: { reasons: Reason[]; rateSi
     <>
       <div className="flex items-end justify-between gap-4">
         <div>
-          <div className="font-geist-mono text-[12px] text-[#44474d]">Saturday, Standard</div>
+          <div className="font-mono text-[12px] text-[#44474d]">Saturday, Standard</div>
           <div className={`mt-2 ${rateSize} font-semibold leading-none tracking-tighter tabular-nums text-[#085ac0]`}>
             $92
           </div>
         </div>
-        <div className="text-right font-geist-mono text-[13px] tabular-nums text-[#44474d]">
+        <div className="text-right font-mono text-[13px] tabular-nums text-[#44474d]">
           <div>$88 to $96</div>
           <div className="text-[#047857]">+10% vs baseline</div>
         </div>
@@ -37,7 +37,7 @@ export function SampleReading({ reasons, rateSize }: { reasons: Reason[]; rateSi
                 {r.delta}
               </span>
             ) : (
-              <span className="shrink-0 font-geist-mono text-[13px] tabular-nums">{r.delta}</span>
+              <span className="shrink-0 font-mono text-[13px] tabular-nums">{r.delta}</span>
             )}
           </li>
         ))}

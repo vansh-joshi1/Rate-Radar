@@ -13,7 +13,7 @@ export default function AwaitingFirstRun({ hotel, children }: { hotel: string; c
   const pathname = usePathname();
   if (pathname.startsWith('/settings')) return <>{children}</>;
   return (
-    <div className="flex flex-col gap-5 rounded-[1.25rem] bg-[#0b1c30]/[0.04] px-6 py-6 font-geist text-[#1a1b20] antialiased ring-1 ring-[#0b1c30]/[0.06]">
+    <div className="flex flex-col gap-5 rounded-[1.25rem] bg-[#0b1c30]/[0.04] px-6 py-6 font-sans text-[#1a1b20] antialiased ring-1 ring-[#0b1c30]/[0.06]">
       <div className="flex items-start gap-3">
         <HourglassMediumIcon weight="light" className="mt-0.5 h-5 w-5 shrink-0 text-[#44474d]" aria-hidden />
         <div className="space-y-2">

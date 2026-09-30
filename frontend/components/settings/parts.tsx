@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
  * the same pill fields, the same status chips.
  */
 
-export const MONO_LABEL = 'font-geist-mono text-[12px] text-[#44474d]';
+export const MONO_LABEL = 'font-mono text-[12px] text-[#44474d]';
 
 export const FOCUS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
@@ -76,7 +76,7 @@ export function Footnote({ children }: { children: ReactNode }) {
 /** Inline code, tinted rather than boxed. */
 export function Code({ children }: { children: ReactNode }) {
   return (
-    <code className="rounded-[0.375rem] bg-[#0b1c30]/[0.05] px-1.5 py-0.5 font-geist-mono text-[0.92em] text-[#1a1b20]">
+    <code className="rounded-[0.375rem] bg-[#0b1c30]/[0.05] px-1.5 py-0.5 font-mono text-[0.92em] text-[#1a1b20]">
       {children}
     </code>
   );

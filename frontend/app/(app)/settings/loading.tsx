@@ -10,7 +10,7 @@ const BLOCK = 'rounded-[0.5rem] bg-[#0b1c30]/[0.06] motion-safe:animate-pulse';
 
 export default function SettingsLoading() {
   return (
-    <div className="mx-auto max-w-5xl space-y-8 font-geist" aria-busy="true" aria-label="Loading settings">
+    <div className="mx-auto max-w-5xl space-y-8 font-sans" aria-busy="true" aria-label="Loading settings">
       <div className="space-y-3">
         <div className={`${BLOCK} h-10 w-40`} />
         <div className={`${BLOCK} h-4 w-96 max-w-full`} />

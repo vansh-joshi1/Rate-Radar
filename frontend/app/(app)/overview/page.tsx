@@ -79,7 +79,7 @@ function NightStrip({ nights }: { nights: { date: string; rate: number }[] }) {
               style={{ height: `${35 + ((n.rate - min) / span) * 65}%` }}
             />
           </div>
-          <span className={`font-geist-mono text-[11.5px] ${i === 0 ? 'text-[#085ac0]' : 'text-[#44474d]'}`}>
+          <span className={`font-mono text-[11.5px] ${i === 0 ? 'text-[#085ac0]' : 'text-[#44474d]'}`}>
             {i === 0 ? 'Tonight' : fmtDow(n.date)}
           </span>
           <span className="text-[13px] font-medium tabular-nums text-[#1a1b20]">{money(n.rate)}</span>
@@ -186,7 +186,7 @@ export default async function Overview() {
   const confidence = Math.round(snapshot.confidence);
 
   return (
-    <div className="space-y-8 font-geist text-[#1a1b20] antialiased">
+    <div className="space-y-8 font-sans text-[#1a1b20] antialiased">
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
@@ -196,7 +196,7 @@ export default async function Overview() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {isDemo ? <StatusChip tone="quiet">Sample data</StatusChip> : <StatusChip tone="ok">Live</StatusChip>}
-          <span className="rounded-full bg-white px-3.5 py-1.5 font-geist-mono text-[12.5px] tabular-nums text-[#1a1b20] ring-1 ring-[#0b1c30]/[0.08]">
+          <span className="rounded-full bg-white px-3.5 py-1.5 font-mono text-[12.5px] tabular-nums text-[#1a1b20] ring-1 ring-[#0b1c30]/[0.08]">
             {fmtRange(upcoming[0].date, upcoming[upcoming.length - 1].date)}
           </span>
         </div>
@@ -291,7 +291,7 @@ export default async function Overview() {
 
         {/* Comp set: every figure here was scraped, so the core is navy. */}
         <Bezel tone="data" className="lg:col-span-5" core="flex h-full flex-col p-6 text-white md:p-8">
-          <span className="font-geist-mono text-[12px] text-[#adc6ff]">
+          <span className="font-mono text-[12px] text-[#adc6ff]">
             Comp set median{compset ? `, ${compset.entries.length} nearby` : ''}
           </span>
           {compsetMedian != null ? (
@@ -313,7 +313,7 @@ export default async function Overview() {
                     {i === insertAt && <SuggestedRow rate={std.recommended} />}
                     <div className="flex items-baseline justify-between gap-4 py-2.5">
                       <span className="truncate text-[14px] text-white/80">{e.name}</span>
-                      <span className="font-geist-mono text-[14px] tabular-nums">{money(e.price)}</span>
+                      <span className="font-mono text-[14px] tabular-nums">{money(e.price)}</span>
                     </div>
                   </li>
                 ))}
@@ -325,7 +325,7 @@ export default async function Overview() {
               </ol>
 
               <div className="mt-auto flex items-center justify-between gap-4 pt-6">
-                <span className="font-geist-mono text-[12px] text-white/50">
+                <span className="font-mono text-[12px] text-white/50">
                   {neighbours.length > shownNeighbours.length
                     ? `${neighbours.length - shownNeighbours.length} more not shown`
                     : `Prices for ${fmtDow(compset!.date)}`}
@@ -387,14 +387,14 @@ export default async function Overview() {
               {upcoming.map((n, i) => (
                 <li key={n.date} className="flex flex-col items-center gap-2">
                   <span
-                    className={`flex aspect-square w-full items-center justify-center rounded-[0.5rem] font-geist-mono text-[13px] tabular-nums ${heat(
+                    className={`flex aspect-square w-full items-center justify-center rounded-[0.5rem] font-mono text-[13px] tabular-nums ${heat(
                       n.nightScore,
                     )}`}
                     title={n.holidayName ?? undefined}
                   >
                     {Math.round(n.nightScore)}
                   </span>
-                  <span className={`font-geist-mono text-[11.5px] ${i === 0 ? 'text-[#085ac0]' : 'text-[#44474d]'}`}>
+                  <span className={`font-mono text-[11.5px] ${i === 0 ? 'text-[#085ac0]' : 'text-[#44474d]'}`}>
                     {i === 0 ? 'Tonight' : fmtDow(n.date)}
                   </span>
                 </li>
@@ -446,7 +446,7 @@ function SuggestedRow({ rate }: { rate: number }) {
   return (
     <div className="-mx-3 flex items-baseline justify-between gap-4 rounded-full bg-white/[0.06] px-3 py-2.5">
       <span className="text-[14px] font-medium text-[#adc6ff]">Suggested for you</span>
-      <span className="font-geist-mono text-[14px] font-medium tabular-nums text-[#adc6ff]">{money(rate)}</span>
+      <span className="font-mono text-[14px] font-medium tabular-nums text-[#adc6ff]">{money(rate)}</span>
     </div>
   );
 }

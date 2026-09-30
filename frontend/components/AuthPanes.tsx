@@ -81,7 +81,7 @@ function Readout() {
         <SampleReading reasons={REASONS} rateSize="text-[56px]" />
 
         <div className="mt-2 flex items-baseline justify-between gap-4 border-t border-[#0b1c30]/[0.06] pt-4">
-          <span className="font-geist-mono text-[12px] text-[#44474d]">Confidence</span>
+          <span className="font-mono text-[12px] text-[#44474d]">Confidence</span>
           <span className="text-[15px] font-semibold tabular-nums text-[#1a1b20]">68%</span>
         </div>
       </Bezel>
@@ -111,7 +111,7 @@ export function AuthFrame({
 }) {
   return (
     <main
-      className="relative isolate grid min-h-[100dvh] grid-cols-1 bg-[#f8f9ff] font-geist text-[#1a1b20] antialiased lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]"
+      className="relative isolate grid min-h-[100dvh] grid-cols-1 bg-[#f8f9ff] font-sans text-[#1a1b20] antialiased lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]"
       style={DOT_FIELD}
     >
       <Grain />

@@ -30,7 +30,7 @@ export default async function Settings() {
     : billingView(await accountFor(getStore(), property.id), new Date(), property.timezone);
 
   return (
-    <div className="font-geist text-[#1a1b20] antialiased">
+    <div className="font-sans text-[#1a1b20] antialiased">
     <SettingsView
       property={{
         id: property.id,
