@@ -83,7 +83,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
  */
 function DemoBar() {
   return (
-    <div className="flex flex-col gap-4 rounded-[1.25rem] bg-[#0b1c30]/[0.04] px-5 py-4 font-geist text-[#1a1b20] antialiased ring-1 ring-[#0b1c30]/[0.06] sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 rounded-[1.25rem] bg-[#0b1c30]/[0.04] px-5 py-4 font-sans text-[#1a1b20] antialiased ring-1 ring-[#0b1c30]/[0.06] sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
         <FlaskIcon weight="light" className="mt-0.5 h-5 w-5 shrink-0 text-[#44474d]" aria-hidden />
         <p className="max-w-[80ch] text-[14.5px] leading-relaxed text-[#44474d]">

@@ -15,7 +15,7 @@ import { LEGAL_PAGES } from '../components/Legal';
 
 /*
  * Marketing landing in the "Machined Instrument" language (DESIGN.md →
- * Marketing surface): a cold daylight canvas, Geist throughout, and every
+ * Marketing surface): a cold daylight canvas, IBM Plex throughout, and every
  * major panel set in a double-bezel enclosure with one soft navy-tinted
  * ambient shadow instead of a grey hairline. The palette rules still hold:
  * Instrument Navy only where a panel holds machine readings, Signal Cobalt
@@ -32,7 +32,7 @@ import { LEGAL_PAGES } from '../components/Legal';
  * 2026-09-22, PRODUCT.md); do not add tiers, limits or features to them here.
  */
 
-const mono = 'font-geist-mono text-[12px]';
+const mono = 'font-mono text-[12px]';
 const chip = 'inline-block shrink-0 rounded-full px-2.5 py-0.5 text-[12px] font-medium';
 const divide = 'divide-y divide-[#0b1c30]/[0.06]';
 const textLink =
@@ -94,7 +94,7 @@ function ParityPreview() {
           </span>
           <span className="flex shrink-0 items-center gap-3">
             {c.price !== undefined && (
-              <span className="font-geist-mono text-[13px] tabular-nums text-white">${c.price}</span>
+              <span className="font-mono text-[13px] tabular-nums text-white">${c.price}</span>
             )}
             {c.own ? (
               <span className={`${chip} bg-[#adc6ff] text-[#0b1c30]`}>You</span>
@@ -142,12 +142,12 @@ function DemandPreview() {
               className="flex flex-col items-center gap-1.5 transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-data-[shown=false]/reveal:translate-y-2 group-data-[shown=false]/reveal:opacity-0 motion-reduce:transition-none"
               style={{ transitionDelay: `${250 + i * 30}ms` }}
             >
-              <span aria-hidden className="font-geist-mono text-[10px] uppercase text-[#44474d]">
+              <span aria-hidden className="font-mono text-[10px] uppercase text-[#44474d]">
                 {WEEKDAYS[i % 7]}
               </span>
               <span
                 aria-label={`${date}, ${tier}`}
-                className={`flex aspect-square w-full items-center justify-center rounded-lg font-geist-mono text-[12px] tabular-nums ${TIER_STYLE[tier]}`}
+                className={`flex aspect-square w-full items-center justify-center rounded-lg font-mono text-[12px] tabular-nums ${TIER_STYLE[tier]}`}
               >
                 {date}
               </span>
@@ -250,7 +250,7 @@ const INCLUDED = [
 export default function Landing() {
   return (
     <div
-      className="bg-[#f8f9ff] font-geist text-[#1a1b20] antialiased"
+      className="bg-[#f8f9ff] font-sans text-[#1a1b20] antialiased"
       style={DOT_FIELD}
     >
       <Grain />

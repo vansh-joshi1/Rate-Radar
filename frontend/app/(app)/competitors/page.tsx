@@ -68,7 +68,7 @@ export default async function Competitors() {
   }));
 
   return (
-    <div className="font-geist text-[#1a1b20] antialiased">
+    <div className="font-sans text-[#1a1b20] antialiased">
       <CompetitorInsights
         propertyId={property.id}
         propertyName={property.name}

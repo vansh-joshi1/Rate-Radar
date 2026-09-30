@@ -28,7 +28,7 @@ export const EMAIL_COLORS = {
 } as const;
 
 const C = EMAIL_COLORS;
-const FONT = `Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`;
+const FONT = `'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`;
 
 export function esc(s: string): string {
   return s
@@ -186,7 +186,7 @@ export function section(title: string, rows: string[], accent?: 'warn'): string 
 export function linkFallback(url: string): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
   <tr><td class="rr-muted" style="font-family:${FONT};font-size:13px;line-height:20px;color:${C.muted};padding:0 0 6px;">If the button doesn't work, paste this into your browser:</td></tr>
-  <tr><td class="rr-well rr-text" style="background:${C.well};border-radius:10px;padding:10px 12px;font-family:'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:12px;line-height:18px;color:${C.ink};word-break:break-all;">${esc(url)}</td></tr>
+  <tr><td class="rr-well rr-text" style="background:${C.well};border-radius:10px;padding:10px 12px;font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:12px;line-height:18px;color:${C.ink};word-break:break-all;">${esc(url)}</td></tr>
 </table>`;
 }
 

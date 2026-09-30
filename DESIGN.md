@@ -23,97 +23,97 @@ colors:
   level-high: "#F29A8E"
 typography:
   display-xl:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "56px"
     fontWeight: 700
     lineHeight: "60px"
     letterSpacing: "-0.03em"
   display-lg:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "42px"
     fontWeight: 700
     lineHeight: "46px"
     letterSpacing: "-0.02em"
   display-md:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "38px"
     fontWeight: 700
     lineHeight: "46px"
     letterSpacing: "-0.02em"
   display-sm:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "32px"
     fontWeight: 700
     lineHeight: "38px"
     letterSpacing: "-0.02em"
   display:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "36px"
     fontWeight: 700
     lineHeight: "44px"
     letterSpacing: "-0.02em"
   headline:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "28px"
     fontWeight: 600
     lineHeight: "36px"
     letterSpacing: "-0.01em"
   headline-mobile:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "24px"
     fontWeight: 600
     lineHeight: "32px"
     letterSpacing: "normal"
   title:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "20px"
     fontWeight: 600
     lineHeight: "28px"
     letterSpacing: "normal"
   title-sm:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "18px"
     fontWeight: 600
     lineHeight: "26px"
     letterSpacing: "normal"
   body-lg:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "16px"
     fontWeight: 400
     lineHeight: "24px"
     letterSpacing: "normal"
   body:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: "20px"
     letterSpacing: "normal"
   body-sm:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 400
     lineHeight: "18px"
     letterSpacing: "normal"
   label:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "12px"
     fontWeight: 600
     lineHeight: "16px"
     letterSpacing: "0.05em"
   label-sm:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "11px"
     fontWeight: 600
     lineHeight: "16px"
     letterSpacing: "0.05em"
   micro:
-    fontFamily: "Geist, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans, system-ui, sans-serif"
     fontSize: "10px"
     fontWeight: 600
     lineHeight: "14px"
     letterSpacing: "0.08em"
   data:
-    fontFamily: "Geist Mono, ui-monospace, monospace"
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
     fontSize: "14px"
     fontWeight: 500
     lineHeight: "20px"
@@ -206,14 +206,14 @@ Rate Radar looks like a piece of calm, precisely machined equipment. Its instrum
 
 The world is built from three materials. A cold near-white canvas is the lit bench. Panels sit on it the way a glass plate sits in an aluminium tray: a **double-bezel enclosure**, a faintly tinted outer shell holding a white core with its own inner highlight, lifted off the bench by one soft, navy-tinted ambient shadow. A deep navy is reserved for cores where the machine's own raw data lives (radar panels, parity readouts, the scoring pipeline, heat cells at the top of the ramp), and it is the only place the interface goes dark. One cobalt accent marks what the system concluded: the recommended rate, where you are, the "major" demand signal, the property's own pin. Everything else is ink, muted ink, and tinted air. Color is a verdict, not decoration.
 
-The same screen must survive a ten-second glance and a two-minute audit. It is read by an owner at a desk, glanced at by front-desk staff mid-shift, and interrogated by a revenue manager who will not accept a number they cannot take apart. The system earns that by being ruthlessly consistent: tabular figures everywhere numbers appear, a Geist Mono label on every reading, and rejected evidence kept on screen and dimmed rather than deleted. The most characteristic thing this design system does is show its own discarded work.
+The same screen must survive a ten-second glance and a two-minute audit. It is read by an owner at a desk, glanced at by front-desk staff mid-shift, and interrogated by a revenue manager who will not accept a number they cannot take apart. The system earns that by being ruthlessly consistent: tabular figures everywhere numbers appear, a IBM Plex Mono label on every reading, and rejected evidence kept on screen and dimmed rather than deleted. The most characteristic thing this design system does is show its own discarded work.
 
 **Key Characteristics:**
 
 - One cobalt accent used as a verdict marker, never as decoration
 - Deep navy reserved exclusively for raw-data cores
 - Double-bezel frames only around instruments and plans; everything else sits open on the canvas
-- One family: Geist for everything, Geist Mono for readings and labels
+- One family: IBM Plex Sans for everything, IBM Plex Mono for readings and labels
 - Tabular figures on every number, without exception
 - Pills for everything you can press or that reports a status; squircles for everything that holds data
 - Spring motion on one curve, `cubic-bezier(0.32, 0.72, 0, 1)`
@@ -221,7 +221,7 @@ The same screen must survive a ten-second glance and a two-minute audit. It is r
 
 ### Migration status
 
-The marketing surface (`frontend/app/page.tsx`, `frontend/app/not-found.tsx` and `frontend/components/landing/*`) the sign-in / get-access screens (`frontend/components/AuthPanes.tsx`), onboarding (`frontend/app/onboarding/page.tsx`) and the dashboard's content (`frontend/app/(app)/overview/page.tsx`), competitor insights (`frontend/app/(app)/competitors/page.tsx`, `frontend/components/CompetitorInsights.tsx`, `frontend/components/ParityGrid.tsx`), market intelligence (`frontend/app/(app)/calendar/page.tsx`, `frontend/components/MarketIntelligence.tsx`, `frontend/components/EventMap.tsx`, `frontend/components/DemandCalendar.tsx`, `frontend/components/ReasoningCard.tsx`), settings (`frontend/app/(app)/settings/page.tsx`, `frontend/components/SettingsView.tsx`, `frontend/components/settings/parts.tsx`, `frontend/components/BaselineEditor.tsx`, `frontend/components/CurrentRates.tsx`, `frontend/components/TeamManager.tsx`), Bellhop (`frontend/app/(app)/analytics/page.tsx`, `frontend/components/Bellhop.tsx`), the app shell (rail and top bar, `frontend/components/shell/AppShell.tsx`) and the demo sandbox notice (`frontend/app/(app)/layout.tsx`) are on this language today. The other logged-in pages still render the previous "Instrument Panel" treatment: Sora + Inter, 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
+The marketing surface (`frontend/app/page.tsx`, `frontend/app/not-found.tsx` and `frontend/components/landing/*`) the sign-in / get-access screens (`frontend/components/AuthPanes.tsx`), onboarding (`frontend/app/onboarding/page.tsx`) and the dashboard's content (`frontend/app/(app)/overview/page.tsx`), competitor insights (`frontend/app/(app)/competitors/page.tsx`, `frontend/components/CompetitorInsights.tsx`, `frontend/components/ParityGrid.tsx`), market intelligence (`frontend/app/(app)/calendar/page.tsx`, `frontend/components/MarketIntelligence.tsx`, `frontend/components/EventMap.tsx`, `frontend/components/DemandCalendar.tsx`, `frontend/components/ReasoningCard.tsx`), settings (`frontend/app/(app)/settings/page.tsx`, `frontend/components/SettingsView.tsx`, `frontend/components/settings/parts.tsx`, `frontend/components/BaselineEditor.tsx`, `frontend/components/CurrentRates.tsx`, `frontend/components/TeamManager.tsx`), Bellhop (`frontend/app/(app)/analytics/page.tsx`, `frontend/components/Bellhop.tsx`), the app shell (rail and top bar, `frontend/components/shell/AppShell.tsx`) and the demo sandbox notice (`frontend/app/(app)/layout.tsx`) are on this language today. The other logged-in pages still render the previous "Instrument Panel" treatment: 1px Hairline borders, flat panels, 8px radii, Material Symbols. Migrate it page by page. Until a page migrates, its old treatment is expected, not a defect. The palette and every Named Rule under Colors apply to both, and nothing here changes a data component's behaviour.
 
 ## Colors
 
@@ -268,9 +268,9 @@ Two ramps carry quantitative meaning and must never be used decoratively.
 
 ## Typography
 
-**Family:** Geist (sans) and Geist Mono, self-hosted through `next/font` from the `geist` package. Pages opt in by putting `GeistSans.variable` and `GeistMono.variable` on their root and using `font-geist` / `font-geist-mono` (tailwind.config.ts).
+**Family:** IBM Plex Sans and IBM Plex Mono, shipped with the app from the `@fontsource` packages through `next/font/local` in `frontend/app/layout.tsx`, so neither visitors nor the build reach Google, and used as Tailwind's `font-sans` / `font-mono`. Plex replaced Geist on 2026-09-30: Geist and Inter had become the default face of AI-built apps, and the product was reading as one.
 
-**Character:** Geist is a precise, contemporary grotesk. It reads like an engraved equipment label at display sizes and stays neutral at 14px. Geist Mono carries every machine reading, so a label or a figure looks like it came off an instrument, not out of a sentence. The pairing is deliberately unromantic: one family, two cuts, no editorial flourish.
+**Character:** IBM Plex Sans is an engineered grotesk with squared curves. It reads like an engraved equipment label at display sizes and stays plain at 14px. Plex Mono carries every machine reading, so a label or a figure looks like it came off an instrument, not out of a sentence. The pairing is deliberately unromantic: one family, two cuts, no editorial flourish.
 
 ### Hierarchy (marketing surface)
 
@@ -283,21 +283,21 @@ Display type is set heavy and tight: weight 600, `tracking-tighter`, leading clo
 - **Lead** (17px, `leading-relaxed`, max 56ch): the paragraph under a section heading.
 - **Body** (14.5px, `leading-relaxed`): panel copy, reasoning lines, list rows.
 - **Figure** (34–72px, weight 600, `tracking-tighter`, tabular): the rate itself.
-- **Mono label** (Geist Mono, 11.5–12px, sentence case): the name of a reading, sitting above it.
-- **Chip** (Geist, 12px, weight 500, sentence case, pill): status markers.
+- **Mono label** (IBM Plex Mono, 11.5–12px, sentence case): the name of a reading, sitting above it.
+- **Chip** (IBM Plex Sans, 12px, weight 500, sentence case, pill): status markers.
 - **Eyebrow** (15px, weight 500, muted, plain text): the hero only. No pill, no caps. A label over every heading is a template tell.
 
 ### App hierarchy (until migrated)
 
-The app keeps its token steps (`text-headline-*`, `text-body-*`, `text-label-*`, `text-micro`, `text-data-mono`) in Sora + Inter. When a page migrates, it swaps the family and keeps the steps.
+The app keeps its token steps (`text-headline-*`, `text-body-*`, `text-label-*`, `text-micro`, `text-data-mono`) in IBM Plex Sans. When a page migrates, it keeps the steps.
 
 ### Named Rules
 
 **The Tabular Rule.** Every number the user might compare or scan vertically uses tabular figures (`tabular-nums`). Rates, deltas, percentages, scores, counts, dates. A column of proportional digits that shifts as values change is a defect in this system, not a nuance.
 
-**The Mono Label Rule.** Every reading gets a Geist Mono label, in sentence case, naming what it is. All-caps micro text is not part of this language. A number without a label is not an instrument reading; it is a mystery. This is what makes a dense screen scannable in ten seconds.
+**The Mono Label Rule.** Every reading gets a IBM Plex Mono label, in sentence case, naming what it is. All-caps micro text is not part of this language. A number without a label is not an instrument reading; it is a mystery. This is what makes a dense screen scannable in ten seconds.
 
-**The One-Family Rule.** Geist for structure and content, Geist Mono for readings. No third typeface, and no serif for currency: money is expressed through tabular Geist and size, not through a change of voice. Inter, Roboto, Arial, Open Sans and Helvetica do not enter new or migrated surfaces.
+**The One-Family Rule.** IBM Plex Sans for structure and content, IBM Plex Mono for readings. No third typeface, and no serif for currency: money is expressed through tabular IBM Plex Sans and size, not through a change of voice. Geist, Inter, Roboto, Arial, Open Sans and Helvetica do not enter new or migrated surfaces.
 
 **The Heavy-Not-Loud Rule.** Hierarchy comes from weight, tight tracking and size together. Display type never goes above weight 600; a bolder face would shout.
 
@@ -365,7 +365,7 @@ Components are **quietly tactile**: restrained but responsive. They acknowledge 
 
 ### Buttons
 
-- **Shape:** a pill, `py-1.5 pl-6 pr-1.5`, 15px Geist weight 500 (`PillCta` in `frontend/components/landing/Machined.tsx`).
+- **Shape:** a pill, `py-1.5 pl-6 pr-1.5`, 15px IBM Plex Sans weight 500 (`PillCta` in `frontend/components/landing/Machined.tsx`).
 - **Button-in-button:** the trailing arrow (Phosphor `ArrowUpRight`, light weight) never sits naked beside the label. It lives in its own 36px circle, flush with the right padding: white at 15% on primary, navy at 5% on secondary.
 - **Primary:** Signal Cobalt fill, white text; hovers to Signal Cobalt Deep.
 - **Secondary:** white, navy ring at 8%, navy text; hovers to a cool tint.
@@ -375,7 +375,7 @@ Components are **quietly tactile**: restrained but responsive. They acknowledge 
 
 ### Chips
 
-- **Style (migrated surfaces):** fully rounded, `2px 10px` padding, 12px Geist weight 500 in sentence case, a tinted fill or a solid 40% ring in the current text color. The app keeps its 11px uppercase chips until it migrates.
+- **Style (migrated surfaces):** fully rounded, `2px 10px` padding, 12px IBM Plex Sans weight 500 in sentence case, a tinted fill or a solid 40% ring in the current text color. The app keeps its 11px uppercase chips until it migrates.
 - **Status tones:** OK, Warn, Bad and Neutral, each as colored text on a 5% tint of the same color.
 - **Demand signal chips** are the system's signature status marker and encode score bands: `major` (≥70) is a solid Signal Cobalt fill with white text; `meaningful` (≥40) is Signal Cobalt Wash with cobalt text and no border; `minor` (≥15) is a 10% ink tint; `quiet` (<15) is a 4–5% navy tint with muted text and no border.
 - **The quiet tint means "nothing here, honestly."** Muted text on a ~5% navy fill marks too-small-to-matter lines, quiet nights and the `sample data` badge, a chip that exists solely to admit a panel is not wired to a live feed. "Needs manual check" is State Warn text inside a solid 40% warn ring. No dashed or dotted borders anywhere.
@@ -432,7 +432,7 @@ A radar sweep drawn as inline SVG on a 24px viewbox: two concentric arcs opening
 
 ### Do:
 
-- **Do** give every number tabular figures and a Geist Mono label above it.
+- **Do** give every number tabular figures and a IBM Plex Mono label above it.
 - **Do** frame instruments and plans in a double-bezel with concentric radii, and leave everything else open.
 - **Do** tint every shadow with Instrument Navy, and give each enclosure exactly one.
 - **Do** reserve Signal Cobalt for the system's conclusions: the recommended rate, where you are, the user's own property.

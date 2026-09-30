@@ -52,7 +52,7 @@ function Table({ caption, rows }: { caption: string; rows: Row[] }) {
         <tbody>
           {rows.map((r) => (
             <tr key={r.name} className="border-b border-[#0b1c30]/[0.06] align-top last:border-0">
-              <td className="px-4 py-3 font-geist-mono text-[12.5px] text-[#1a1b20]">{r.name}</td>
+              <td className="px-4 py-3 font-mono text-[12.5px] text-[#1a1b20]">{r.name}</td>
               <td className="px-4 py-3">{r.purpose}</td>
               <td className="px-4 py-3">{r.lasts}</td>
             </tr>

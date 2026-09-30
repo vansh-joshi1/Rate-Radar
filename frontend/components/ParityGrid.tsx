@@ -95,11 +95,11 @@ export default function ParityGrid({ parity }: { parity: RateCheck[] }) {
                 </span>
                 <span className="flex shrink-0 items-baseline gap-3">
                   {direct != null && (
-                    <span className={`font-geist-mono text-[12px] tabular-nums ${below ? 'text-[#b45309]' : 'text-[#44474d]'}`}>
+                    <span className={`font-mono text-[12px] tabular-nums ${below ? 'text-[#b45309]' : 'text-[#44474d]'}`}>
                       {p.price === direct ? 'Matched' : `${below ? '-' : '+'}$${Math.abs(p.price! - direct)}`}
                     </span>
                   )}
-                  <span className={`font-geist-mono text-[15px] font-medium tabular-nums ${below ? 'text-[#b45309]' : ''}`}>
+                  <span className={`font-mono text-[15px] font-medium tabular-nums ${below ? 'text-[#b45309]' : ''}`}>
                     ${p.price}
                   </span>
                 </span>

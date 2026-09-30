@@ -84,7 +84,7 @@ export default function CookieBanner() {
   return (
     <section
       aria-label="Cookie choice"
-      className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-[560px] rounded-[1.25rem] bg-white p-5 font-geist text-[#1a1b20] antialiased shadow-[0_8px_32px_-8px_rgba(11,28,48,0.25)] ring-1 ring-[#0b1c30]/[0.08]"
+      className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-[560px] rounded-[1.25rem] bg-white p-5 font-sans text-[#1a1b20] antialiased shadow-[0_8px_32px_-8px_rgba(11,28,48,0.25)] ring-1 ring-[#0b1c30]/[0.08]"
     >
       <p className="mb-4 text-pretty text-[14px] leading-relaxed text-[#44474d]">
         We&rsquo;d like to use analytics to see how Rate Radar is used. Sign-in cookies are always on; nothing else

@@ -568,7 +568,7 @@ export default function EventMap({
       )}
 
       {!painted && !failed && (
-        <p className="pointer-events-none absolute inset-0 flex items-center justify-center font-geist-mono text-[12px] text-[#adc6ff]/70">
+        <p className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[12px] text-[#adc6ff]/70">
           Loading map
         </p>
       )}
@@ -616,7 +616,7 @@ export default function EventMap({
               {on && <span aria-hidden className="absolute -inset-1.5 rounded-full ring-1 ring-white/80" />}
             </span>
             {b.events.length > 1 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 font-geist-mono text-[10px] font-medium tabular-nums text-[#0b1c30]">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 font-mono text-[10px] font-medium tabular-nums text-[#0b1c30]">
                 {b.events.length}
               </span>
             )}
@@ -634,14 +634,14 @@ export default function EventMap({
           className="pointer-events-none absolute bottom-3 left-3 z-10 w-[min(16rem,calc(100%-1.5rem))] rounded-[1rem] bg-white p-3.5 text-[#1a1b20] shadow-[0_16px_32px_-16px_rgba(5,12,24,0.55)]"
         >
           <p className="truncate text-[14px] font-semibold tracking-tight">{active.venue}</p>
-          <p className="font-geist-mono text-[12px] tabular-nums text-[#44474d]">
+          <p className="font-mono text-[12px] tabular-nums text-[#44474d]">
             {fmtMi(active.miles)} mi {active.bearing} of you
           </p>
           <ul className="mt-2 space-y-1 border-t border-[#0b1c30]/[0.06] pt-2">
             {active.events.slice(0, 3).map((e) => (
               <li key={e.id} className="flex items-baseline justify-between gap-3 text-[13px]">
                 <span className="min-w-0 truncate">{e.name}</span>
-                <span className="shrink-0 font-geist-mono text-[12px] tabular-nums text-[#44474d]">{e.score}</span>
+                <span className="shrink-0 font-mono text-[12px] tabular-nums text-[#44474d]">{e.score}</span>
               </li>
             ))}
           </ul>

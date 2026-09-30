@@ -233,7 +233,7 @@ function arrive(visible: boolean, i: number) {
 }
 
 function PanelLabel({ children }: { children: React.ReactNode }) {
-  return <div className="font-geist-mono text-[12px] text-[#adc6ff]">{children}</div>;
+  return <div className="font-mono text-[12px] text-[#adc6ff]">{children}</div>;
 }
 
 function SourceList({ visible }: { visible: boolean }) {
@@ -246,7 +246,7 @@ function SourceList({ visible }: { visible: boolean }) {
           return (
             <li key={s.name} className={`flex items-center justify-between gap-4 py-2.5 ${a.className}`} style={a.style}>
               <span className="min-w-0">
-                <span className="block truncate text-body-md text-white">{s.name}</span>
+                <span className="block text-body-md text-white">{s.name}</span>
                 <span className="block text-body-sm text-[#adc6ff]/80">{s.detail}</span>
               </span>
               {s.stale ? (
@@ -275,7 +275,7 @@ function SignalList({ visible }: { visible: boolean }) {
           return (
             <li key={s.label} className={`flex items-baseline justify-between gap-4 py-2.5 ${a.className}`} style={a.style}>
               <span className="min-w-0">
-                <span className={`block truncate text-body-md ${rejected ? 'text-[#9ba4b4]' : 'text-white'}`}>
+                <span className={`block text-body-md ${rejected ? 'text-[#9ba4b4]' : 'text-white'}`}>
                   {s.label}
                 </span>
                 <span className="block text-body-sm text-[#adc6ff]/70">{s.note}</span>
@@ -286,7 +286,7 @@ function SignalList({ visible }: { visible: boolean }) {
                 </span>
               ) : (
                 <span
-                  className={`shrink-0 font-geist-mono text-[13px] tabular-nums ${
+                  className={`shrink-0 font-mono text-[13px] tabular-nums ${
                     s.kind === 'major' ? 'font-semibold text-[#67dca8]' : 'text-white'
                   }`}
                 >
@@ -319,7 +319,7 @@ function Verdict({
         <span ref={rateRef} className="mt-3 block text-[72px] font-semibold leading-none tracking-tighter tabular-nums text-white">
           ${rate}
         </span>
-        <span className="mt-3 block font-geist-mono text-[13px] tabular-nums text-[#67dca8]">
+        <span className="mt-3 block font-mono text-[13px] tabular-nums text-[#67dca8]">
           +{Math.round(((RECOMMENDED - BASELINE) / BASELINE) * 100)}% vs ${BASELINE} baseline, range $84 to $94
         </span>
         <div className={`mt-8 max-w-sm ${a.className}`} style={a.style}>
@@ -358,7 +358,7 @@ function AlertEmail({ visible }: { visible: boolean }) {
           </span>
           <span className="text-[13px] font-semibold text-[#1a1b20]">Rate Radar</span>
         </span>
-        <span className="font-geist-mono text-[11.5px] text-[#44474d]">07:02</span>
+        <span className="font-mono text-[11.5px] text-[#44474d]">07:02</span>
       </div>
       <p className="mt-4 text-balance text-[14.5px] font-semibold leading-snug text-[#0b1c30]">
         Friday: recommended rate moved $84 &rarr; $89
@@ -367,7 +367,7 @@ function AlertEmail({ visible }: { visible: boolean }) {
         Neon Compass at Harborview Amphitheater is a major event. Downtown absorbs part of the draw.
       </p>
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#0b1c30]/[0.06] pt-3">
-        <span className="font-geist-mono text-[12px] tabular-nums text-[#047857]">+$5, 3 reasons</span>
+        <span className="font-mono text-[12px] tabular-nums text-[#047857]">+$5, 3 reasons</span>
         <span className="text-[12px] text-[#44474d]">Nothing was changed</span>
       </div>
     </div>

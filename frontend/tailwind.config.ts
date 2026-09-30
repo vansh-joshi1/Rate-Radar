@@ -52,15 +52,9 @@ const config: Config = {
         'overlay-lg': '0 24px 60px -20px rgba(11, 28, 48, 0.45)',
       },
       fontFamily: {
-        // Marketing surface (landing, 404): Geist, self-hosted via next/font
-        // from the `geist` package. The variables are set on those pages' root
-        // elements only; the app still renders Sora + Inter until it migrates.
-        geist: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-        'geist-mono': ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
-        display: ['var(--font-sora)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        // ---- design-system aliases (match the Figma token names 1:1) ----
-        'body-md': ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        // IBM Plex, self-hosted via next/font (app/layout.tsx).
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       // Named steps from the design system. Additive — the numeric scale is
       // untouched, so nothing existing shifts.

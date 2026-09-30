@@ -24,7 +24,7 @@ export default function ReasoningCard({
       <div className="md:col-span-7">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 className="text-[22px] font-semibold tracking-tight">Tonight&apos;s reasoning</h2>
-          <span className="font-geist-mono text-[12px] text-[#44474d]">{fmtWeekdayLong(date)}</span>
+          <span className="font-mono text-[12px] text-[#44474d]">{fmtWeekdayLong(date)}</span>
         </div>
         <ol className="mt-4 divide-y divide-[#0b1c30]/[0.06]">
           {reasoning.map((r, i) => (
@@ -34,7 +34,7 @@ export default function ReasoningCard({
                 r.includes('too small') ? 'text-[#44474d] opacity-80' : ''
               }`}
             >
-              <span className="w-5 shrink-0 pt-0.5 font-geist-mono text-[12px] tabular-nums text-[#44474d]">
+              <span className="w-5 shrink-0 pt-0.5 font-mono text-[12px] tabular-nums text-[#44474d]">
                 {i + 1}
               </span>
               <span className="min-w-0">{r}</span>
@@ -45,7 +45,7 @@ export default function ReasoningCard({
 
       <div className="md:col-span-5">
         <div className="rounded-[1rem] bg-[#0b1c30]/[0.035] p-5 shadow-[inset_0_1px_1px_rgba(255,255,255,1)]">
-          <span className="font-geist-mono text-[12px] text-[#44474d]">Confidence</span>
+          <span className="font-mono text-[12px] text-[#44474d]">Confidence</span>
           <p className="mt-1 text-[40px] font-semibold leading-none tracking-tighter tabular-nums">
             {confidence}
             <span className="text-[20px] text-[#44474d]">%</span>

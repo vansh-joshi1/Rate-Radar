@@ -46,7 +46,7 @@ export default function Terms() {
           applicable tax. <strong>Subscriptions renew automatically</strong> until you cancel.
         </li>
         <li>
-          Cancel any time in Settings → Billing → Manage billing. Cancelling stops the next renewal; you keep access until
+          Cancel any time in Settings › Billing › Manage billing. Cancelling stops the next renewal; you keep access until
           the end of the period you have paid for.
         </li>
         <li>We give at least 30 days&rsquo; notice by email before a price change applies to your subscription.</li>

@@ -11,7 +11,7 @@ const BLOCK = 'rounded-[0.5rem] bg-[#0b1c30]/[0.06] motion-safe:animate-pulse';
 
 export default function OverviewLoading() {
   return (
-    <div className="space-y-8 font-geist" aria-busy="true" aria-label="Loading the dashboard">
+    <div className="space-y-8 font-sans" aria-busy="true" aria-label="Loading the dashboard">
       <div className="space-y-3">
         <div className={`${BLOCK} h-10 w-72 max-w-full`} />
         <div className={`${BLOCK} h-4 w-96 max-w-full`} />

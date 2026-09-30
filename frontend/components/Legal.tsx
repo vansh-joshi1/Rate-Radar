@@ -44,7 +44,7 @@ export function LegalLinks({ className = '' }: { className?: string }) {
 
 export default function LegalPage({ title, updated, children }: { title: string; updated: string; children: React.ReactNode }) {
   return (
-    <div className="min-h-[100dvh] bg-[#f8f9ff] px-4 font-geist text-[#1a1b20] antialiased md:px-6">
+    <div className="min-h-[100dvh] bg-[#f8f9ff] px-4 font-sans text-[#1a1b20] antialiased md:px-6">
       <header className="mx-auto flex max-w-[70ch] flex-wrap items-center justify-between gap-4 pt-6">
         <Link
           href="/"

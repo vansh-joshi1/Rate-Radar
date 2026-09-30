@@ -2,6 +2,8 @@
 
 `rate-radar-brandkit.png` is a 3×3 overview of the Rate Radar identity: mark, mark construction, the live site, the promise, color, type, a front-desk printout, image direction and system parts. The rules behind it live in [DESIGN.md](../../DESIGN.md); this board only shows them.
 
+**The type is out of date.** The product moved from Geist to IBM Plex Sans and Plex Mono on 2026-09-30. This board, `site.png` and the explorations below predate that and still show Geist; DESIGN.md is current. Don't take the Geist files in this folder into new work.
+
 It is rendered from `board.html`, which is plain HTML and CSS using the self-hosted Geist fonts in this folder (SIL Open Font License, see `GEIST-LICENSE.txt`). `site.png` is a screenshot of the landing page.
 
 To re-render after editing `board.html`, run this from the repo root in Git Bash on Windows (the path conversion and the encoded space matter; a plain `$(pwd)` renders an error page):

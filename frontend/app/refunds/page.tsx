@@ -15,7 +15,7 @@ export default function Refunds() {
 
       <h2>Cancelling</h2>
       <p>
-        Cancel any time in Settings → Billing → Manage billing. Your plan stops renewing, you are not charged again, and you
+        Cancel any time in Settings › Billing › Manage billing. Your plan stops renewing, you are not charged again, and you
         keep access until the end of the period you have already paid for.
       </p>
 
