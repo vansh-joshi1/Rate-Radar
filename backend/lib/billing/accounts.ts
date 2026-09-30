@@ -97,17 +97,17 @@ export interface BillingView {
   canManage: boolean;
 }
 
-const day = (iso?: string) =>
-  iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '';
+const day = (iso: string | undefined, timeZone: string) =>
+  iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone }) : '';
 
-/** What Settings → Billing says about an account. */
-export function billingView(a: Account, now: Date): BillingView {
+/** What Settings → Billing says about an account. Dates are in the hotel's timezone, as Stripe shows them. */
+export function billingView(a: Account, now: Date, timeZone: string): BillingView {
   const canManage = Boolean(a.stripeCustomerId);
   if (!a.status || !a.plan || !a.interval) {
     const left = trialDaysLeft(a, now);
     return {
       plan: 'Trial, Growth features',
-      status: left > 0 ? `${left} ${left === 1 ? 'day' : 'days'} left, ends ${day(a.trialEndsAt)}` : 'Trial ended',
+      status: left > 0 ? `${left} ${left === 1 ? 'day' : 'days'} left, ends ${day(a.trialEndsAt, timeZone)}` : 'Trial ended',
       canSubscribe: true,
       canManage,
     };
@@ -118,9 +118,9 @@ export function billingView(a: Account, now: Date): BillingView {
     a.status === 'past_due'
       ? 'Payment failed, Stripe is retrying the card'
       : a.cancelsAt
-        ? `Cancels ${day(a.cancelsAt)}`
+        ? `Cancels ${day(a.cancelsAt, timeZone)}`
         : a.status === 'trialing'
-          ? `Subscribed, first charge ${day(a.currentPeriodEnd)}`
-          : `Active, renews ${day(a.currentPeriodEnd)}`;
+          ? `Subscribed, first charge ${day(a.currentPeriodEnd, timeZone)}`
+          : `Active, renews ${day(a.currentPeriodEnd, timeZone)}`;
   return { plan, status, canSubscribe: false, canManage };
 }

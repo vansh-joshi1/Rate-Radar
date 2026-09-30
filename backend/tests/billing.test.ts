@@ -93,16 +93,18 @@ describe('accountFromSubscription', () => {
 
 describe('billingView', () => {
   it('counts trial days and offers the plans', () => {
-    expect(billingView(trial(9), NOW)).toMatchObject({ status: '9 days left, ends Oct 10, 2026', canSubscribe: true, canManage: false });
-    expect(billingView(trial(-1), NOW).status).toBe('Trial ended');
+    expect(billingView(trial(9), NOW, 'UTC')).toMatchObject({ status: '9 days left, ends Oct 10, 2026', canSubscribe: true, canManage: false });
+    expect(billingView(trial(-1), NOW, 'UTC').status).toBe('Trial ended');
   });
 
   it('describes a live subscription and hides the plans', () => {
     const paid: Account = { ...trial(-1), stripeCustomerId: 'cus_1', plan: 'starter', interval: 'month', status: 'active', currentPeriodEnd: '2026-11-01T00:00:00Z' };
-    expect(billingView(paid, NOW)).toEqual({ plan: 'Starter, $99 per month', status: 'Active, renews Nov 1, 2026', canSubscribe: false, canManage: true });
-    expect(billingView({ ...paid, cancelsAt: '2026-11-01T00:00:00Z' }, NOW).status).toBe('Cancels Nov 1, 2026');
-    expect(billingView({ ...paid, status: 'past_due' }, NOW).status).toBe('Payment failed, Stripe is retrying the card');
-    expect(billingView({ ...paid, status: 'canceled' }, NOW)).toMatchObject({ status: 'Ended', canSubscribe: true });
+    expect(billingView(paid, NOW, 'UTC')).toEqual({ plan: 'Starter, $99 per month', status: 'Active, renews Nov 1, 2026', canSubscribe: false, canManage: true });
+    expect(billingView({ ...paid, cancelsAt: '2026-11-01T00:00:00Z' }, NOW, 'UTC').status).toBe('Cancels Nov 1, 2026');
+    expect(billingView({ ...paid, status: 'past_due' }, NOW, 'UTC').status).toBe('Payment failed, Stripe is retrying the card');
+    expect(billingView({ ...paid, status: 'canceled' }, NOW, 'UTC')).toMatchObject({ status: 'Ended', canSubscribe: true });
+    // 00:00 UTC on Nov 1 is still Oct 31 in Tennessee, and Stripe shows it that way.
+    expect(billingView(paid, NOW, 'America/Chicago').status).toBe('Active, renews Oct 31, 2026');
   });
 });
 

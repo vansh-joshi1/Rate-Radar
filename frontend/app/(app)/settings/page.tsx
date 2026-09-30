@@ -26,7 +26,7 @@ export default async function Settings() {
     ? isDemo
       ? { plan: `Starter, ${PLAN_PRICES.starter.month} per month`, status: 'Active', canSubscribe: false, canManage: false }
       : { plan: 'Not billed', status: 'The original hotel is never billed', canSubscribe: false, canManage: false }
-    : billingView(await accountFor(getStore(), property.id), new Date());
+    : billingView(await accountFor(getStore(), property.id), new Date(), property.timezone);
 
   return (
     <div className="font-geist text-[#1a1b20] antialiased">
