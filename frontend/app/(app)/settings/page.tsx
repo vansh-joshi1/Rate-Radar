@@ -9,6 +9,7 @@ import { accountFor, billingView, isExempt } from '../../../../backend/lib/billi
 import { PLAN_PRICES } from '../../../../backend/lib/billing/plans';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Settings' };
 
 /**
  * Settings is a server component so the Integrations panel can report real

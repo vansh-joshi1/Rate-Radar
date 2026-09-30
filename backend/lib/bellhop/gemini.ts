@@ -27,7 +27,8 @@ export type ReplyPart = { text: string } | { grounding: Grounding };
 export function groundingFrom(meta: GroundingMetadata | undefined): Grounding | null {
   const sources = new Map<string, { title: string; uri: string }>();
   for (const { web } of meta?.groundingChunks ?? []) {
-    if (!web?.uri) continue;
+    // Rendered as a link: only http(s), never a javascript: URI from upstream.
+    if (!web?.uri || !/^https?:\/\//i.test(web.uri)) continue;
     const title = web.title || web.uri;
     if (!sources.has(title)) sources.set(title, { title, uri: web.uri });
   }

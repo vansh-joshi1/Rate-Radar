@@ -9,6 +9,7 @@ import { demoVenueCoords } from '../../../../backend/lib/demo';
 import { todayIn } from '../../../../backend/lib/date';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Market intelligence' };
 
 
 export default async function Calendar() {

@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
+import { Inter, Sora } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import PostHogInit from '../components/PostHogInit';
+import CookieBanner from '../components/Consent';
+
+// Downloaded at build and served from our own domain: no visitor request reaches Google.
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const sora = Sora({ subsets: ['latin'], weight: ['600', '700'], variable: '--font-sora' });
 
 export const metadata: Metadata = {
-  title: 'Rate Radar — Know what to charge tonight',
+  title: { default: 'Rate Radar — Know what to charge tonight', template: '%s · Rate Radar' },
   description: 'Revenue management for independent hotels. Recommends nightly rates — a human decides.',
   robots: { index: false, follow: false },
   // The image comes from app/opengraph-image.tsx. Previews matter even while
@@ -20,19 +26,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // Geist variables once for the whole app; surfaces opt in with `font-geist`.
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    // Font variables once for the whole app; surfaces opt in with `font-geist`.
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${inter.variable} ${sora.variable}`}>
       <body>
         <PostHogInit />
         {children}
+        <CookieBanner />
       </body>
     </html>
   );

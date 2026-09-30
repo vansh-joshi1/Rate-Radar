@@ -12,7 +12,8 @@ import { passwordOk } from './password';
 
 const KEY = 'onboarding:requests';
 
-const url = z.string().trim().url().max(500).or(z.literal(''));
+// zod's url() alone accepts javascript: and data: links.
+const url = z.string().trim().url().max(500).regex(/^https?:\/\//i, 'must be an http(s) link').or(z.literal(''));
 
 export const AccessRequestBody = z.object({
   email: z.string().trim().toLowerCase().email().max(200),
@@ -34,10 +35,14 @@ export const AccessRequestBody = z.object({
     .array(z.object({ name: z.string().max(200), tier: z.enum(['standard', 'superior']), price: z.number().nullable() }))
     .max(60),
   competitors: z.array(z.string().trim().min(1).max(120)).min(1).max(40),
+  /** The Terms + Privacy Policy checkbox. Required: this request creates an account. */
+  terms: z.literal(true),
 });
 
-export type AccessRequest = Omit<z.infer<typeof AccessRequestBody>, 'password'> & {
+export type AccessRequest = Omit<z.infer<typeof AccessRequestBody>, 'password' | 'terms'> & {
   status: 'pending' | 'approved';
+  /** When the requester agreed to the Terms and Privacy Policy. Absent on requests from before the checkbox. */
+  termsAcceptedAt?: string;
   /** Set when approval starts, so a retry after a partial failure finishes the same hotel instead of making another. */
   propertyId?: string;
   submittedAt: string;

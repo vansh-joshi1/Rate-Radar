@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import AuthPanes from '../../components/AuthPanes';
+
+export const metadata: Metadata = { title: 'Sign in' };
 
 /**
  * Sign-in. The UI is shared with /signup (same split-screen, two tabs) —

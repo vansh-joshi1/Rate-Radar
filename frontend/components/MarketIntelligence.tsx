@@ -248,7 +248,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
                       }`}
                     >
                       {f.label}
-                      <span className="font-geist-mono text-[12px] tabular-nums opacity-70">{count}</span>
+                      <span className="font-geist-mono text-[12px] tabular-nums">{count}</span>
                     </button>
                   );
                 })}
@@ -295,7 +295,7 @@ export default function MarketIntelligence({ property, events, nights, weather, 
                           {noonUTC(e.date).getUTCDate()}
                         </span>
                       </span>
-                      <span className={`min-w-0 ${small ? 'opacity-70' : ''}`}>
+                      <span className={`min-w-0 ${small ? 'opacity-80' : ''}`}>
                         <span className="flex items-start justify-between gap-3">
                           <span className="min-w-0 text-[15px] font-medium leading-snug">{e.name}</span>
                           <span className="shrink-0 text-right font-geist-mono text-[14px] tabular-nums">

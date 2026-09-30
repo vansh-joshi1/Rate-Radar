@@ -8,9 +8,10 @@ import { EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { RadarIcon } from './RadarMark';
-import { Bezel, PillButton, SPRING } from './landing/Machined';
+import { Bezel, PillButton, SPRING, textLink } from './landing/Machined';
 import { DOT_FIELD, Grain, HeroRadar } from './landing/Backdrop';
 import { SampleReading, type Reason } from './landing/SampleReading';
+import { LegalLinks } from './Legal';
 
 /*
  * Sign in and Get access, on the marketing surface's machined parts
@@ -62,7 +63,6 @@ export const FIELD = `h-12 w-full rounded-full bg-white px-5 text-[15px] text-[#
 
 export const LABEL = 'mb-2 block pl-5 text-[14px] font-medium text-[#0b1c30]';
 
-const textLink = `rounded-full font-medium text-[#0b1c30] underline decoration-[#0b1c30]/20 underline-offset-4 transition-colors duration-300 hover:decoration-[#0b1c30]/60 ${ring}`;
 
 // ---------------------------------------------------------------- readout
 
@@ -129,7 +129,10 @@ export function AuthFrame({
 
         <div className="flex flex-1 items-center py-10 md:py-12">{children}</div>
 
-        <p className="text-[13px] text-[#44474d]">Recommendation only. Rate Radar never changes a price anywhere.</p>
+        <div className="flex flex-col gap-3 text-[13px] text-[#44474d] sm:flex-row sm:items-center sm:justify-between">
+          <p>Recommendation only. Rate Radar never changes a price anywhere.</p>
+          <LegalLinks />
+        </div>
       </section>
 
       <aside

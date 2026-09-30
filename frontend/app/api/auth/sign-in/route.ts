@@ -17,7 +17,11 @@ export async function POST(req: NextRequest) {
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   const store = getStore();
-  if ((await store.incr(`sign-in:${ip}:${Math.floor(Date.now() / 60_000)}`, 90)) > 10) {
+  // Per IP, and per account so guesses spread across many IPs still hit a wall.
+  if (
+    (await store.incr(`sign-in:${ip}:${Math.floor(Date.now() / 60_000)}`, 90)) > 10 ||
+    (await store.incr(`sign-in:${email}`, 900)) > 20
+  ) {
     return NextResponse.json({ error: 'too many attempts' }, { status: 429 });
   }
 

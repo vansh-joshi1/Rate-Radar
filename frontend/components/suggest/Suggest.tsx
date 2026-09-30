@@ -66,7 +66,8 @@ export function useSuggest<T>(
   const inputProps = {
     role: 'combobox' as const,
     'aria-expanded': open,
-    'aria-controls': `${name}-suggestions`,
+    // The listbox only exists while open; pointing at a missing id is an ARIA error.
+    'aria-controls': open ? `${name}-suggestions` : undefined,
     'aria-autocomplete': 'list' as const,
     'aria-activedescendant': open && active >= 0 ? `${name}-option-${active}` : undefined,
     onFocus: () => items.length > 0 && setOpen(true),

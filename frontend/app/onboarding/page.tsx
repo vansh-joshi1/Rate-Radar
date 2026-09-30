@@ -8,8 +8,9 @@ import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { CircleIcon } from '@phosphor-icons/react/dist/ssr/Circle';
 import { PASSWORD_RULES, passwordOk } from '../../../backend/lib/password';
-import { Bezel, PillButton, SPRING } from '../../components/landing/Machined';
+import { Bezel, PillButton, SPRING, textLink } from '../../components/landing/Machined';
 import { AuthFrame, FIELD, LABEL, PasswordToggle, ring } from '../../components/AuthPanes';
+
 import { SuggestList, useSuggest } from '../../components/suggest/Suggest';
 import { assignTiers, nearbyHotels, type Candidate, type Nearby, type RoomTier, type RoomType } from '../../../backend/lib/onboarding';
 
@@ -319,6 +320,7 @@ export default function Onboarding() {
   const [extra, setExtra] = useState('');
   const [pwShown, setPwShown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [terms, setTerms] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const sent = useRef<HTMLDialogElement>(null);
 
@@ -426,6 +428,7 @@ export default function Onboarding() {
           : { direct: '', expedia: '', booking: '' },
         roomTypes: rooms.map((r) => ({ name: r.name, tier: r.tier, price: r.price })),
         competitors: a.competitors,
+        terms,
       }),
     }).catch(() => null);
     setSubmitting(false);
@@ -456,7 +459,7 @@ export default function Onboarding() {
   const blocked =
     (step === 1 && (busy || !listingsReady)) ||
     (step === 3 && a.competitors.length === 0) ||
-    (last && (submitting || !passwordOk(a.password) || a.confirm !== a.password));
+    (last && (submitting || !terms || !passwordOk(a.password) || a.confirm !== a.password));
 
   return (
     <AuthFrame aside={<Readback a={a} channels={channels} rooms={rooms} />}>
@@ -644,7 +647,7 @@ export default function Onboarding() {
                               {on && <CheckIcon weight="bold" aria-hidden className="h-3.5 w-3.5" />}
                               {n.name}
                               {!Number.isNaN(n.distanceMi) && (
-                                <span className="font-geist-mono text-[12px] tabular-nums opacity-70">{n.distanceMi} mi</span>
+                                <span className="font-geist-mono text-[12px] tabular-nums">{n.distanceMi} mi</span>
                               )}
                             </button>
                           );
@@ -710,7 +713,7 @@ export default function Onboarding() {
                           return (
                             <li
                               key={r.label}
-                              className={`flex items-center gap-1.5 text-[13.5px] transition-colors duration-300 ${ok ? 'text-[#029768]' : 'text-[#44474d]'}`}
+                              className={`flex items-center gap-1.5 text-[13.5px] transition-colors duration-300 ${ok ? 'text-[#047857]' : 'text-[#44474d]'}`}
                             >
                               {ok ? (
                                 <CheckCircleIcon weight="fill" aria-hidden className="h-4 w-4 shrink-0" />
@@ -746,7 +749,7 @@ export default function Onboarding() {
                           <p
                             id="confirm-note"
                             className={`mt-2.5 flex items-center gap-1.5 pl-5 text-[13.5px] font-medium ${
-                              a.confirm === a.password ? 'text-[#029768]' : 'text-[#b45309]'
+                              a.confirm === a.password ? 'text-[#047857]' : 'text-[#b45309]'
                             }`}
                           >
                             {a.confirm === a.password ? (
@@ -761,6 +764,26 @@ export default function Onboarding() {
                         )}
                       </div>
                     </div>
+                    <label className="flex items-start gap-3 pl-5 text-[14px] leading-relaxed text-[#44474d]">
+                      <input
+                        type="checkbox"
+                        checked={terms}
+                        onChange={(e) => setTerms(e.target.checked)}
+                        required
+                        className="mt-1 h-4 w-4 shrink-0 accent-[#085ac0]"
+                      />
+                      <span>
+                        I agree to the{' '}
+                        <a href="/terms" target="_blank" className={textLink}>
+                          Terms<span className="sr-only"> (opens in a new tab)</span>
+                        </a>{' '}
+                        and{' '}
+                        <a href="/privacy" target="_blank" className={textLink}>
+                          Privacy Policy<span className="sr-only"> (opens in a new tab)</span>
+                        </a>
+                        .
+                      </span>
+                    </label>
                     {submitError && <Note>{submitError}</Note>}
                   </>
                 )}

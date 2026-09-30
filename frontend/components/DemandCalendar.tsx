@@ -66,8 +66,8 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  * rendered one swatch white on white. `track` is the meter's colour on that fill.
  */
 const TIERS: readonly { band: Band; label: string; fill: string; text: string; sub: string; track: string }[] = [
-  { band: 'major', label: 'Major', fill: 'bg-[#085ac0]', text: 'text-white', sub: 'text-white/75', track: 'bg-white/25' },
-  { band: 'meaningful', label: 'Meaningful', fill: 'bg-[#e5eeff]', text: 'text-[#085ac0]', sub: 'text-[#085ac0]/80', track: 'bg-[#085ac0]/15' },
+  { band: 'major', label: 'Major', fill: 'bg-[#085ac0]', text: 'text-white', sub: 'text-white/85', track: 'bg-white/25' },
+  { band: 'meaningful', label: 'Meaningful', fill: 'bg-[#e5eeff]', text: 'text-[#085ac0]', sub: 'text-[#085ac0]', track: 'bg-[#085ac0]/15' },
   { band: 'minor', label: 'Minor', fill: 'bg-[#1a1b20]/[0.08]', text: 'text-[#1a1b20]', sub: 'text-[#44474d]', track: 'bg-[#1a1b20]/10' },
   { band: 'quiet', label: 'Quiet', fill: 'bg-[#0b1c30]/[0.035]', text: 'text-[#44474d]', sub: 'text-[#44474d]', track: 'bg-[#0b1c30]/[0.06]' },
 ];
@@ -434,7 +434,7 @@ export default function DemandCalendar({
                       >
                         <span
                           className={`font-geist-mono text-[13px] tabular-nums ${
-                            isToday ? 'font-medium text-[#085ac0]' : 'text-[#44474d]/45'
+                            isToday ? 'font-medium text-[#085ac0]' : 'text-[#6b6e75]'
                           }`}
                         >
                           {dayLabel}

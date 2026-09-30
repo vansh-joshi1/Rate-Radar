@@ -13,6 +13,7 @@ import ApproveRequest from '../../../components/ApproveRequest';
 import { ago } from '../../../lib/ago';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Portfolio' };
 
 /**
  * Portfolio: every hotel on Rate Radar, and the access requests waiting to
@@ -35,6 +36,7 @@ export default async function Admin() {
 
   return (
     <div className="space-y-8">
+      <h1 className="sr-only">Portfolio</h1>
       <section>
         <div className="mb-3 flex items-center gap-3">
           <SectionTitle>Access requests</SectionTitle>
@@ -109,7 +111,7 @@ export default async function Admin() {
                         <div className="text-xs text-muted">{p.city}</div>
                       </td>
                       <td className="td">
-                        {snap ? ago(snap.runAt) : <Chip className="opacity-60">Waiting for first run</Chip>}
+                        {snap ? ago(snap.runAt) : <Chip>Waiting for first run</Chip>}
                       </td>
                       <td className="td">{snap ? `${snap.confidence}%` : '—'}</td>
                       <td className="td">{team}</td>
@@ -133,6 +135,7 @@ export default async function Admin() {
 function SamplePortfolio() {
   return (
     <div>
+      <h1 className="sr-only">Portfolio</h1>
       <div className="mb-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <SectionTitle>All properties</SectionTitle>
@@ -167,7 +170,7 @@ function SamplePortfolio() {
                     {p.parity === 'gap' ? <Chip tone="bad">Gap detected</Chip> : <Chip tone="ok">In parity</Chip>}
                   </td>
                   <td className="td">
-                    {p.alerts > 0 ? <Chip tone="warn">{p.alerts} new</Chip> : <Chip className="opacity-50">0</Chip>}
+                    {p.alerts > 0 ? <Chip tone="warn">{p.alerts} new</Chip> : <Chip>0</Chip>}
                   </td>
                   <td className="td text-right">
                     <Link href="/overview" className="btn btn-sm">Manage</Link>

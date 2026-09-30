@@ -7,6 +7,7 @@ import { membershipFor, ownerEmail } from './lib/auth/members';
 import { DEFAULT_PROPERTY_ID } from './lib/properties';
 import { DEMO_COOKIE } from './lib/demo/session';
 import type { Role } from './lib/auth/roles';
+import { SHARED_LOGIN_EMAIL } from './lib/auth/session-age';
 import { signInEmail } from './lib/email/messages';
 import { sendEmail } from './lib/email/send';
 
@@ -34,8 +35,6 @@ import { sendEmail } from './lib/email/send';
 const perRender: <F extends (...args: never[]) => unknown>(fn: F) => F =
   (React as { cache?: <F>(fn: F) => F }).cache ?? ((fn) => fn);
 
-/** The shared-password identity. Never emailed; `.invalid` is reserved and can't receive mail. */
-export const SHARED_LOGIN_EMAIL = 'front-desk@rate-radar.invalid';
 const SHARED_NAME = 'Front desk (shared password)';
 
 export interface SessionUser {

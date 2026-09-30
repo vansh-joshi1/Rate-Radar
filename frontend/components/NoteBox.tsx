@@ -30,6 +30,7 @@ export default function NoteBox({ date, initial }: { date: string; initial: stri
         onChange={(e) => setText(e.target.value)}
         rows={3}
         className="field mb-3"
+        aria-label="Manual note"
         placeholder="e.g. Nissan all-hands Thursday — expect corporate walk-ins"
         readOnly={!canWrite}
         disabled={!canWrite}

@@ -326,8 +326,11 @@ export default function CompetitorInsights({
       [propertyName, ...visibleNights.map((n) => String(n.recommended))],
       ...hotels.map((h) => [h.label, ...h.perNight.map((e) => (e ? String(e.price) : ''))]),
     ];
+    // Hotel names come from users and Google: a leading = + - @ would run as a
+    // spreadsheet formula, so it is defused with a quote. Prices are never negative.
+    const safe = (cell: string) => (/^[=+\-@\t\r]/.test(cell) ? `'${cell}` : cell);
     const csv = [header, ...rows]
-      .map((r) => r.map((cell) => (/[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell)).join(','))
+      .map((r) => r.map(safe).map((cell) => (/[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell)).join(','))
       .join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
@@ -727,7 +730,7 @@ export default function CompetitorInsights({
                       className="sticky left-0 max-w-[280px] bg-[#e5eeff] px-6 py-3 text-left font-geist text-[14.5px] font-medium text-[#085ac0] md:px-8"
                     >
                       <span className="block truncate">{propertyName}</span>
-                      <span className="block font-geist-mono text-[11.5px] font-normal text-[#085ac0]/80">Suggested</span>
+                      <span className="block font-geist-mono text-[11.5px] font-normal text-[#085ac0]">Suggested</span>
                     </th>
                     {visibleNights.map((n) => (
                       <td key={n.date} className="px-3 py-3 text-center" title={`Suggested for ${n.date}`}>

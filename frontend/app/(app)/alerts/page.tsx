@@ -11,6 +11,7 @@ import { todayIn } from '../../../../backend/lib/date';
 import { loadSnapshot } from '../../../../backend/lib/dashboard-data';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'System health' };
 
 const ICONS = { accent: TrendUpIcon, bad: ShieldIcon, warn: WarningIcon, neutral: InfoIcon } as const;
 const COLORS = { accent: 'text-accent', bad: 'text-bad', warn: 'text-warn', neutral: 'text-muted' } as const;
@@ -25,6 +26,7 @@ export default async function Alerts() {
 
   return (
     <div>
+      <h1 className="sr-only">System health</h1>
       <div className="mb-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <SectionTitle>Alert center</SectionTitle>

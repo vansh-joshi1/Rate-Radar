@@ -19,7 +19,7 @@ export function SampleReading({ reasons, rateSize }: { reasons: Reason[]; rateSi
         </div>
         <div className="text-right font-geist-mono text-[13px] tabular-nums text-[#44474d]">
           <div>$88 to $96</div>
-          <div className="text-[#029768]">+10% vs baseline</div>
+          <div className="text-[#047857]">+10% vs baseline</div>
         </div>
       </div>
 

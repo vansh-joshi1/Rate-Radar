@@ -54,8 +54,11 @@ export function Eyebrow({ children, tone = 'light' }: { children: React.ReactNod
   );
 }
 
-const focusRing =
+export const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f9ff]';
+
+/** An inline text link on the marketing surface. */
+export const textLink = `rounded-full font-medium text-[#0b1c30] underline decoration-[#0b1c30]/20 underline-offset-4 transition-colors duration-300 hover:decoration-[#0b1c30]/60 ${focusRing}`;
 
 type PillVariant = 'primary' | 'secondary';
 type PillSize = 'md' | 'sm';

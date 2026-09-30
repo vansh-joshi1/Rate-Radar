@@ -15,6 +15,7 @@ import { fmtWeekdayLong, fmtRange, fmtDow } from '../../../../backend/lib/date';
 import type { ScoredEvent, SourceResult } from '../../../../backend/lib/scoring/types';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Dashboard' };
 
 /*
  * The dashboard, on the Machined Instrument language (DESIGN.md). It is the

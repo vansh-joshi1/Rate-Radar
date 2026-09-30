@@ -254,7 +254,7 @@ Two ramps carry quantitative meaning and must never be used decoratively.
 
 ### State
 
-- **State OK** (`#029768`): Healthy sources, confidence fills, positive deltas.
+- **State OK** (`#029768`): Healthy sources, confidence fills, positive deltas. As text under 24px it is `#047857`: `#029768` is 3.7:1 on white, under WCAG AA.
 - **State Warn** (`#B45309`): Stale data, degraded sources, "needs manual check". A warning, never a failure.
 - **State Bad** (`#BA1A1A`): Genuine breakage only — a failed source, a destructive action.
 

@@ -255,7 +255,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                 role="tab"
                 type="button"
                 aria-selected={on}
-                aria-controls={`panel-${id}`}
+                aria-controls={on ? `panel-${id}` : undefined}
                 tabIndex={on ? 0 : -1}
                 onClick={() => choose(id)}
                 className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-[14px] font-medium transition-[background-color,color,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] active:duration-100 motion-reduce:transition-none ${FOCUS} ${

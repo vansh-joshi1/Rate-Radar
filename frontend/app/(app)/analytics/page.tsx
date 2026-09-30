@@ -4,6 +4,7 @@ import { BOOKINGS_KEY, type Bookings } from '../../../../backend/lib/bookings';
 import Bellhop from '../../../components/Bellhop';
 
 export const dynamic = 'force-dynamic';
+export const metadata = { title: 'Bellhop' };
 
 export default async function BellhopPage() {
   const property = await requestProperty();

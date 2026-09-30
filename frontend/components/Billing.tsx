@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr/LockSimple';
 import { Bezel, PillButton } from './landing/Machined';
 import { StatusLine } from './settings/parts';
@@ -57,6 +58,17 @@ export function PlanPicker() {
           </PillButton>
         ))}
       </div>
+      <p className="text-[13px] text-[#44474d]">
+        Renews every {interval} until you cancel in Manage billing. See the{' '}
+        <Link href="/refunds" className="underline underline-offset-4">
+          refund policy
+        </Link>{' '}
+        and{' '}
+        <Link href="/terms" className="underline underline-offset-4">
+          terms
+        </Link>
+        .
+      </p>
       <StatusLine status={status} />
     </div>
   );
