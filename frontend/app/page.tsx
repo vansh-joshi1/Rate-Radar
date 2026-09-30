@@ -10,6 +10,7 @@ import { DOT_FIELD, Grain, HeroRadar } from '../components/landing/Backdrop';
 import HonestStates from '../components/landing/HonestStates';
 import WatchDemo from '../components/landing/WatchDemo';
 import { SampleReading, type Reason } from '../components/landing/SampleReading';
+import { PLAN_PRICES } from '../../backend/lib/billing/plans';
 
 /*
  * Marketing landing in the "Machined Instrument" language (DESIGN.md →
@@ -183,8 +184,8 @@ const PLANS: {
   {
     name: 'Starter',
     audience: 'For the single independent hotel or motel getting its pricing under control.',
-    price: '$99',
-    yearly: '$990',
+    price: PLAN_PRICES.starter.month,
+    yearly: PLAN_PRICES.starter.year,
     facts: [
       '1 property',
       'Twice-daily rate refreshes across hotel-direct, Booking.com and Expedia',
@@ -200,8 +201,8 @@ const PLANS: {
   {
     name: 'Growth',
     audience: 'For small groups and owners adding a second or third property.',
-    price: '$249',
-    yearly: '$2,490',
+    price: PLAN_PRICES.growth.month,
+    yearly: PLAN_PRICES.growth.year,
     badge: 'Most popular',
     includes: 'Everything in Starter, plus:',
     facts: [

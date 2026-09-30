@@ -5,7 +5,11 @@ const phAssets = phHost.replace('.i.posthog.com', '-assets.i.posthog.com');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Server code lives in ../backend; let Next compile imports from outside this dir.
-  experimental: { externalDir: true },
+  // serverComponentsHmrCache replays earlier fetch responses (Supabase included,
+  // despite noStore) during a dev hot reload. Local dev can point at the real
+  // database, so a replayed "no account yet" once overwrote a paid account with
+  // a fresh trial. Dev reads must always be live.
+  experimental: { externalDir: true, serverComponentsHmrCache: false },
   // First-party proxy for PostHog (see components/PostHogInit.tsx).
   skipTrailingSlashRedirect: true,
   async rewrites() {

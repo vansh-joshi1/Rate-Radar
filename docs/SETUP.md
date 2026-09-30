@@ -38,6 +38,29 @@ generate with `openssl rand -hex 32`. The site also sets
 `robots.txt` disallow + `noindex` headers on every page — it won't appear in search
 engines.
 
+### 6. Stripe (billing)
+
+Hotels get a 14-day trial from approval, then must subscribe or the app locks
+(the original hotel and the demo are never billed). Design:
+`docs/design/specs/2026-09-27-stripe-billing-design.md`. Use test mode first.
+
+1. Stripe → Product catalog → two products, **Starter** and **Growth**, each with a
+   monthly and a yearly recurring price: $99/$990 and $249/$2,490. Copy the four price
+   ids into `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PRICE_STARTER_YEARLY`,
+   `STRIPE_PRICE_GROWTH_MONTHLY`, `STRIPE_PRICE_GROWTH_YEARLY`. If the prices ever
+   change, change `backend/lib/billing/plans.ts` to match.
+2. Developers → API keys → secret key → `STRIPE_SECRET_KEY`.
+3. Settings → Billing → Customer portal → activate it; allow updating payment
+   methods, cancelling, viewing invoices, and switching between the four prices.
+4. Developers → Webhooks → add endpoint `https://<your domain>/api/billing/webhook`
+   with events `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted` → signing secret → `STRIPE_WEBHOOK_SECRET`.
+5. Settings → Billing → Subscriptions and emails → turn on receipts and failed-payment
+   emails, and set the card retry schedule (the app stays open while Stripe retries).
+
+All six are Vercel-only. Locally, `stripe listen --forward-to localhost:3000/api/billing/webhook`
+prints a `whsec_` secret to use instead of step 4.
+
 ## Verifying the pipeline end to end
 
 1. GitHub → Actions → **collect** → Run workflow (manual runs bypass the hour gate).

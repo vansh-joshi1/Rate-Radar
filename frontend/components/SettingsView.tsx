@@ -12,6 +12,9 @@ import CurrentRatesCard from './CurrentRates';
 import { Bezel } from './landing/Machined';
 import { ago } from '../lib/ago';
 import { Code, DIVIDER, FOCUS, Footnote, MONO_LABEL, PanelHead, StatusChip, type Tone } from './settings/parts';
+import { ManageBilling, PlanPicker } from './Billing';
+import { useCanWrite } from './RoleProvider';
+import type { BillingView } from '../../backend/lib/billing/accounts';
 
 /*
  * Settings, on the Machined Instrument language (DESIGN.md).
@@ -87,7 +90,7 @@ interface Props {
   thresholds: Thresholds;
   /** Collection hours, Central, straight from the collector's RUN_SLOTS_CT. */
   runSlots: readonly number[];
-  invoices: { date: string; amount: string; status: string }[];
+  billing: BillingView;
   isDemo: boolean;
 }
 
@@ -127,8 +130,17 @@ const SOURCE_LABEL: Record<string, { name: string; feeds: string }> = {
 
 const PANEL = 'space-y-6 p-6 md:p-8';
 
-export default function SettingsView({ property, tiers, sources, budget, thresholds, runSlots, invoices, isDemo }: Props) {
+export default function SettingsView({ property, tiers, sources, budget, thresholds, runSlots, billing, isDemo }: Props) {
   const [tab, setTab] = useState<TabId>('property');
+  const isOwner = useCanWrite('owner');
+  // Back from Stripe Checkout before its webhook has landed: say so, then reload once to pick up the plan.
+  const [checkoutDone, setCheckoutDone] = useState(false);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('checkout') !== 'done') return;
+    setCheckoutDone(true);
+    const t = setTimeout(() => window.location.replace('/settings#billing'), 4000);
+    return () => clearTimeout(t);
+  }, []);
   // A panel stays mounted once opened and is only hidden after, so unsaved
   // baseline edits and fetched team/rates data survive a tab switch.
   const [seen, setSeen] = useState<Set<TabId>>(() => new Set(['property']));
@@ -302,47 +314,34 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
               {isDemo && <StatusChip title="Rendered from sample data, not a live feed">Sample data</StatusChip>}
             </PanelHead>
 
-            <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-3">
+            <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
               <Fact label="Plan" big>
-                Starter
-                <span className="mt-1 block text-[14px] font-normal tracking-normal text-[#44474d]">$99 per month</span>
+                {billing.plan}
               </Fact>
-              <Fact label="Next invoice" big>
-                <span className="text-[#44474d]">None</span>
-                <span className="mt-1 block text-[14px] font-normal tracking-normal text-[#44474d]">
-                  No payment provider connected
-                </span>
-              </Fact>
-              <Fact label="Payment method" big>
-                Test card
-                <span className="mt-1 block text-[14px] font-normal tracking-normal text-[#44474d]">
-                  Stripe, ending <span className="font-geist-mono tabular-nums">4242</span>
-                </span>
+              <Fact label="Status" big>
+                {billing.status}
               </Fact>
             </dl>
 
-            <div className={DIVIDER} />
+            {checkoutDone && (
+              <p role="status" className="text-[14.5px] text-[#027a55]">
+                Payment received, updating your plan…
+              </p>
+            )}
 
-            <div>
-              <h3 className={MONO_LABEL}>Invoice history</h3>
-              {invoices.length === 0 ? (
-                <p className="mt-3 text-[14.5px] text-[#44474d]">No invoices yet.</p>
-              ) : (
-                <ul className="mt-2 divide-y divide-[#0b1c30]/[0.06]">
-                  {invoices.map((inv) => (
-                    <li key={inv.date} className="flex items-center justify-between gap-4 py-3">
-                      <span className="text-[14.5px]">{inv.date}</span>
-                      <span className="flex items-center gap-4">
-                        <span className="font-geist-mono text-[14px] tabular-nums">{inv.amount}</span>
-                        <StatusChip tone="ok">{inv.status}</StatusChip>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            {isOwner && (billing.canSubscribe || billing.canManage) && (
+              <>
+                <div className={DIVIDER} />
+                {billing.canSubscribe && <PlanPicker />}
+                {billing.canManage && <ManageBilling />}
+              </>
+            )}
 
-            <Footnote>Billing is not wired to a payment provider yet. These figures are placeholders, not charges.</Footnote>
+            <Footnote>
+              {isOwner
+                ? 'Payments, card changes, cancellation and invoices are handled on Stripe’s pages. Rate Radar never sees your card.'
+                : 'Only the hotel’s owner can change the plan.'}
+            </Footnote>
           </Bezel>
         ))}
 

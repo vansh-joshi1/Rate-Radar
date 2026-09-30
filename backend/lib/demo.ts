@@ -271,7 +271,3 @@ export const demoPortfolio = [
   { name: 'The Motel on Main', city: 'Ferrymead, WA', rec: 189, occupancy: '94%', parity: 'ok' as const, alerts: 1 },
 ];
 
-export const demoInvoices = [
-  { date: 'Jul 1, 2026', amount: '$99.00', status: 'Paid' },
-  { date: 'Jun 1, 2026', amount: '$99.00', status: 'Paid' },
-];
