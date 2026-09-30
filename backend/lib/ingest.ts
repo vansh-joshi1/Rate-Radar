@@ -10,7 +10,10 @@ import { sendAlertEmail } from './alerts/email';
 import { matchCompset, compsetMedian, applyCompsetBound } from './scoring/compset';
 import { DEFAULT_PROPERTY_ID, propKey, type Property } from './properties';
 import { getStore } from './store';
-import { listMembers, memberProperty } from './auth/members';
+import { ownersOf } from './auth/members';
+import { HISTORY_KEPT } from './history';
+import { accountFor } from './billing/accounts';
+import { enforceCompCap } from './billing/limits';
 import { loadWatchlist, saveWatchlist, watchlistKey, watchlistCompsetConfig, OPEN_PRICE_SANITY, type WatchlistHotel } from './watchlist';
 import { loadRatesConfig } from './rates-config';
 import type { RatesData } from '../collector/sources/rates';
@@ -122,6 +125,16 @@ export async function processBundle(bundle: Bundle, store: Store, now: Date, pro
       }
     }
     if (changed) await saveWatchlist(store, bundlePropertyId, list);
+  }
+
+  // Hold the list to the plan's cap before it bounds this run's compset. This is where
+  // lists from before the caps, or a trim the token write above just undid, get cut.
+  // Only a real ingest reaches here: a collector dry run never POSTs. A failed trim must
+  // not fail the ingest, whether the account read or the trim fails; the next one tries again.
+  try {
+    await enforceCompCap(await accountFor(getStore(), bundlePropertyId, now), bundlePropertyId, store);
+  } catch (err) {
+    console.error(`[ingest] comp cap for ${bundlePropertyId} failed:`, err);
   }
 
   // Filter against the UI-editable watchlist when one exists (the collector
@@ -250,7 +263,12 @@ export async function processBundle(bundle: Bundle, store: Store, now: Date, pro
 
   const historyDates = (await store.get<string[]>('history:dates')) ?? [];
   if (!historyDates.includes(today)) {
-    await store.set('history:dates', [today, ...historyDates].slice(0, 400));
+    const dates = [today, ...historyDates];
+    await store.set('history:dates', dates.slice(0, HISTORY_KEPT));
+    // Drop the records that fell off the list too, so the hash the Competitors page reads stays bounded.
+    // Pruning is housekeeping: a failure must not fail the ingest.
+    const dropped = dates.slice(HISTORY_KEPT);
+    if (dropped.length > 0) await store.hdel('history', dropped).catch((err) => console.error('[ingest] history prune failed:', err));
   }
 
   // Send before recording alert state: a failed send must leave the triggers
@@ -259,7 +277,7 @@ export async function processBundle(bundle: Bundle, store: Store, now: Date, pro
   if (alertResult.triggers.length > 0) {
     // The original property mails ALERT_EMAIL_TO; an onboarded hotel mails its own owners.
     const to = property.collect
-      ? (await listMembers(getStore())).filter((m) => m.role === 'owner' && memberProperty(m) === property.id).map((m) => m.email)
+      ? await ownersOf(getStore(), property.id)
       : undefined;
     emailStatus = await sendAlertEmail(alertResult.triggers, to).catch((err) => {
       console.error('[ingest] alert email failed:', err);

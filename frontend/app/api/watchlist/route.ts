@@ -5,6 +5,7 @@ import { DEMO_NEARBY_HOTELS } from '../../../../backend/lib/demo';
 import { isCollector, propertyFromRequest } from '../../../../backend/lib/api/property-request';
 import { hasHotel, loadWatchlist, normalizeName, saveWatchlist, type WatchlistHotel } from '../../../../backend/lib/watchlist';
 import { requireRole, type RoleGate } from '../../../../backend/lib/auth/guard';
+import { PLAN_LIMITS } from '../../../../backend/lib/billing/plans';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,7 +92,13 @@ export async function POST(req: NextRequest) {
 
   const hotels = await loadWatchlist(store, propertyId);
   if (hasHotel(hotels, clean)) return NextResponse.json({ error: 'already on the watchlist' }, { status: 409 });
-  if (hotels.length >= 25) return NextResponse.json({ error: 'watchlist is capped at 25 hotels' }, { status: 400 });
+  const { plan, maxComps } = gate.limits;
+  if (hotels.length >= maxComps) {
+    // Only Starter's cap is one a payment lifts.
+    return plan === 'starter'
+      ? NextResponse.json({ error: `Starter tracks up to ${maxComps} competitors, Growth ${PLAN_LIMITS.growth.maxComps}.` }, { status: 402 })
+      : NextResponse.json({ error: `The watchlist is capped at ${maxComps} hotels.` }, { status: 400 });
+  }
 
   // Coords supplied by the hotel-search picker skip the geocoding round-trip.
   const located =

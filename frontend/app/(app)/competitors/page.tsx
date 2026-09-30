@@ -1,14 +1,16 @@
 import { loadSnapshot } from '../../../../backend/lib/dashboard-data';
 import { requestProperty, requestStore } from '../../../../backend/lib/demo/context';
 import { loadCurrentRates } from '../../../../backend/lib/current-rates';
-import { loadWatchlist } from '../../../../backend/lib/watchlist';
+import { loadWatchlist, trimNoteKey, type TrimNote } from '../../../../backend/lib/watchlist';
+import { limitsForProperty } from '../../../../backend/lib/billing/limits';
+import { addDays, todayIn } from '../../../../backend/lib/date';
 import ParityGrid from '../../../components/ParityGrid';
 import { trackedParity } from '../../../../backend/lib/parity/channels';
 import CompetitorInsights, {
   type CompsetNight,
   type HistoryPoint,
 } from '../../../components/CompetitorInsights';
-import type { HistoryRecord } from '../../../../backend/lib/scoring/types';
+import { recentHistory } from '../../../../backend/lib/history';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Competitor insights' };
@@ -39,20 +41,18 @@ export default async function Competitors() {
     address: h.address,
   }));
 
-  // Recorded history — one point per collector run. The chart plots the window
-  // that actually exists rather than padding out to a fixed 90 days.
-  const historyDates = (await store.get<string[]>('history:dates')) ?? [];
-  const history: HistoryPoint[] = [];
-  for (const d of historyDates.slice(0, 90)) {
-    const rec = await store.hget<HistoryRecord>('history', d);
-    if (rec) {
-      history.push({
-        date: rec.date,
-        recommended: rec.recommendedStandard,
-        compsetMedian: rec.compsetMedian ?? null,
-      });
-    }
-  }
+  // Recorded history, one point per day, as far back as the plan shows. The
+  // chart plots the window that actually exists rather than padding it out.
+  const limits = await limitsForProperty(property.id);
+  const since = addDays(todayIn(property.timezone), -limits.historyDays);
+  const history: HistoryPoint[] = (await recentHistory(store, since)).map((rec) => ({
+    date: rec.date,
+    recommended: rec.recommendedStandard,
+    compsetMedian: rec.compsetMedian ?? null,
+  }));
+  // A note from a trim to another cap is stale: the hotel has changed plan since.
+  const note = await store.get<TrimNote>(trimNoteKey(property.id));
+  const trimNote = note?.max === limits.maxComps ? note : null;
 
   // Our recommended standard rate per night, keyed for the heatmap's own row.
   const recommendedByDate = new Map(
@@ -77,6 +77,8 @@ export default async function Competitors() {
         history={history}
         yourRate={yourRate?.price ?? null}
         initialWatchlist={watchlist.map((h) => h.name)}
+        maxComps={limits.maxComps}
+        trimNote={trimNote}
         isDemo={isDemo}
         /*
           Parity sits beside the price history because it answers the

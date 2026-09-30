@@ -8,11 +8,15 @@ import { PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { CircleIcon } from '@phosphor-icons/react/dist/ssr/Circle';
 import { PASSWORD_RULES, passwordOk } from '../../../backend/lib/password';
+import { PLAN_LIMITS } from '../../../backend/lib/billing/plans';
 import { Bezel, PillButton, SPRING, textLink } from '../../components/landing/Machined';
 import { AuthFrame, FIELD, LABEL, PasswordToggle, ring } from '../../components/AuthPanes';
 
 import { SuggestList, useSuggest } from '../../components/suggest/Suggest';
 import { assignTiers, nearbyHotels, type Candidate, type Nearby, type RoomTier, type RoomType } from '../../../backend/lib/onboarding';
+
+/** The trial runs on Growth, so it starts with Growth's competitor cap. */
+const MAX_COMPS = PLAN_LIMITS.growth.maxComps;
 
 /*
  * Onboarding, on the sign-in screen's machined parts (DESIGN.md → Marketing
@@ -339,7 +343,7 @@ export default function Onboarding() {
       ...prev,
       competitors: prev.competitors.includes(hotel)
         ? prev.competitors.filter((h) => h !== hotel)
-        : [...prev.competitors, hotel],
+        : prev.competitors.length >= MAX_COMPS ? prev.competitors : [...prev.competitors, hotel],
     }));
 
   async function runSearch() {
@@ -397,7 +401,7 @@ export default function Onboarding() {
     const name = extra.trim();
     if (!name) return;
     setNearby((prev) => (prev.some((n) => n.name === name) ? prev : [...prev, { name, distanceMi: NaN }]));
-    setA((prev) => (prev.competitors.includes(name) ? prev : { ...prev, competitors: [...prev.competitors, name] }));
+    setA((prev) => (prev.competitors.includes(name) || prev.competitors.length >= MAX_COMPS ? prev : { ...prev, competitors: [...prev.competitors, name] }));
     setExtra('');
   }
 
@@ -643,7 +647,14 @@ export default function Onboarding() {
                         {nearby.map((n) => {
                           const on = a.competitors.includes(n.name);
                           return (
-                            <button key={n.name} type="button" aria-pressed={on} onClick={() => toggle(n.name)} className={pill(on)}>
+                            <button
+                              key={n.name}
+                              type="button"
+                              aria-pressed={on}
+                              disabled={!on && a.competitors.length >= MAX_COMPS}
+                              onClick={() => toggle(n.name)}
+                              className={`${pill(on)} disabled:opacity-50`}
+                            >
                               {on && <CheckIcon weight="bold" aria-hidden className="h-3.5 w-3.5" />}
                               {n.name}
                               {!Number.isNaN(n.distanceMi) && (
@@ -680,7 +691,10 @@ export default function Onboarding() {
                         <PlusIcon weight="light" aria-hidden className="h-[18px] w-[18px]" />
                       </button>
                     </div>
-                    <p className="mt-3 pl-5 text-[13.5px] tabular-nums text-[#44474d]">{a.competitors.length} selected</p>
+                    <p role="status" className="mt-3 pl-5 text-[13.5px] tabular-nums text-[#44474d]">
+                      {a.competitors.length} of {MAX_COMPS} selected
+                      {a.competitors.length >= MAX_COMPS && '. That is the most we track; unselect one to pick another.'}
+                    </p>
                   </fieldset>
                 )}
 

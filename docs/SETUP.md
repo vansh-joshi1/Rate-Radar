@@ -16,7 +16,7 @@ personal throwaway — this needs to keep running long-term.
 ### 2. Vercel
 
 1. vercel.com → sign up with the same business account → Add New Project → import the GitHub repo. Framework auto-detects as Next.js; no build config needed.
-2. **Storage + auth:** supabase.com → New project (free tier) → SQL editor → paste and run `supabase/migrations/0001_kv.sql`. Then Project Settings → API → copy the URL, the `anon` key and the `service_role` key into Vercel as `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY`. In Authentication → Providers → Email, leave email enabled. Rate Radar mints and sends its own sign-in links, so Supabase's email templates and SMTP go unused.
+2. **Storage + auth:** supabase.com → New project (free tier) → SQL editor → paste and run each file in `supabase/migrations/` in order (`0001_kv.sql` first). A live project runs any new file there once, when it lands. Then Project Settings → API → copy the URL, the `anon` key and the `service_role` key into Vercel as `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY`. In Authentication → Providers → Email, leave email enabled. Rate Radar mints and sends its own sign-in links, so Supabase's email templates and SMTP go unused.
 3. **Env vars:** Project → Settings → Environment Variables → add `SITE_PASSWORD`, `OWNER_EMAIL`, `INGEST_SECRET` (same value as the GitHub secret), `RESEND_API_KEY`, `ALERT_EMAIL_TO`, `DASHBOARD_URL`, `GEMINI_API_KEY` (Bellhop; free key from aistudio.google.com).
 4. Deploy. Note the production URL — that's `DASHBOARD_URL` (set it in both Vercel and GitHub secrets).
 

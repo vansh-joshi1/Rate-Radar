@@ -8,9 +8,11 @@ import { DEFAULT_PROPERTY_ID } from './properties';
 export interface Store {
   get<T>(key: string): Promise<T | null>;
   set(key: string, value: unknown, ttlSeconds?: number): Promise<void>;
+  del(key: string): Promise<void>;
   hget<T>(key: string, field: string): Promise<T | null>;
   hset(key: string, field: string, value: unknown): Promise<void>;
-  /** Every field of a hash. For small hashes (access requests), not big ones. */
+  hdel(key: string, fields: string[]): Promise<void>;
+  /** Every field of a hash, in one read. Keep the hash bounded (see `history`, pruned by ingest). */
   hgetall<T>(key: string): Promise<Record<string, T>>;
   /** Atomic counter with TTL set on first increment — used for rate limiting. */
   incr(key: string, ttlSeconds: number): Promise<number>;
@@ -50,11 +52,18 @@ export class SupabaseStore implements Store {
     const { error } = await this.db.from('kv').upsert({ key, value, expires_at: SupabaseStore.expiry(ttlSeconds) });
     SupabaseStore.check('set', error);
   }
+  async del(key: string): Promise<void> {
+    const { error } = await this.db.from('kv').delete().eq('key', key);
+    SupabaseStore.check('del', error);
+  }
   async hget<T>(key: string, field: string): Promise<T | null> {
     return (await this.rpc<T | null>('kv_hget', { k: key, f: field })) ?? null;
   }
   async hset(key: string, field: string, value: unknown): Promise<void> {
     await this.rpc('kv_hset', { k: key, f: field, v: value });
+  }
+  async hdel(key: string, fields: string[]): Promise<void> {
+    await this.rpc('kv_hdel', { k: key, f: fields });
   }
   async hgetall<T>(key: string): Promise<Record<string, T>> {
     // A hash is one jsonb object in its row, so a plain get returns all of it.
@@ -96,6 +105,11 @@ export class FileStore implements Store {
     d.kv[key] = value;
     this.write(d);
   }
+  async del(key: string): Promise<void> {
+    const d = this.read();
+    delete d.kv[key];
+    this.write(d);
+  }
   async hget<T>(key: string, field: string): Promise<T | null> {
     const v = this.read().hashes[key]?.[field];
     return v === undefined ? null : (v as T);
@@ -103,6 +117,11 @@ export class FileStore implements Store {
   async hset(key: string, field: string, value: unknown): Promise<void> {
     const d = this.read();
     (d.hashes[key] ??= {})[field] = value;
+    this.write(d);
+  }
+  async hdel(key: string, fields: string[]): Promise<void> {
+    const d = this.read();
+    for (const f of fields) delete d.hashes[key]?.[f];
     this.write(d);
   }
   async hgetall<T>(key: string): Promise<Record<string, T>> {
@@ -171,12 +190,18 @@ export class PrefixedStore implements Store {
   async set(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
     await this.inner.set(this.k(key), value, ttlSeconds ?? this.ttlSeconds);
   }
+  del(key: string): Promise<void> {
+    return this.inner.del(this.k(key));
+  }
   hget<T>(key: string, field: string): Promise<T | null> {
     return this.inner.hget<T>(this.k(key), field);
   }
   async hset(key: string, field: string, value: unknown): Promise<void> {
     await this.inner.hset(this.k(key), field, value);
     await this.touch(this.k(key));
+  }
+  hdel(key: string, fields: string[]): Promise<void> {
+    return this.inner.hdel(this.k(key), fields);
   }
   hgetall<T>(key: string): Promise<Record<string, T>> {
     return this.inner.hgetall<T>(this.k(key));
