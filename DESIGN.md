@@ -268,7 +268,7 @@ Two ramps carry quantitative meaning and must never be used decoratively.
 
 ## Typography
 
-**Family:** IBM Plex Sans and IBM Plex Mono, self-hosted through `next/font` in `frontend/app/layout.tsx` and used as Tailwind's `font-sans` / `font-mono`. Plex replaced Geist on 2026-09-30: Geist and Inter had become the default face of AI-built apps, and the product was reading as one.
+**Family:** IBM Plex Sans and IBM Plex Mono, shipped with the app from the `@fontsource` packages through `next/font/local` in `frontend/app/layout.tsx`, so neither visitors nor the build reach Google, and used as Tailwind's `font-sans` / `font-mono`. Plex replaced Geist on 2026-09-30: Geist and Inter had become the default face of AI-built apps, and the product was reading as one.
 
 **Character:** IBM Plex Sans is an engineered grotesk with squared curves. It reads like an engraved equipment label at display sizes and stays plain at 14px. Plex Mono carries every machine reading, so a label or a figure looks like it came off an instrument, not out of a sentence. The pairing is deliberately unromantic: one family, two cuts, no editorial flourish.
 
