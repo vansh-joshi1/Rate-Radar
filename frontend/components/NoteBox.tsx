@@ -23,7 +23,7 @@ export default function NoteBox({ date, initial }: { date: string; initial: stri
     <div className="card">
       <h3 className="mb-2 text-lg font-bold tracking-tight">Manual notes</h3>
       <p className="mb-3 text-sm text-muted">
-        For things no feed knows about — a recruiting day at a nearby campus, a vendor visit, a group booking rumor.
+        Anything the feeds can't know, like a group booking or a campus event.
       </p>
       <textarea
         value={text}

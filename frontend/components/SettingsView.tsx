@@ -220,9 +220,6 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
     <div className="mx-auto max-w-5xl space-y-8">
       <header>
         <h1 className="text-balance text-[30px] font-semibold leading-[1.1] tracking-tighter md:text-[40px]">Settings</h1>
-        <p className="mt-2 max-w-[56ch] text-pretty text-[15px] leading-relaxed text-[#44474d]">
-          Your property, the rates the recommendations start from, who can sign in, and where the data comes from.
-        </p>
       </header>
 
       {/* Sticky under the 64px top bar so it stays reachable while a long
@@ -277,9 +274,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
         {panel('property', (
           <>
             <Bezel core={PANEL}>
-              <PanelHead title="Property profile">
-                <StatusChip title="Set in lib/properties.ts">Set in code</StatusChip>
-              </PanelHead>
+              <PanelHead title="Property profile" />
               <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
                 <Fact label="Property name">{property.name}</Fact>
                 <Fact label="Location">{property.city}</Fact>
@@ -288,12 +283,6 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                   {property.lat.toFixed(4)}, {property.lng.toFixed(4)}
                 </Fact>
               </dl>
-              <div className={DIVIDER} />
-              <Footnote>
-                The property registry is configured in code (<Code>lib/properties.ts</Code>) because every stored record
-                is keyed by property id, and renaming one here would orphan its history. The rates below are yours to
-                edit.
-              </Footnote>
             </Bezel>
 
             <Bezel core={PANEL}>
@@ -339,7 +328,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
 
             <Footnote>
               {isOwner
-                ? 'Payments, card changes, cancellation and invoices are handled on Stripe’s pages. Rate Radar never sees your card.'
+                ? 'Billing is handled on Stripe. Rate Radar never sees your card.'
                 : 'Only the hotel’s owner can change the plan.'}
             </Footnote>
           </Bezel>
@@ -354,15 +343,13 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
 
         {panel('notifications', (
           <Bezel core={PANEL}>
-            <PanelHead title="Notifications">
-              <StatusChip title="Rules live in lib/alerts/rules.ts">Set in code</StatusChip>
-            </PanelHead>
+            <PanelHead title="Notifications" />
             <ul className="space-y-2">
               {[
                 {
                   title: 'Rate recommendation moved',
                   trigger: `$${thresholds.rateDeltaUsd} or ${thresholds.rateDeltaPct}%`,
-                  desc: "Emails when a night's recommendation moves this much from the last figure you were emailed. It compares against what you were last told, not the last run, so small moves can't add up to a stream of emails.",
+                  desc: "Emails when a night's recommendation moves this much since you were last emailed about it.",
                 },
                 {
                   title: 'Parity gap between channels',
@@ -377,7 +364,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                 {
                   title: 'A data source failing',
                   trigger: `${thresholds.sourceFailThreshold} runs in a row`,
-                  desc: 'Emails after this many consecutive failed runs for one source, so a single flaky fetch stays quiet.',
+                  desc: 'Emails when one source keeps failing.',
                 },
               ].map((rule) => (
                 <li
@@ -398,9 +385,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
             <div className="flex items-start gap-3 rounded-[1rem] bg-[#e5eeff] px-4 py-3.5">
               <InfoIcon weight="light" aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-[#085ac0]" />
               <p className="text-pretty text-[14px] leading-relaxed text-[#1a1b20]">
-                These rules live in <Code>lib/alerts/rules.ts</Code> and repeat at most once every{' '}
-                {thresholds.dedupeHours} hours. Recipients come from <Code>ALERT_EMAIL_TO</Code>. They are shown rather
-                than toggled because a switch here would change nothing about what the alert engine sends.
+                Each alert repeats at most once every {thresholds.dedupeHours} hours.
               </p>
             </div>
           </Bezel>
@@ -452,10 +437,6 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                   })}
                 </ul>
               )}
-              <Footnote>
-                These are the integrations this system actually has. It reads demand and price signals; it never
-                connects to a PMS or channel manager, because it never writes a price anywhere.
-              </Footnote>
             </Bezel>
 
             {budget && (
@@ -501,24 +482,19 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                     )}
                     {budget.notFound.length > 0 && (
                       <p className="text-white/70">
-                        Not seen in Google Hotels results yet: {budget.notFound.join(', ')}. Either Google does not carry
-                        them or they were sold out every time we looked. Once one appears with a price it is pinned by
-                        token, and from then on the two are told apart.
+                        Not found on Google Hotels yet: {budget.notFound.join(', ')}.
                       </p>
                     )}
                     {budget.unavailable.length > 0 && (
                       <p className="text-white/70">
-                        Carried by Google but not sellable that night, sold out or off the market:{' '}
-                        {budget.unavailable.join(', ')}. These come back on their own; nothing to fix.
+                        Sold out or off the market that night: {budget.unavailable.join(', ')}.
                       </p>
                     )}
                   </div>
                 )}
 
                 <p className="font-geist-mono text-[12px] leading-relaxed text-white/50">
-                  Prices come from SerpApi&apos;s Google Hotels engine on a metered plan, so each run draws from a monthly
-                  allowance. The collector reads the live balance before every run and narrows what it fetches rather
-                  than failing when the budget runs low.
+                  Price searches come from a monthly allowance. When it runs low, fewer nights are checked.
                 </p>
               </Bezel>
             )}
@@ -528,9 +504,7 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                 <StatusChip>Version 1</StatusChip>
               </PanelHead>
               <p className="max-w-[64ch] text-pretty text-[14.5px] leading-relaxed text-[#44474d]">
-                A key-authenticated REST API serving collected prices and recommendations, scoped per property. Every
-                response carries its provenance (<Code>runAt</Code>, per-source status, confidence) so consumers can
-                judge freshness for themselves.
+                Read your prices and recommendations from your own tools. Every response says how fresh its data is.
               </p>
               <ul className="space-y-2">
                 {[
@@ -552,21 +526,12 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
               </ul>
               <Footnote>
                 Authenticate with <Code>Authorization: Bearer rr_…</Code> or <Code>x-api-key</Code>, up to 60 requests a
-                minute per key. Mint a key with <Code>npm run apikey -- --name &quot;label&quot;</Code>; it is stored
-                hashed and shown once.
+                minute per key.
               </Footnote>
             </Bezel>
 
             <Bezel core={PANEL}>
-              <PanelHead title="Ingest and schedule" />
-              <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
-                <Fact label="Webhook endpoint" mono>
-                  https://your-deployment.vercel.app/api/ingest
-                </Fact>
-                <Fact label="Secret" mono>
-                  Bearer, from INGEST_SECRET
-                </Fact>
-              </dl>
+              <PanelHead title="Schedule" />
               <div>
                 <p className={MONO_LABEL}>Runs each day, {property.timezone.replace(/_/g, ' ')}</p>
                 <ul className="mt-2 flex flex-wrap gap-2">
@@ -577,10 +542,6 @@ export default function SettingsView({ property, tiers, sources, budget, thresho
                   ))}
                 </ul>
               </div>
-              <Footnote>
-                GitHub&apos;s cron runs in UTC and ignores daylight saving, so the workflow checks the current Central
-                hour before running. That keeps the schedule right in both CST and CDT.
-              </Footnote>
             </Bezel>
           </>
         ))}

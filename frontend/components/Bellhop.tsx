@@ -4,20 +4,18 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { track } from './PostHogInit';
 import { Bezel, PillButton, SPRING } from './landing/Machined';
 import { DIVIDER, FIELD, FIELD_BAD, FOCUS, MONO_LABEL, NUMBER, StatusLine } from './settings/parts';
-import type { ChatTurn } from '../../backend/lib/bellhop/gemini';
+import type { ChatTurn, Grounding } from '../../backend/lib/bellhop/gemini';
 import type { BookingReading } from '../../backend/lib/bookings';
 
-const STARTERS = [
-  'Why is tonight priced where it is?',
-  'What events are coming up this week?',
-  'What if I charged $10 less tonight?',
-];
+const STARTERS = ['Why is tonight this price?', "What's on this week?", 'What if I charge $10 less?'];
+/** Needs web search, so not offered in the demo. */
+const GUEST_STARTER = 'Where can a guest eat nearby?';
 
 const TEXT = 'text-pretty text-[15px] leading-relaxed text-[#1a1b20]';
 const LINK = `rounded-full font-medium text-[#44474d] underline decoration-[#0b1c30]/20 underline-offset-4 transition-colors duration-150 hover:text-[#1a1b20] ${FOCUS}`;
 
-/** An answer Bellhop could not give. Shown in warn, never sent back to the model as history. */
-type Turn = ChatTurn & { failed?: boolean };
+/** `failed`: an answer Bellhop could not give, shown in warn, never sent back as history. */
+type Turn = ChatTurn & { failed?: boolean; grounding?: Grounding };
 
 /*
  * Bellhop, on the Machined Instrument language (DESIGN.md): one enclosure that
@@ -27,13 +25,14 @@ type Turn = ChatTurn & { failed?: boolean };
  * model, which reads it back from the store on the next question.
  */
 export default function Bellhop({
-  propertyName,
   totalRooms,
   tonight,
+  web,
 }: {
-  propertyName: string;
   totalRooms: number;
   tonight: BookingReading | null;
+  /** Web search is on (a real hotel, not the demo). */
+  web: boolean;
 }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState('');
@@ -50,7 +49,8 @@ export default function Bellhop({
     const q = question.trim();
     if (!q || busy) return;
     const sent: Turn[] = [...turns, { role: 'user', text: q }];
-    const show = (text: string, failed = false) => setTurns([...sent, { role: 'assistant', text, failed }]);
+    const show = (text: string, failed = false, grounding?: Grounding) =>
+      setTurns([...sent, { role: 'assistant', text, failed, grounding }]);
     setTurns([...sent, { role: 'assistant', text: '' }]);
     setDraft('');
     track('bellhop_question_asked');
@@ -71,13 +71,16 @@ export default function Bellhop({
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let text = '';
+      // Text, then (for a searched answer) "\x1e" and its sources as JSON: see /api/bellhop.
+      let raw = '';
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
-        text += decoder.decode(value, { stream: true });
-        show(text);
+        raw += decoder.decode(value, { stream: true });
+        show(raw.split('\x1e')[0]);
       }
+      const [text, tail] = raw.split('\x1e');
+      if (tail) show(text, false, JSON.parse(tail));
     } catch {
       show('Bellhop is unavailable right now.', true);
     } finally {
@@ -97,27 +100,19 @@ export default function Bellhop({
         <div className="min-w-0">
           <h1 className="text-[22px] font-semibold leading-tight tracking-tight">Bellhop</h1>
           <p className="text-pretty text-[14px] leading-relaxed text-[#44474d]">
-            Questions about {propertyName}&apos;s rates, answered from Rate Radar&apos;s own numbers.
+            {web ? 'Rates, what-ifs and guest questions.' : 'Rates and what-ifs.'} It never changes a price.
           </p>
         </div>
       </header>
       <div className={DIVIDER} />
 
       <ol className="flex flex-1 flex-col gap-6 px-6 py-6 md:px-8" aria-live="polite">
-        <li>
-          <BellhopSays>
-            <p className={TEXT}>
-              Ask me about any night Rate Radar has priced. I answer from the same numbers and reasoning as the
-              calendar, and I never change a price.
-            </p>
-          </BellhopSays>
-        </li>
         <RoomsBooked totalRooms={totalRooms} initial={tonight} />
 
         {turns.length === 0 && (
           // Full width on a phone so each pill stays on one line; aligned under the messages from sm up.
           <li className="flex flex-wrap gap-2 sm:pl-12">
-            {STARTERS.map((s) => (
+            {(web ? [...STARTERS, GUEST_STARTER] : STARTERS).map((s) => (
               <button
                 key={s}
                 type="button"
@@ -137,10 +132,13 @@ export default function Bellhop({
             <li key={i} className="animate-fade-in-up">
               <BellhopSays typing={busy && i === turns.length - 1}>
                 {t.text ? (
-                  <p className={`whitespace-pre-wrap ${TEXT} ${t.failed ? '!text-[#b45309]' : ''}`}>{t.text}</p>
+                  <>
+                    <p className={`whitespace-pre-wrap ${TEXT} ${t.failed ? '!text-[#b45309]' : ''}`}>{t.text}</p>
+                    {t.grounding && <Sources grounding={t.grounding} />}
+                  </>
                 ) : (
                   <p className="text-[15px] text-[#44474d]" role="status">
-                    Looking at the numbers
+                    Looking into it
                   </p>
                 )}
               </BellhopSays>
@@ -160,6 +158,7 @@ export default function Bellhop({
           <input
             id="bellhop-q"
             className={`${FIELD} h-12`}
+            aria-describedby="bellhop-privacy"
             placeholder="Ask Bellhop"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -169,11 +168,17 @@ export default function Bellhop({
             Ask
           </PillButton>
         </form>
-        {turns.length > 0 && !busy && (
-          <button type="button" onClick={() => setTurns([])} className={`mt-3 text-[13px] ${LINK}`}>
-            Start over
-          </button>
-        )}
+        {/* Every question is sent to Google. */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <p id="bellhop-privacy" className="text-[13px] leading-relaxed text-[#44474d]">
+            Leave out guest names and details.
+          </p>
+          {turns.length > 0 && !busy && (
+            <button type="button" onClick={() => setTurns([])} className={`text-[13px] ${LINK}`}>
+              Start over
+            </button>
+          )}
+        </div>
       </div>
     </Bezel>
   );
@@ -238,7 +243,7 @@ function RoomsBooked({ totalRooms, initial }: { totalRooms: number; initial: Boo
                 required
                 autoFocus={!!latest}
                 aria-invalid={!!error}
-                aria-describedby={error ? 'bellhop-rooms-error' : 'bellhop-rooms-help'}
+                aria-describedby={error ? 'bellhop-rooms-error' : undefined}
                 className={`${FIELD} ${NUMBER} h-9 !w-28 tabular-nums ${error ? FIELD_BAD : ''}`}
                 value={rooms}
                 onChange={(e) => setRooms(e.target.value)}
@@ -262,9 +267,6 @@ function RoomsBooked({ totalRooms, initial }: { totalRooms: number; initial: Boo
             <div id="bellhop-rooms-error">
               <StatusLine status={error ? { tone: 'bad', text: error } : null} />
             </div>
-            <p id="bellhop-rooms-help" className="text-[13px] leading-relaxed text-[#44474d]">
-              Saved with the time, so later answers show how tonight filled.
-            </p>
           </form>
         </BellhopSays>
       </li>
@@ -296,6 +298,44 @@ function RoomsBooked({ totalRooms, initial }: { totalRooms: number; initial: Boo
         </p>
       </BellhopSays>
     </li>
+  );
+}
+
+/**
+ * Where a searched answer came from: one link per site, then Google's Search
+ * Suggestions, which its grounding terms require beside the answer, unmodified.
+ * They are Google's own HTML and CSS, so they sit in a frame: no scripts, their
+ * styles can't reach the page, and `<base target>` opens links in a new tab
+ * rather than navigating away from the chat. Same-origin only so the frame can
+ * be sized to its content.
+ */
+function Sources({ grounding }: { grounding: Grounding }) {
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      {grounding.sources.length > 0 && (
+        <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px]">
+          <span className={MONO_LABEL}>Sources</span>
+          {grounding.sources.map((s) => (
+            <a key={s.uri} href={s.uri} target="_blank" rel="noopener noreferrer" className={LINK}>
+              {s.title}
+            </a>
+          ))}
+        </p>
+      )}
+      {grounding.suggestions && (
+        <iframe
+          title="Google Search suggestions"
+          sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          srcDoc={`<!doctype html><base target="_blank"><style>body{margin:0}</style>${grounding.suggestions}`}
+          onLoad={(e) => {
+            const doc = e.currentTarget.contentDocument;
+            if (doc) e.currentTarget.style.height = `${doc.documentElement.scrollHeight}px`;
+          }}
+          className="h-14 w-full border-0"
+          style={{ colorScheme: 'light' }}
+        />
+      )}
+    </div>
   );
 }
 
@@ -362,13 +402,12 @@ function BellhopAvatar({ size = 'sm', typing = false }: { size?: 'sm' | 'lg'; ty
 }
 
 
-/** One thing Bellhop says: the avatar, its name, and the content beside them. */
+/** One thing Bellhop says: the avatar and the content beside it. The avatar is the byline. */
 function BellhopSays({ children, typing = false }: { children: ReactNode; typing?: boolean }) {
   return (
     <div className="flex max-w-[70ch] gap-3">
       <BellhopAvatar typing={typing} />
-      <div className="min-w-0 flex-1 pt-1">
-        <span className={`mb-1 block ${MONO_LABEL}`}>Bellhop</span>
+      <div className="min-w-0 flex-1 pt-1.5">
         {children}
       </div>
     </div>

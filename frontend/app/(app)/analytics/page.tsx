@@ -1,4 +1,4 @@
-import { requestProperty, requestStore } from '../../../../backend/lib/demo/context';
+import { demoSid, requestProperty, requestStore } from '../../../../backend/lib/demo/context';
 import { todayIn } from '../../../../backend/lib/date';
 import { BOOKINGS_KEY, type Bookings } from '../../../../backend/lib/bookings';
 import Bellhop from '../../../components/Bellhop';
@@ -12,7 +12,11 @@ export default async function BellhopPage() {
 
   return (
     <div className="font-geist text-[#1a1b20] antialiased">
-      <Bellhop propertyName={property.name} totalRooms={property.totalRooms} tonight={tonight} />
+      <Bellhop
+        totalRooms={property.totalRooms}
+        tonight={tonight}
+        web={!(await demoSid())}
+      />
     </div>
   );
 }

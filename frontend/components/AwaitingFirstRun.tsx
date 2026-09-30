@@ -19,9 +19,8 @@ export default function AwaitingFirstRun({ hotel, children }: { hotel: string; c
         <div className="space-y-2">
           <h1 className="text-[18px] font-semibold">{hotel} is set up</h1>
           <p className="max-w-[70ch] text-[14.5px] leading-relaxed text-[#44474d]">
-            Rate Radar collects prices and demand twice a day. Your first recommendations, competitor rates and local
-            events appear after the next run, usually within half a day. Until then, you can invite your team and check
-            the starting baseline rates, which came from the prices Google showed for your rooms.
+            Your first recommendations arrive after the next collection run, usually within half a day. Until then,
+            invite your team and check your baseline rates.
           </p>
         </div>
       </div>

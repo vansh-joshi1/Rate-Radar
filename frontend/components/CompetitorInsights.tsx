@@ -345,9 +345,6 @@ export default function CompetitorInsights({
           <h1 className="text-balance text-[30px] font-semibold leading-[1.1] tracking-tighter md:text-[40px]">
             Competitor insights
           </h1>
-          <p className="mt-2 max-w-[56ch] text-pretty text-[15px] leading-relaxed text-[#44474d]">
-            What the hotels you track are charging, and where your rate lands among them.
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {isDemo ? (
@@ -561,19 +558,13 @@ export default function CompetitorInsights({
                   Comp set median{chart.compPoints === 0 ? ', not yet recorded' : ''}
                 </Legend>
               </div>
-              {chart.compPoints === 0 && (
-                <p className="mt-3 text-[13px] leading-relaxed text-[#44474d]">
-                  Competitor history starts with the next collector run. Earlier days were never recorded, so nothing
-                  is drawn for them.
-                </p>
-              )}
             </>
           ) : (
             <div className="mt-6 flex min-h-[240px] flex-1 flex-col items-center justify-center rounded-[1.25rem] bg-[#0b1c30]/[0.04] px-6 text-center">
               <ChartLineIcon weight="light" aria-hidden className="h-8 w-8 text-[#44474d]" />
               <p className="mt-3 text-[14.5px] font-medium">Not enough history to draw a trend yet</p>
               <p className="mt-1 max-w-[44ch] text-[13px] leading-relaxed text-[#44474d]">
-                One point is stored per collector run. The line appears once there are at least two.
+                The line appears after two collection runs.
               </p>
             </div>
           )}
@@ -819,8 +810,7 @@ export default function CompetitorInsights({
           )}
 
           <p className="border-t border-[#0b1c30]/[0.06] px-6 py-4 text-[13px] leading-relaxed text-[#44474d] md:px-8">
-            Hotels are matched against Google Hotels results, then pinned by property token (brand and area). Additions
-            take effect on the next collection run.
+            New hotels get prices from the next collection run.
           </p>
         </Bezel>
       </div>

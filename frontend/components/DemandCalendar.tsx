@@ -333,14 +333,7 @@ export default function DemandCalendar({
         <div className="min-w-0">
           <h2 className="text-[22px] font-semibold tracking-tight">Demand calendar</h2>
           <p className="mt-1 text-[14px] leading-relaxed text-[#44474d]">
-            {first && last ? (
-              <>
-                <span className="tabular-nums">{nights.length}</span> forecast nights, {fmtDay(first)} to {fmtDay(last)}.
-                Today is <span className="font-medium text-[#1a1b20]">{fmtDowDayYear(today)}</span>, property time.
-              </>
-            ) : (
-              'No forecast nights yet.'
-            )}
+            {first && last ? `${fmtDay(first)} to ${fmtDay(last)}` : 'No forecast nights yet.'}
           </p>
         </div>
 
@@ -545,9 +538,8 @@ export default function DemandCalendar({
       )}
 
       <p className="border-t border-[#0b1c30]/[0.06] px-6 py-4 text-[13px] leading-relaxed text-[#44474d] md:px-8">
-        Each night shows its suggested standard rate; pick one for its events. Faded dates are outside the forecast
-        window. Today is ringed in cobalt{todayOutside ? ', and it sits outside the window, so the collector is behind' : ''}.
-        Dates are the property&apos;s local day ({timeZone}), not your browser&apos;s.
+        Rates are for the Standard room.
+        {todayOutside && ' Today is outside the forecast, so the collector is behind.'}
       </p>
     </Bezel>
   );

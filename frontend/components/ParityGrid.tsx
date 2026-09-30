@@ -117,8 +117,7 @@ export default function ParityGrid({ parity }: { parity: RateCheck[] }) {
 
       <p className="mt-5 text-pretty text-[14.5px] leading-relaxed">{summary}</p>
       <p className="mt-auto pt-4 text-[13px] leading-relaxed text-[#44474d]">
-        Checked for tomorrow night: the cheapest public rate per channel, as Google sees it. Booking.com and Expedia.com
-        only. Other resellers are collected but not reported here.
+        Tomorrow night&apos;s cheapest public rate on each channel.
       </p>
     </Bezel>
   );

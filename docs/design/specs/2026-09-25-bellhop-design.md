@@ -25,7 +25,7 @@ which is the data any future forecast would need.
 - It never implies it can change a price anywhere.
 - A future deterministic forecast (built on the bookings collected here) plugs in as one
   more context input; Bellhop then narrates it. Out of scope now.
-- Answering questions beyond the site's data is a later phase, out of scope now.
+- Answering questions beyond the site's data: see [2026-09-30-bellhop-outside-questions-design.md](2026-09-30-bellhop-outside-questions-design.md).
 
 ## Decisions
 
