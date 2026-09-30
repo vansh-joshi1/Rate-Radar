@@ -13,7 +13,6 @@ export default async function BellhopPage() {
   return (
     <div className="font-geist text-[#1a1b20] antialiased">
       <Bellhop
-        propertyName={property.name}
         totalRooms={property.totalRooms}
         tonight={tonight}
         web={!(await demoSid())}

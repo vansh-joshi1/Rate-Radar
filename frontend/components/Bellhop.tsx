@@ -7,13 +7,9 @@ import { DIVIDER, FIELD, FIELD_BAD, FOCUS, MONO_LABEL, NUMBER, StatusLine } from
 import type { ChatTurn, Grounding } from '../../backend/lib/bellhop/gemini';
 import type { BookingReading } from '../../backend/lib/bookings';
 
-const STARTERS = [
-  'Why is tonight priced where it is?',
-  'What events are coming up this week?',
-  'What if I charged $10 less tonight?',
-];
+const STARTERS = ['Why is tonight this price?', "What's on this week?", 'What if I charge $10 less?'];
 /** Needs web search, so not offered in the demo. */
-const GUEST_STARTER = 'Where can a guest get dinner nearby?';
+const GUEST_STARTER = 'Where can a guest eat nearby?';
 
 const TEXT = 'text-pretty text-[15px] leading-relaxed text-[#1a1b20]';
 const LINK = `rounded-full font-medium text-[#44474d] underline decoration-[#0b1c30]/20 underline-offset-4 transition-colors duration-150 hover:text-[#1a1b20] ${FOCUS}`;
@@ -29,12 +25,10 @@ type Turn = ChatTurn & { failed?: boolean; grounding?: Grounding };
  * model, which reads it back from the store on the next question.
  */
 export default function Bellhop({
-  propertyName,
   totalRooms,
   tonight,
   web,
 }: {
-  propertyName: string;
   totalRooms: number;
   tonight: BookingReading | null;
   /** Web search is on (a real hotel, not the demo). */
@@ -106,22 +100,13 @@ export default function Bellhop({
         <div className="min-w-0">
           <h1 className="text-[22px] font-semibold leading-tight tracking-tight">Bellhop</h1>
           <p className="text-pretty text-[14px] leading-relaxed text-[#44474d]">
-            Questions about {propertyName}&apos;s rates, answered from Rate Radar&apos;s own numbers.
+            {web ? 'Rates, what-ifs and guest questions.' : 'Rates and what-ifs.'} It never changes a price.
           </p>
         </div>
       </header>
       <div className={DIVIDER} />
 
       <ol className="flex flex-1 flex-col gap-6 px-6 py-6 md:px-8" aria-live="polite">
-        <li>
-          <BellhopSays>
-            <p className={TEXT}>
-              Ask me about any night Rate Radar has priced. I answer from the same numbers and reasoning as the
-              calendar, and I never change a price.
-              {web && ' I can also look up what guests ask at the desk, like where to eat or how far the arena is.'}
-            </p>
-          </BellhopSays>
-        </li>
         <RoomsBooked totalRooms={totalRooms} initial={tonight} />
 
         {turns.length === 0 && (
@@ -153,7 +138,7 @@ export default function Bellhop({
                   </>
                 ) : (
                   <p className="text-[15px] text-[#44474d]" role="status">
-                    Looking at the numbers
+                    Looking into it
                   </p>
                 )}
               </BellhopSays>
@@ -186,7 +171,7 @@ export default function Bellhop({
         {/* Every question is sent to Google. */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <p id="bellhop-privacy" className="text-[13px] leading-relaxed text-[#44474d]">
-            Don&apos;t include guest names or personal details.
+            Leave out guest names and details.
           </p>
           {turns.length > 0 && !busy && (
             <button type="button" onClick={() => setTurns([])} className={`text-[13px] ${LINK}`}>
@@ -258,7 +243,7 @@ function RoomsBooked({ totalRooms, initial }: { totalRooms: number; initial: Boo
                 required
                 autoFocus={!!latest}
                 aria-invalid={!!error}
-                aria-describedby={error ? 'bellhop-rooms-error' : 'bellhop-rooms-help'}
+                aria-describedby={error ? 'bellhop-rooms-error' : undefined}
                 className={`${FIELD} ${NUMBER} h-9 !w-28 tabular-nums ${error ? FIELD_BAD : ''}`}
                 value={rooms}
                 onChange={(e) => setRooms(e.target.value)}
@@ -282,9 +267,6 @@ function RoomsBooked({ totalRooms, initial }: { totalRooms: number; initial: Boo
             <div id="bellhop-rooms-error">
               <StatusLine status={error ? { tone: 'bad', text: error } : null} />
             </div>
-            <p id="bellhop-rooms-help" className="text-[13px] leading-relaxed text-[#44474d]">
-              Saved with the time, so later answers show how tonight filled.
-            </p>
           </form>
         </BellhopSays>
       </li>
@@ -420,13 +402,12 @@ function BellhopAvatar({ size = 'sm', typing = false }: { size?: 'sm' | 'lg'; ty
 }
 
 
-/** One thing Bellhop says: the avatar, its name, and the content beside them. */
+/** One thing Bellhop says: the avatar and the content beside it. The avatar is the byline. */
 function BellhopSays({ children, typing = false }: { children: ReactNode; typing?: boolean }) {
   return (
     <div className="flex max-w-[70ch] gap-3">
       <BellhopAvatar typing={typing} />
-      <div className="min-w-0 flex-1 pt-1">
-        <span className={`mb-1 block ${MONO_LABEL}`}>Bellhop</span>
+      <div className="min-w-0 flex-1 pt-1.5">
         {children}
       </div>
     </div>
