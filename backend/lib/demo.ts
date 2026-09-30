@@ -1,6 +1,7 @@
 import type { NightRecommendation, ScoredEvent, Snapshot } from './scoring/types';
 import { DEMO_PROPERTY } from './properties';
 import { noonUTC, todayIn, toIsoDate as iso } from './date';
+import { compsetMedian } from './scoring/compset';
 
 /**
  * The demo world — sample data shaped exactly like a live Snapshot, used when
@@ -62,6 +63,24 @@ export const DEMO_VENUE_COORDS: Record<string, { lat: number; lng: number }> = {
   'fairmount field': { lat: 44.6215, lng: -123.9385 },
   'mill creek park': { lat: 44.615, lng: -124.03 },
 };
+
+/**
+ * The competitors the demo watches, and what each charges on each night of the
+ * collector's five-night horizon: tonight's concert, tomorrow's rivalry game, a
+ * quiet night, the Harbor Days holiday, another quiet night. The sandbox's
+ * watchlist is seeded from these names, so every watched hotel has a price.
+ * The rest of DEMO_NEARBY_HOTELS is left for a visitor to add.
+ */
+const DEMO_COMPSET: Record<string, number[]> = {
+  'Gull Point Motor Inn': [79, 94, 74, 92, 75],
+  'Tidewater Inn & Suites': [84, 101, 79, 99, 80],
+  'Pinecrest Inn Kestrel Bay': [92, 111, 86, 108, 87],
+  'Rivermark Lodge': [95, 115, 89, 111, 90],
+  'Lantern Bay Suites': [109, 131, 102, 128, 104],
+  'The Anchorage Hotel': [119, 143, 111, 139, 112],
+  'Cormorant Court Hotel': [124, 149, 116, 145, 118],
+};
+export const DEMO_WATCHED = Object.keys(DEMO_COMPSET);
 
 export function demoVenueCoords(venue: string): { lat: number; lng: number } | null {
   return DEMO_VENUE_COORDS[venue.trim().toLowerCase()] ?? null;
@@ -210,29 +229,10 @@ export function demoSnapshot(): Snapshot {
       { source: 'Super.com', status: 'ok', price: 76, fetchedAt: ago(2) },
       { source: 'Traveluro', status: 'ok', price: 84, fetchedAt: ago(2) },
     ],
-    compsets: [
-      {
-        date: iso(day(0)),
-        median: 95,
-        entries: [
-          { name: 'Gull Point Motor Inn', price: 79 },
-          { name: 'Tidewater Inn & Suites', price: 84 },
-          { name: 'Pinecrest Inn Kestrel Bay', price: 92 },
-          { name: 'Rivermark Lodge', price: 95 },
-          { name: 'Lantern Bay Suites', price: 109 },
-          { name: 'The Anchorage Hotel', price: 119 },
-          { name: 'Cormorant Court Hotel', price: 124 },
-        ],
-      },
-      {
-        date: iso(day(1)),
-        median: 104.5,
-        entries: [
-          { name: 'Gull Point Motor Inn', price: 94 },
-          { name: 'Rivermark Lodge', price: 115 },
-        ],
-      },
-    ],
+    compsets: [0, 1, 2, 3, 4].map((n) => {
+      const entries = Object.entries(DEMO_COMPSET).map(([name, prices]) => ({ name, price: prices[n] }));
+      return { date: iso(day(n)), median: compsetMedian(entries), entries };
+    }),
     sources: [
       { source: 'events-api', status: 'ok', fetchedAt: ago(2) },
       { source: 'college-sports', status: 'ok', fetchedAt: ago(2) },

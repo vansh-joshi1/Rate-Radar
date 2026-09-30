@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { getStore, PrefixedStore, storeFor, type Store } from '../store';
 import { DEFAULT_PROPERTY_ID, DEMO_PROPERTY, getProperty, loadProperty, propKey, type Property } from '../properties';
 import { DEMO_COOKIE, DEMO_TTL_SECONDS, demoPrefix, isValidDemoSid } from './session';
-import { demoSnapshot, DEMO_NEARBY_HOTELS } from '../demo';
+import { demoSnapshot, DEMO_NEARBY_HOTELS, DEMO_WATCHED } from '../demo';
 import { watchlistKey, type WatchlistHotel } from '../watchlist';
 
 /**
@@ -99,7 +99,8 @@ export async function seedDemoSandbox(store: Store): Promise<void> {
   // default: that default is config/compset.json, the real property's actual
   // competitor whitelist, which would put a dozen real hotel brands into a
   // market that is otherwise entirely invented.
-  const watchlist: WatchlistHotel[] = DEMO_NEARBY_HOTELS.map((h) => ({
+  // Only the hotels the fixture prices; the rest of the directory is there to add.
+  const watchlist: WatchlistHotel[] = DEMO_NEARBY_HOTELS.filter((h) => DEMO_WATCHED.includes(h.name)).map((h) => ({
     name: h.name,
     lat: h.lat,
     lng: h.lng,

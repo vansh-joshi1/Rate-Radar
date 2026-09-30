@@ -10,6 +10,8 @@ import { seedDemoSandbox } from '../lib/demo/context';
 import { isTrackedChannel } from '../lib/parity/channels';
 import { loadWatchlist } from '../lib/watchlist';
 import defaultCompset from '../config/compset.json';
+import { HORIZON_DAYS } from '../collector/budget';
+import { compsetMedian } from '../lib/scoring/compset';
 
 function freshStore(): FileStore {
   return new FileStore(join(mkdtempSync(join(tmpdir(), 'rr-demo-')), 'store.json'));
@@ -122,11 +124,30 @@ describe('the demo world is invented', () => {
     await seedDemoSandbox(sandbox);
 
     const list = await loadWatchlist(sandbox, DEMO_PROPERTY.id);
-    expect(list.length).toBe(DEMO_NEARBY_HOTELS.length);
-    expect(list.map((h) => h.name).sort()).toEqual(DEMO_NEARBY_HOTELS.map((h) => h.name).sort());
+    const directory = DEMO_NEARBY_HOTELS.map((h) => h.name);
+    for (const h of list) expect(directory).toContain(h.name);
     for (const real of defaultCompset.competitors as string[]) {
       expect(list.map((h) => h.name)).not.toContain(real);
     }
+  });
+
+  /**
+   * Regression: the watchlist was seeded with the whole add-a-competitor
+   * directory, three of which the fixture never priced, and the fixture
+   * priced two nights (the second for two hotels). The grid read half empty.
+   */
+  it('prices every watched hotel on every night of the horizon, and leaves hotels to add', async () => {
+    const sandbox = new PrefixedStore(freshStore(), demoPrefix(SID));
+    await seedDemoSandbox(sandbox);
+    const watched = (await loadWatchlist(sandbox, DEMO_PROPERTY.id)).map((h) => h.name).sort();
+    const { compsets = [] } = demoSnapshot();
+
+    expect(compsets).toHaveLength(HORIZON_DAYS);
+    for (const night of compsets) {
+      expect(night.entries.map((e) => e.name).sort()).toEqual(watched);
+      expect(night.median).toBe(compsetMedian(night.entries));
+    }
+    expect(DEMO_NEARBY_HOTELS.length).toBeGreaterThan(watched.length);
   });
 });
 
