@@ -101,8 +101,8 @@ seeded sandbox.
 npm test
 ```
 
-168 tests across 19 files: scoring, alert rules, parsers against captured HTML
-fixtures, auth and role guards, store behaviour, and demo isolation.
+281 tests across 31 files: scoring, alert rules, parsers against captured HTML
+fixtures, auth and role guards, store behaviour, demo isolation, and plan limits.
 
 ```bash
 npm run collect -- --dry-run --skip-rates
@@ -113,8 +113,8 @@ Runs the collector without POSTing and without spending any metered searches.
 ## Stack
 
 Next.js 15 (App Router) · TypeScript · Tailwind · Supabase Auth (magic link + shared
-password) · Supabase Postgres · Vitest · GitHub Actions · Vercel. ~13,400 lines of
-TypeScript, 18 API routes.
+password) · Supabase Postgres · Vitest · GitHub Actions · Vercel. ~21,700 lines of
+TypeScript, 30 API routes.
 
 ## Repo layout
 
