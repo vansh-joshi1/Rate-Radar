@@ -45,7 +45,7 @@ describe('source-health trigger (3 consecutive failed runs)', () => {
   it('recovery after an alert fires a healthy-again notice', () => {
     const health: Record<string, SourceHealth> = { calendars: { consecutiveFails: 5, alerting: true } };
     const r = evaluateAlerts(base({ sources: [okSource('calendars')], sourceHealth: health }));
-    expect(r.triggers.map((t) => t.line).join(' ')).toMatch(/healthy again after 5 failed runs/);
+    expect(r.triggers.map((t) => t.line).join(' ')).toMatch(/working again after 5 failed runs/);
     expect(r.newSourceHealth.calendars.alerting).toBeUndefined();
     expect(r.newSourceHealth.calendars.consecutiveFails).toBe(0);
   });
@@ -63,7 +63,7 @@ describe('source-health trigger (3 consecutive failed runs)', () => {
     ];
     const health: Record<string, SourceHealth> = { 'rate:expedia': { consecutiveFails: 2 } };
     const r = evaluateAlerts(base({ parity, sourceHealth: health }));
-    expect(r.triggers.some((t) => t.line.includes('"rate:expedia"') && t.line.includes('3 consecutive'))).toBe(true);
+    expect(r.triggers.some((t) => t.line === 'expedia rates failing, 3 runs in a row')).toBe(true);
     expect(r.newSourceHealth['rate:booking'].consecutiveFails).toBe(0);
   });
 

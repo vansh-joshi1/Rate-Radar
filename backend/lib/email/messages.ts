@@ -1,6 +1,6 @@
 import type { Trigger } from '../alerts/rules';
 import { fmtDowDay } from '../date';
-import { emailShell, linkFallback, section } from './template';
+import { emailShell, linkFallback, nightsTable, section } from './template';
 import { PLAN_LIMITS } from '../billing/plans';
 
 export interface EmailMessage {
@@ -11,43 +11,55 @@ export interface EmailMessage {
 
 const FOOTER_TEXT = 'Rate Radar recommends. It never changes a price anywhere. A human decides.';
 
+/** Shown under the nights, in this order. Data problems go in the small print instead. */
+const ALSO: Trigger['type'][] = ['parity-gap', 'new-event', 'weather', 'holiday'];
+const DATA: Trigger['type'][] = ['source-health', 'search-budget'];
+
 /**
- * Trigger lines are written once in lib/alerts/rules.ts and shown in more than
- * one place. In email they read better as one sentence, so the spaced dash the
- * rules use as a joiner becomes a comma here.
+ * The biggest rate move leads the subject and the headline; each night that moved is
+ * one row; everything else is one short line. An event that drove a night's move is
+ * shown in that night's row, not again underneath.
  */
-function tidy(line: string): string {
-  return line.replace(/\s+—\s+/g, ', ');
-}
-
-const GROUPS: { title: string; types: Trigger['type'][]; accent?: 'warn' }[] = [
-  { title: 'Rate changes', types: ['rate-change'] },
-  { title: 'New demand', types: ['new-event'] },
-  { title: 'Holidays ahead', types: ['holiday'] },
-  { title: 'Weather', types: ['weather'] },
-  { title: 'Rate parity', types: ['parity-gap'] },
-  { title: 'Data health', types: ['source-health', 'search-budget'], accent: 'warn' },
-];
-
 export function alertDigestEmail(triggers: Trigger[], dashboardUrl?: string): EmailMessage {
   const base = dashboardUrl?.replace(/\/$/, '') || undefined;
-  const n = triggers.length;
-  const firstDate = triggers.find((t) => t.date)?.date;
-  const subject = `Rate Radar: ${n} update${n === 1 ? '' : 's'}${firstDate ? ` · ${fmtDowDay(firstDate)}` : ''}`;
 
-  const groups = GROUPS.map((g) => ({ ...g, lines: triggers.filter((t) => g.types.includes(t.type)).map((t) => tidy(t.line)) }))
-    .filter((g) => g.lines.length > 0);
+  const moves = triggers
+    .filter((t): t is Trigger & { date: string; rate: NonNullable<Trigger['rate']> } => Boolean(t.rate && t.date))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const moveOn = new Map(moves.map((t) => [t.date, t]));
+  const folded = (t: Trigger) =>
+    t.type === 'new-event' && t.date !== undefined && moveOn.has(t.date) && (moveOn.get(t.date)!.rate.driver ?? t.event) === t.event;
+  const rows = moves.map((t) => ({
+    date: fmtDowDay(t.date),
+    now: t.rate.now,
+    was: t.rate.was,
+    why: t.rate.driver ?? triggers.find((e) => folded(e) && e.date === t.date)?.event,
+  }));
+  const also = ALSO.flatMap((type) => triggers.filter((t) => t.type === type && !folded(t))).map((t) => t.line);
+  const data = triggers.filter((t) => DATA.includes(t.type)).map((t) => t.line);
 
-  const heading = n === 1 ? 'One thing worth a look' : `${n} things worth a look`;
-  const intro =
-    'These changed since the last alert. Nothing has been changed on any channel; the reasoning for each night is on the dashboard.';
+  const top = moves.reduce<(typeof moves)[number] | undefined>(
+    (best, t) => (!best || Math.abs(t.rate.now - t.rate.was) > Math.abs(best.rate.now - best.rate.was) ? t : best),
+    undefined,
+  );
+  const heading = top
+    ? `${top.rate.now > top.rate.was ? 'Raise' : 'Lower'} ${fmtDowDay(top.date)} to $${top.rate.now}`
+    : also[0] ?? `Data problem: ${data[0]}`;
+  // Without a rate move the first "also" line is the headline, so it is not listed twice.
+  const listed = top ? also : also.slice(1);
+  const others = rows.length + also.length + data.length - 1;
+  const lead = top
+    ? `${fmtDowDay(top.date)} → $${top.rate.now} (${top.rate.now > top.rate.was ? '+' : '-'}$${Math.abs(top.rate.now - top.rate.was)})`
+    : heading;
+  const subject = `${lead}${others > 0 ? ` · ${others} more` : ''}`;
+  const dataNote = data.length ? `Data: ${data.join(' · ')}` : undefined;
 
   const html = emailShell({
-    preheader: tidy(triggers[0]?.line ?? heading),
+    preheader: [...listed, ...data].join(' · ') || heading,
     heading,
-    intro,
-    bodyHtml: groups.map((g) => section(g.title, g.lines, g.accent)).join(''),
+    bodyHtml: (rows.length ? nightsTable(rows) : '') + (listed.length ? section('Also', listed) : ''),
     cta: base ? { label: 'Open dashboard', href: `${base}/overview` } : undefined,
+    note: dataNote,
     reason: 'You get this when an alert rule fires, never on a quiet run. Thresholds are in Settings > Notifications.',
     origin: base,
   });
@@ -55,8 +67,11 @@ export function alertDigestEmail(triggers: Trigger[], dashboardUrl?: string): Em
   const text = [
     heading,
     '',
-    ...groups.flatMap((g) => [g.title, ...g.lines.map((l) => `  • ${l}`), '']),
-    base ? `Full reasoning: ${base}/overview` : '',
+    ...rows.map((r) => `${r.date}  $${r.now}  was $${r.was}${r.why ? `  ${r.why}` : ''}`),
+    ...(rows.length ? [''] : []),
+    ...(listed.length ? ['Also', ...listed.map((l) => `  • ${l}`), ''] : []),
+    base ? `Dashboard: ${base}/overview` : '',
+    ...(dataNote ? ['', dataNote] : []),
     '',
     FOOTER_TEXT,
   ].join('\n');

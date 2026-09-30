@@ -50,7 +50,7 @@ export interface EmailShellInput {
   preheader: string;
   heading: string;
   /** Plain sentence(s) under the heading; escaped here. */
-  intro: string;
+  intro?: string;
   /** Optional status chip above the heading, e.g. "Needs attention". */
   status?: { label: string; tone: 'warn' | 'ok' };
   /** Pre-built, already-escaped HTML for the panel body. */
@@ -135,7 +135,7 @@ export function emailShell(input: EmailShellInput): string {
           <tr><td class="rr-pad" style="padding:36px 36px 34px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr><td>${status}<h1 class="rr-title" style="margin:0;font-family:${FONT};font-size:24px;font-weight:600;line-height:32px;letter-spacing:-0.01em;color:${C.navy};">${esc(input.heading)}</h1></td></tr>
-              <tr><td class="rr-text" style="padding:10px 0 0;font-family:${FONT};font-size:15px;line-height:24px;color:${C.muted};">${esc(input.intro)}</td></tr>
+              ${input.intro ? `<tr><td class="rr-text" style="padding:10px 0 0;font-family:${FONT};font-size:15px;line-height:24px;color:${C.muted};">${esc(input.intro)}</td></tr>` : ''}
               ${input.bodyHtml ? `<tr><td style="padding:24px 0 0;">${input.bodyHtml}</td></tr>` : ''}
               ${cta}
               ${input.afterCtaHtml ? `<tr><td style="padding:28px 0 0;">${input.afterCtaHtml}</td></tr>` : ''}
@@ -188,4 +188,20 @@ export function linkFallback(url: string): string {
   <tr><td class="rr-muted" style="font-family:${FONT};font-size:13px;line-height:20px;color:${C.muted};padding:0 0 6px;">If the button doesn't work, paste this into your browser:</td></tr>
   <tr><td class="rr-well rr-text" style="background:${C.well};border-radius:10px;padding:10px 12px;font-family:'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:12px;line-height:18px;color:${C.ink};word-break:break-all;">${esc(url)}</td></tr>
 </table>`;
+}
+
+/** One row per night whose rate moved: date, the new rate in bold, what it was, and why. */
+export function nightsTable(rows: { date: string; now: number; was: number; why?: string }[]): string {
+  const cell = `font-family:${FONT};font-size:14px;line-height:22px;padding:10px 0;border-bottom:1px solid ${C.hairline};vertical-align:baseline;`;
+  const trs = rows
+    .map(
+      (r) => `<tr>
+        <td class="rr-muted" style="${cell}color:${C.muted};white-space:nowrap;padding-right:14px;">${esc(r.date)}</td>
+        <td class="rr-title" style="${cell}color:${C.navy};font-size:18px;font-weight:700;white-space:nowrap;padding-right:10px;">$${r.now}</td>
+        <td class="rr-muted" style="${cell}color:${C.muted};white-space:nowrap;padding-right:14px;">was $${r.was}</td>
+        <td class="rr-text" style="${cell}color:${C.ink};width:100%;">${r.why ? esc(r.why) : ''}</td>
+      </tr>`
+    )
+    .join('');
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">${trs}</table>`;
 }
