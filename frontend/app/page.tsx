@@ -544,9 +544,9 @@ export default function Landing() {
             <a href="#how-it-works" className={textLink}>
               How it works
             </a>
-            <Link href="/demo" className={textLink}>
+            <a href="/demo" className={textLink}>
               Open the demo
-            </Link>
+            </a>
             <Link href="/login" className={textLink}>
               Sign in
             </Link>

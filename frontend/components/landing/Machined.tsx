@@ -108,7 +108,9 @@ export function PillCta({
   );
   // A same-page hash goes through a plain anchor: the browser fires `hashchange`
   // for it, which the router's pushState does not (SettingsView listens for it).
-  return href.startsWith('#') ? (
+  // /demo routes set or clear the demo cookie: a <Link> prefetch would run them
+  // unclicked (Exit demo, visible in the banner, logged visitors out of the demo).
+  return href.startsWith('#') || href.startsWith('/demo') ? (
     <a href={href} className={pillClass(variant, size)}>
       {inner}
     </a>

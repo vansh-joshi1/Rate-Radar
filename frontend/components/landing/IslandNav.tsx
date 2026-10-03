@@ -123,7 +123,7 @@ export default function IslandNav() {
             <Link href="/login" className={`rounded-full text-[13px] font-medium text-[#44474d] transition-colors hover:text-[#0b1c30] ${ring}`}>
               Sign in
             </Link>
-            <Link
+            <a
               href="/demo"
               className={`group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-[#085ac0] py-1 pl-4 pr-1 text-[13px] font-medium text-white transition-[transform,background-color] duration-500 ${SPRING} hover:bg-[#06489c] active:scale-[0.98] active:duration-100 motion-reduce:transition-none ${ring}`}
             >
@@ -134,7 +134,7 @@ export default function IslandNav() {
               >
                 <ArrowUpRightIcon weight="light" className="h-3.5 w-3.5" />
               </span>
-            </Link>
+            </a>
           </div>
 
           {/* hamburger: two lines that rotate about their shared centre into an X */}
@@ -196,7 +196,7 @@ export default function IslandNav() {
           }`}
           style={{ transitionDelay: open ? '320ms' : '0ms' }}
         >
-          <Link
+          <a
             href="/demo"
             onClick={() => setOpen(false)}
             className={`group inline-flex items-center gap-3 rounded-full bg-[#085ac0] py-1.5 pl-6 pr-1.5 text-[15px] font-medium text-white transition-transform duration-500 ${SPRING} active:scale-[0.98] active:duration-100 motion-reduce:transition-none ${ring}`}
@@ -205,7 +205,7 @@ export default function IslandNav() {
             <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15">
               <ArrowUpRightIcon weight="light" className="h-4 w-4" />
             </span>
-          </Link>
+          </a>
         </div>
       </div>
     </>
