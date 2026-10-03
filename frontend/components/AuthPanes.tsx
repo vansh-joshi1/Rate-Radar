@@ -513,9 +513,9 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
 
                 <p className="mt-8 text-[14px] text-[#44474d]">
                   Just looking?{' '}
-                  <Link href="/demo" className={textLink}>
+                  <a href="/demo" className={textLink}>
                     Open the demo
-                  </Link>
+                  </a>
                 </p>
               </div>
             </div>
