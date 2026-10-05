@@ -202,6 +202,7 @@ describe('no browser-facing handler touches the production store directly', () =
     'api/auth/password/route.ts': 'sign-in to the REAL property: its throttle is global so a demo cookie cannot reset it',
     'api/auth/sign-in/route.ts': 'sign-in to the REAL property: must read the real Team list and access requests',
     'api/onboarding/request/route.ts': 'access requests must land where the team reviews them, not in a sandbox that expires',
+    'api/contact/route.ts': 'only a per-IP throttle counter, global so a demo cookie cannot reset it',
     'api/members/route.ts': 'branches to the sandbox first; the global Team list (filtered to the caller\'s hotel) is the non-demo path',
     '(app)/admin/page.tsx': 'OWNER_EMAIL only, and a demo visitor gets the sample portfolio before any store read',
     'api/admin/approve/route.ts': 'OWNER_EMAIL only, refuses demo callers; approving writes the global property list and Team list',

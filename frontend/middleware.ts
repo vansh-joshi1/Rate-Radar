@@ -59,10 +59,10 @@ export const config = {
     // our sign-in endpoints (api/auth) and the magic-link landing (auth/confirm),
     // ingest (bearer-token protected), the v1 API
     // (its own key auth), health, watchlist (self-auths: session OR ingest
-    // secret — the collector calls it), onboarding discovery (public, capped), the Stripe webhook (signature-verified),
+    // secret — the collector calls it), onboarding discovery (public, capped), the Enterprise contact form (public, throttled), the Stripe webhook (signature-verified),
     // static assets, and the favicon + link
     // preview image, which unfurlers and signed-out tabs must be able to fetch,
     // the landing page's demo video, the PostHog proxy (signed-out pages send events too), and the email mark, which inboxes fetch with no session
-    '/((?!$|privacy|terms|cookies|refunds|demo|login|signup|onboarding|auth/confirm|api/auth|api/ingest|api/v1|api/health|api/watchlist|api/cron|api/onboarding|api/billing/webhook|_next/static|_next/image|favicon.ico|icon.svg|opengraph-image|email-mark.png|robots.txt|originid.global.js|rate-radar-demo.mp4|ingest).*)',
+    '/((?!$|privacy|terms|cookies|refunds|demo|login|signup|onboarding|auth/confirm|api/auth|api/ingest|api/v1|api/health|api/watchlist|api/cron|api/onboarding|api/contact|api/billing/webhook|_next/static|_next/image|favicon.ico|icon.svg|opengraph-image|email-mark.png|robots.txt|originid.global.js|rate-radar-demo.mp4|ingest).*)',
   ],
 };
