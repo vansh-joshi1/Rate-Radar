@@ -6,7 +6,7 @@ import { GoogleGenAI, type GenerateContentResponse, type GroundingMetadata } fro
  */
 const MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
 
-/** Appended whenever the model answers without search: in the demo, or when the grounded attempt failed. */
+/** Appended whenever the model answers without search: when the grounded attempt failed. */
 const SEARCH_OFF =
   'WEB SEARCH IS OFF for this answer. For anything outside the DATA, say you cannot look that up right now.';
 
