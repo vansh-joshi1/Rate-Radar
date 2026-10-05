@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { alertDigestEmail, pipelineStaleEmail, signInEmail } from '../lib/email/messages';
+import { alertDigestEmail, pipelineStaleEmail, salesInquiryEmail, signInEmail } from '../lib/email/messages';
 import type { Trigger } from '../lib/alerts/rules';
 
 const TRIGGERS: Trigger[] = [
@@ -75,5 +75,16 @@ describe('signInEmail', () => {
     expect(msg.html).toContain('https://rr.example.com/email-mark.png');
     expect(msg.html).toContain('token=a&amp;email=');
     expect(msg.text).toContain(url);
+  });
+});
+
+describe('salesInquiryEmail', () => {
+  it('carries every field and escapes what the visitor typed', () => {
+    const msg = salesInquiryEmail({ name: 'Jo <b>Lee</b>', email: 'jo@hotels.com', phone: '555 010 2030', properties: 12, details: 'Uses <script>x</script>' });
+    expect(msg.subject).toContain('12 properties');
+    expect(msg.html).toContain('Jo &lt;b&gt;Lee&lt;/b&gt;');
+    expect(msg.html).not.toContain('<script>');
+    expect(msg.text).toContain('Phone: 555 010 2030');
+    expect(msg.text).toContain('Email: jo@hotels.com');
   });
 });

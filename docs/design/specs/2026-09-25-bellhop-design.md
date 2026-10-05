@@ -36,7 +36,7 @@ which is the data any future forecast would need.
 | Who can use it | Every signed-in role (`viewer`+) can ask and can record tonight's bookings. |
 | Rooms-booked capture | Bellhop asks about **tonight** (on-the-books count), not last night. Recorded through a structured number input inside the chat, never parsed by the model. |
 | Chat history | Browser session only. Not stored server-side. |
-| Demo sandbox | Bellhop works, capped at 10 questions per sandbox per day. |
+| Demo sandbox | Every question gets a fixed reply pointing to the Growth plan; no model call. |
 
 ## Components
 

@@ -1,6 +1,6 @@
 import type { Trigger } from '../alerts/rules';
 import { fmtDowDay } from '../date';
-import { emailShell, linkFallback, nightsTable, section } from './template';
+import { emailShell, esc, linkFallback, nightsTable, section } from './template';
 import { PLAN_LIMITS } from '../billing/plans';
 
 export interface EmailMessage {
@@ -167,5 +167,30 @@ export function compsTrimmedEmail(opts: { hotelName: string; removed: string[]; 
   });
 
   const text = [heading, '', intro, '', 'No longer tracked:', ...opts.removed.map((n) => `  • ${n}`), '', FOOTER_TEXT].join('\n');
+  return { subject, html, text };
+}
+
+/** Sent to OWNER_EMAIL when someone asks about Enterprise from the pricing section. */
+export function salesInquiryEmail(opts: { name: string; email: string; phone: string; properties: number; details: string }): EmailMessage {
+  const subject = `Enterprise inquiry: ${opts.name}, ${opts.properties} properties`;
+  const heading = 'New Enterprise inquiry';
+  const rows: [string, string][] = [
+    ['Name', opts.name],
+    ['Email', opts.email],
+    ['Phone', opts.phone],
+    ['Properties', String(opts.properties)],
+  ];
+
+  const html = emailShell({
+    preheader: `${opts.name} asked about Enterprise for ${opts.properties} properties.`,
+    heading,
+    intro: 'Someone filled in the Contact us form on the pricing section.',
+    bodyHtml:
+      rows.map(([k, v]) => `<p style="margin:0 0 8px"><strong>${k}:</strong> ${esc(v)}</p>`).join('') +
+      (opts.details ? `<p style="margin:16px 0 0;white-space:pre-wrap">${esc(opts.details)}</p>` : ''),
+    reason: 'You are the Rate Radar owner, so Enterprise inquiries come to you.',
+  });
+
+  const text = [heading, '', ...rows.map(([k, v]) => `${k}: ${v}`), '', opts.details, '', FOOTER_TEXT].join('\n');
   return { subject, html, text };
 }

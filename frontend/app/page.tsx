@@ -9,6 +9,7 @@ import { Bezel, Eyebrow, PillCta } from '../components/landing/Machined';
 import { DOT_FIELD, Grain, HeroRadar } from '../components/landing/Backdrop';
 import HonestStates from '../components/landing/HonestStates';
 import WatchDemo from '../components/landing/WatchDemo';
+import ContactSales from '../components/landing/ContactSales';
 import { SampleReading, type Reason } from '../components/landing/SampleReading';
 import { PLAN_PRICES } from '../../backend/lib/billing/plans';
 import { LEGAL_PAGES } from '../components/Legal';
@@ -179,7 +180,8 @@ const PLANS: {
   badge?: string;
   includes?: string;
   facts: string[];
-  cta: { href: string; label: string };
+  /** Absent: the card opens the Contact us form instead of linking. */
+  cta?: { href: string; label: string };
   primary?: boolean;
 }[] = [
   {
@@ -232,7 +234,6 @@ const PLANS: {
       'Dedicated onboarding and quarterly pricing strategy reviews',
       'SLA and phone support',
     ],
-    cta: { href: '/signup', label: 'Contact us' },
   },
 ];
 
@@ -476,9 +477,13 @@ export default function Landing() {
                       ))}
                     </ul>
                     <div className="mt-8">
-                      <PillCta href={plan.cta.href} variant={plan.primary ? 'primary' : 'secondary'}>
-                        {plan.cta.label}
-                      </PillCta>
+                      {plan.cta ? (
+                        <PillCta href={plan.cta.href} variant={plan.primary ? 'primary' : 'secondary'}>
+                          {plan.cta.label}
+                        </PillCta>
+                      ) : (
+                        <ContactSales />
+                      )}
                     </div>
                   </Bezel>
                 </Reveal>

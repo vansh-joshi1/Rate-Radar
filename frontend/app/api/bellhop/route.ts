@@ -16,7 +16,8 @@ const Body = z.object({
     .refine((m) => m[m.length - 1].role === 'user'),
 });
 
-const DEMO_DAILY_QUESTIONS = 10;
+const DEMO_REPLY =
+  "Sorry, Bellhop can't be fully used in the demo. On the Growth plan it answers questions about your own hotel: why tonight's rate moved, what's on in town, and what your guests are asking about.";
 const UNAVAILABLE = 'Bellhop is unavailable right now. The recommendations on the dashboard are unaffected.';
 
 /** Every question spends model quota, so it is a POST behind the lowest role, not an open endpoint. */
@@ -29,19 +30,13 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'invalid' }, { status: 400 });
 
+  // The demo answers every question with an upgrade note, as a normal reply, so it spends no model quota.
+  if (await demoSid()) {
+    return new Response(DEMO_REPLY, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
+  }
+
   const store = await requestStore();
   const property = await requestProperty();
-  const demo = !!(await demoSid());
-
-  // The public demo spends the real key's quota. The counter lives in the
-  // sandbox (it expires with it), so this is per sandbox per day.
-  // ponytail: a visitor who clears cookies gets a fresh sandbox and a fresh 10; add an IP limit if the demo gets abused.
-  if (demo && (await store.incr('bellhop:asked', 86400)) > DEMO_DAILY_QUESTIONS) {
-    return NextResponse.json(
-      { error: `The demo allows ${DEMO_DAILY_QUESTIONS} Bellhop questions a day. The real product has no such cap.` },
-      { status: 429 }
-    );
-  }
 
   const dates = ((await store.get<string[]>('history:dates')) ?? []).slice(0, 30);
   const [snapshot, actuals, bookings, history] = await Promise.all([
@@ -61,8 +56,7 @@ export async function POST(req: Request) {
 
   let parts: AsyncGenerator<ReplyPart>;
   try {
-    // No search in the demo: its town is invented, and it would spend the shared monthly search quota.
-    parts = await streamReply(system, parsed.data.messages, { search: !demo });
+    parts = await streamReply(system, parsed.data.messages, { search: true });
   } catch (err) {
     console.error('bellhop:', err);
     return NextResponse.json({ error: UNAVAILABLE }, { status: 503 });
