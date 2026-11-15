@@ -6,8 +6,7 @@ import { XIcon } from '@phosphor-icons/react/dist/ssr/X';
 import { PillButton } from './landing/Machined';
 
 /**
- * Consent for the optional trackers: PostHog analytics (every page) and
- * OriginID visitor identification (landing only). Neither loads until the
+ * Consent for the optional tracker, PostHog analytics. It does not load until the
  * visitor accepts. Sign-in and demo cookies are strictly necessary and need no
  * consent (app/cookies). A Global Privacy Control signal counts as a
  * decline, so those visitors are never asked.
@@ -19,7 +18,7 @@ const KEY = 'rr-consent';
 const EVENT = 'rr-consent';
 
 /** Nothing optional configured, nothing to ask about. */
-const TRACKERS_ON = Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN || process.env.NEXT_PUBLIC_ORIGINID_PUBLIC_KEY);
+const TRACKERS_ON = Boolean(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN);
 
 /** Private windows can refuse storage; the choice then lasts for this page load. */
 let memory: Consent | null = null;
@@ -39,11 +38,11 @@ export function setConsent(c: Consent) {
   try {
     localStorage.setItem(KEY, c);
   } catch {}
-  // Declining also deletes what the trackers left, including cookies set before
-  // this choice existed. ponytail: host-only cookies, which is what both set on our domain today.
+  // Declining also deletes what PostHog left, including cookies set before
+  // this choice existed. ponytail: host-only cookies, which is what PostHog sets on our domain today.
   if (c === 'denied')
     for (const name of document.cookie.split('; ').map((kv) => kv.split('=')[0]))
-      if (name.startsWith('ph_') || name === 'originid_vid') document.cookie = `${name}=; Max-Age=0; path=/`;
+      if (name.startsWith('ph_')) document.cookie = `${name}=; Max-Age=0; path=/`;
   window.dispatchEvent(new Event(EVENT));
 }
 

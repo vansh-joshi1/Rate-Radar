@@ -63,6 +63,6 @@ export const config = {
     // static assets, and the favicon + link
     // preview image, which unfurlers and signed-out tabs must be able to fetch,
     // the landing page's demo video, the PostHog proxy (signed-out pages send events too), and the email mark, which inboxes fetch with no session
-    '/((?!$|privacy|terms|cookies|refunds|demo|login|signup|onboarding|auth/confirm|api/auth|api/ingest|api/v1|api/health|api/watchlist|api/cron|api/onboarding|api/contact|api/billing/webhook|_next/static|_next/image|favicon.ico|icon.svg|opengraph-image|email-mark.png|robots.txt|originid.global.js|rate-radar-demo.mp4|ingest).*)',
+    '/((?!$|privacy|terms|cookies|refunds|demo|login|signup|onboarding|auth/confirm|api/auth|api/ingest|api/v1|api/health|api/watchlist|api/cron|api/onboarding|api/contact|api/billing/webhook|_next/static|_next/image|favicon.ico|icon.svg|opengraph-image|email-mark.png|robots.txt|rate-radar-demo.mp4|ingest).*)',
   ],
 };

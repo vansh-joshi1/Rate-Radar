@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import OriginIdInit from '../components/OriginIdInit';
 import { RadarIcon } from '../components/RadarMark';
 import RadarDemo from '../components/RadarDemo';
 import HowItWorks from '../components/HowItWorks';
@@ -255,8 +254,6 @@ export default function Landing() {
       style={DOT_FIELD}
     >
       <Grain />
-      {/* Visitor identification runs on the public landing page only, once the visitor accepts. */}
-      <OriginIdInit />
 
       {/* Skip link: first stop for keyboard users, invisible until focused.
           z-50 sits over the island nav (z-40), its phone menu (z-30) and the

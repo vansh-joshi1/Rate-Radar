@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'Privacy Policy' };
  */
 export default function Privacy() {
   return (
-    <LegalPage title="Privacy Policy" updated="30 September 2026">
+    <LegalPage title="Privacy Policy" updated="5 October 2026">
       <p>
         Rate Radar recommends nightly room rates to hotels. This page says what personal information we collect, why,
         who else handles it, and what you can ask us to do with it. Questions go to <ContactEmail />.
@@ -42,8 +42,7 @@ export default function Privacy() {
         <li>
           <strong>Only if you accept analytics:</strong> the pages you visit, the features you use (for example
           &ldquo;baseline rates saved&rdquo;), errors, and your browser and device type. When you are signed in these are
-          linked to your account ID and role, never to your name or email. On the front page only, a visitor-identification
-          service also reads browser and device characteristics to recognise returning visitors. See the{' '}
+          linked to your account ID and role, never to your name or email. See the{' '}
           <Link href="/cookies" className={textLink}>
             Cookie Policy
           </Link>
@@ -82,7 +81,6 @@ export default function Privacy() {
         <li><strong>SerpApi</strong>: looks up your hotel on Google Hotels during onboarding, using its name and address.</li>
         <li><strong>OpenStreetMap services</strong> (Photon, Nominatim): place hotel names and addresses on the map.</li>
         <li><strong>PostHog</strong>: product analytics, only with your consent.</li>
-        <li><strong>DigitalFingerprint (OriginID)</strong>: visitor identification on the front page, only with your consent.</li>
       </ul>
       <p>
         Some of these providers are in the United States, so your information may be processed there. We may also disclose

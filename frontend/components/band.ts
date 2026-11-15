@@ -3,11 +3,14 @@
  * and the dashboard, so a Major night reads the same everywhere.
  */
 
+import { tierOf } from '../../backend/lib/scoring/score';
+
 export type Band = 'major' | 'meaningful' | 'minor' | 'quiet';
 
-/** Demand band, on the scoring engine's own thresholds (backend/lib/scoring/score.ts → tierOf). */
+/** Demand band: the scoring engine's tier, with "too small" shown as quiet. */
 export function band(score: number): Band {
-  return score >= 70 ? 'major' : score >= 40 ? 'meaningful' : score >= 15 ? 'minor' : 'quiet';
+  const t = tierOf(score);
+  return t === 'too-small' ? 'quiet' : t;
 }
 
 /* Demand chips on a light surface, DESIGN.md → Chips. */
