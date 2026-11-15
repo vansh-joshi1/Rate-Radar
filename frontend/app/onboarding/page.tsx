@@ -11,6 +11,7 @@ import { PASSWORD_RULES, passwordOk } from '../../../backend/lib/password';
 import { PLAN_LIMITS } from '../../../backend/lib/billing/plans';
 import { Bezel, PillButton, SPRING, textLink } from '../../components/landing/Machined';
 import { AuthFrame, FIELD, LABEL, PasswordToggle, ring } from '../../components/AuthPanes';
+import { send } from '../../lib/send';
 
 import { SuggestList, useSuggest } from '../../components/suggest/Suggest';
 import { assignTiers, nearbyHotels, type Candidate, type Nearby, type RoomTier, type RoomType } from '../../../backend/lib/onboarding';
@@ -71,14 +72,9 @@ const HEADINGS = [
 ];
 
 async function discover<T>(body: object): Promise<T> {
-  const res = await fetch('/api/onboarding/discover', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error ?? 'upstream');
-  return json as T;
+  const { ok, data } = await send('/api/onboarding/discover', body);
+  if (!ok) throw new Error(data.error ?? 'upstream');
+  return data as T;
 }
 
 const pill = (on: boolean) =>
@@ -414,39 +410,35 @@ export default function Onboarding() {
   async function requestAccess() {
     setSubmitError('');
     setSubmitting(true);
-    const res = await fetch('/api/onboarding/request', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: a.email,
-        password: a.password,
-        phone: a.phone,
-        name: a.name,
-        address: a.address,
-        rooms: a.rooms,
-        type: a.type,
-        token: manual ? null : chosen?.token ?? null,
-        channels: manual ? [] : channels.filter((c) => c.on).map((c) => c.source),
-        listings: manual
-          ? { direct: a.direct, expedia: a.expedia, booking: a.booking }
-          : { direct: '', expedia: '', booking: '' },
-        roomTypes: rooms.map((r) => ({ name: r.name, tier: r.tier, price: r.price })),
-        competitors: a.competitors,
-        terms,
-      }),
-    }).catch(() => null);
+    const { ok, status } = await send('/api/onboarding/request', {
+      email: a.email,
+      password: a.password,
+      phone: a.phone,
+      name: a.name,
+      address: a.address,
+      rooms: a.rooms,
+      type: a.type,
+      token: manual ? null : chosen?.token ?? null,
+      channels: manual ? [] : channels.filter((c) => c.on).map((c) => c.source),
+      listings: manual
+        ? { direct: a.direct, expedia: a.expedia, booking: a.booking }
+        : { direct: '', expedia: '', booking: '' },
+      roomTypes: rooms.map((r) => ({ name: r.name, tier: r.tier, price: r.price })),
+      competitors: a.competitors,
+      terms,
+    });
     setSubmitting(false);
-    if (res?.ok) {
+    if (ok) {
       track('onboarding_completed');
       sent.current?.showModal();
       return;
     }
     setSubmitError(
-      res?.status === 409
+      status === 409
         ? 'That email already has an account. Sign in instead, or use a different email.'
-        : res?.status === 429
+        : status === 429
           ? 'Too many requests from here. Try again in an hour.'
-          : res?.status === 400
+          : status === 400
             ? 'Something in the form is not right. Check each step and try again.'
             : 'We could not send your request right now. Try again in a minute.',
     );

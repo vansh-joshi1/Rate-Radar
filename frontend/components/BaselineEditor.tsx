@@ -6,6 +6,7 @@ import { ReadOnlyNote, useCanWrite } from './RoleProvider';
 import { CheckIcon } from '@phosphor-icons/react/dist/ssr/Check';
 import { PillButton } from './landing/Machined';
 import { FIELD, FIELD_BAD, NUMBER, MONO_LABEL, StatusLine, Footnote } from './settings/parts';
+import { send } from '../lib/send';
 
 /*
  * Baseline rates: one row per room tier, one column per day class, each cell a
@@ -80,32 +81,28 @@ export default function BaselineEditor({ propertyId }: { propertyId: string }) {
     if (!config || problems.size > 0) return;
     setSaving(true);
     setStatus(null);
-    try {
-      const res = await fetch(`/api/rates-config?propertyId=${propertyId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config }),
+    const res = await send(`/api/rates-config?propertyId=${propertyId}`, { config }, 'PUT');
+    if (!res.ok) {
+      setStatus({
+        tone: 'bad',
+        text: res.status
+          ? (res.data.error ?? 'The baselines were not saved. Try again.')
+          : 'Could not reach the server, so nothing was saved. Check your connection.',
       });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setStatus({ tone: 'bad', text: json.error ?? 'The baselines were not saved. Try again.' });
-        return;
-      }
-      setSaved(JSON.stringify(config));
-      // Apply immediately: rescore the last collected data with the new baselines.
-      setStatus({ tone: 'muted', text: 'Saved. Applying to the latest data.' });
-      const re = await fetch(`/api/recompute?propertyId=${propertyId}`, { method: 'POST' }).catch(() => null);
-      setStatus(
-        re?.ok
-          ? { tone: 'ok', text: 'Saved. Recommendations are updated.' }
-          : { tone: 'ok', text: 'Saved. It applies from the next collection run.' },
-      );
-      track('baseline_rates_saved', { tier_count: config.tiers.length, recommendations_recomputed: !!re?.ok });
-    } catch {
-      setStatus({ tone: 'bad', text: 'Could not reach the server, so nothing was saved. Check your connection.' });
-    } finally {
       setSaving(false);
+      return;
     }
+    setSaved(JSON.stringify(config));
+    // Apply immediately: rescore the last collected data with the new baselines.
+    setStatus({ tone: 'muted', text: 'Saved. Applying to the latest data.' });
+    const re = await send(`/api/recompute?propertyId=${propertyId}`);
+    setStatus(
+      re.ok
+        ? { tone: 'ok', text: 'Saved. Recommendations are updated.' }
+        : { tone: 'ok', text: 'Saved. It applies from the next collection run.' },
+    );
+    track('baseline_rates_saved', { tier_count: config.tiers.length, recommendations_recomputed: re.ok });
+    setSaving(false);
   }
 
   if (loadFailed) {

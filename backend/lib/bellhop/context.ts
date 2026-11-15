@@ -3,7 +3,7 @@ import type { HistoryRecord, Snapshot } from '../scoring/types';
 import type { Bookings } from '../bookings';
 import { fmtDowDay, fmtWeekdayLong } from '../date';
 
-export interface BellhopContext {
+interface BellhopContext {
   property: Property;
   /** Tonight, YYYY-MM-DD in the property's timezone. */
   today: string;

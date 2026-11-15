@@ -31,7 +31,7 @@ import type { RateCheck } from '../scoring/types';
  * family. Substring matching would also claim any reseller whose name merely
  * contains "booking".
  */
-export const TRACKED_CHANNELS: readonly string[] = ['booking', 'expedia'];
+const TRACKED_CHANNELS: readonly string[] = ['booking', 'expedia'];
 
 /** Stated in the v1 API's provenance block so a consumer can tell 3-of-26 from 3-of-3. */
 export const CHANNEL_POLICY = 'direct + booking.com + expedia.com';

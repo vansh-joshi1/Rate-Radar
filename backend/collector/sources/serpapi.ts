@@ -24,7 +24,7 @@ export interface SerpProperty {
 }
 
 /** One booking channel for a property, from the property-details response. */
-export interface SerpFeaturedPrice {
+interface SerpFeaturedPrice {
   source?: string;
   official?: boolean;
   rate_per_night?: { lowest?: string; extracted_lowest?: number };
@@ -40,7 +40,7 @@ export interface SerpPropertyDetails {
   prices?: SerpFeaturedPrice[];
 }
 
-export interface SerpQuota {
+interface SerpQuota {
   remaining: number;
   usedThisMonth: number;
   perMonth?: number;

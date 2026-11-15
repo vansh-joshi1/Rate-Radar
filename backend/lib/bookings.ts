@@ -19,7 +19,7 @@ export type Bookings = Record<string, BookingReading[]>;
 /** Unscoped, like `actuals` beside it; `requestStore()` namespaces it for the demo. */
 export const BOOKINGS_KEY = 'bookings';
 
-export type RecordResult =
+type RecordResult =
   | { ok: true; date: string; reading: BookingReading }
   | { ok: false; error: string };
 

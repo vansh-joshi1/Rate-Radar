@@ -24,7 +24,7 @@ export function mapRoomToTier(room: string, rules: RoomTierRule[]): string | und
   return undefined;
 }
 
-export interface SerpApiPropertyConfig {
+interface SerpApiPropertyConfig {
   /** Location query for the compset search — 'hotels near <address>' works best. */
   query: string;
   /** Our own property's google_hotels property_token; stable, resolved once. */

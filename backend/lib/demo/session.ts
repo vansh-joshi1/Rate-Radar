@@ -21,10 +21,6 @@ export function isValidDemoSid(sid: string | undefined | null): sid is string {
   return typeof sid === 'string' && SID.test(sid);
 }
 
-export function newDemoSid(): string {
-  return crypto.randomUUID();
-}
-
 /**
  * Key namespace for one sandbox. Every demo read and write goes through a
  * store wrapped in this prefix, which is why a demo visitor can exercise the

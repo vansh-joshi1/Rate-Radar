@@ -7,6 +7,7 @@ import { Bezel, PillButton } from './landing/Machined';
 import { StatusLine } from './settings/parts';
 import { PLAN_LIMITS, PLAN_PRICES } from '../../backend/lib/billing/plans';
 import { useCanWrite } from './RoleProvider';
+import { send } from '../lib/send';
 
 /**
  * Billing controls. Both go to Stripe-hosted pages: Checkout to subscribe, the
@@ -19,14 +20,9 @@ type Status = { tone: 'ok' | 'bad' | 'muted'; text: string } | null;
 /** POST to a billing route and follow the Stripe URL it returns. */
 async function goToStripe(path: string, body: unknown, setStatus: (s: Status) => void) {
   setStatus({ tone: 'muted', text: 'Opening Stripe…' });
-  try {
-    const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
-    const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string; message?: string };
-    if (data.url) return window.location.assign(data.url);
-    setStatus({ tone: 'bad', text: data.message ?? data.error ?? "Couldn't reach Stripe, try again." });
-  } catch {
-    setStatus({ tone: 'bad', text: "Couldn't reach Stripe, try again." });
-  }
+  const { data } = await send(path, body);
+  if (data.url) return window.location.assign(data.url);
+  setStatus({ tone: 'bad', text: data.message ?? data.error ?? "Couldn't reach Stripe, try again." });
 }
 
 export function PlanPicker() {

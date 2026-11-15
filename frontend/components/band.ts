@@ -32,3 +32,7 @@ export const KIND_LABEL: Record<string, string> = {
 
 /** Miles for display: one decimal under ten, whole miles after. */
 export const fmtMi = (n: number) => (n < 10 ? n.toFixed(1) : Math.round(n).toString());
+
+/** Dollar figures, and a difference with its sign (zero reads $0). */
+export const money = (n: number) => `$${n}`;
+export const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '-' : ''}$${Math.abs(n)}`;

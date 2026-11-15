@@ -17,7 +17,7 @@ import { demoSid, requestProperty, requestStore } from '../demo/context';
  * string. The one caller allowed to name a property is the collector, which
  * holds INGEST_SECRET and collects for every hotel.
  */
-export type PropertyRequest =
+type PropertyRequest =
   | { ok: true; propertyId: string; property: Property; store: Store }
   | { ok: false; response: NextResponse };
 

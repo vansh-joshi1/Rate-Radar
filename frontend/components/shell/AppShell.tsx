@@ -12,11 +12,8 @@ import { GearSixIcon } from '@phosphor-icons/react/dist/ssr/GearSix';
 import { SignOutIcon } from '@phosphor-icons/react/dist/ssr/SignOut';
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr/Buildings';
 import { RadarIcon } from '../RadarMark';
-import { PillCta, SPRING } from '../landing/Machined';
+import { PillCta, SPRING, focusRing as FOCUS } from '../landing/Machined';
 import { resetAnalytics } from '../PostHogInit';
-
-const FOCUS =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f9ff]';
 
 /*
  * App chrome on the Machined Instrument language (DESIGN.md): a 280px rail

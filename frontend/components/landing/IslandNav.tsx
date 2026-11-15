@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowUpRight';
 import { RadarIcon } from '../RadarMark';
 import { SPRING } from './Machined';
+import { FOCUS as ring } from '../settings/parts';
 
 /*
  * The landing's floating island nav: a glass pill detached from the top edge.
@@ -26,9 +27,6 @@ const LINKS = [
   { id: 'how-it-works', label: 'How it works' },
   { id: 'pricing', label: 'Pricing' },
 ];
-
-const ring =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
 export default function IslandNav() {
   const [current, setCurrent] = useState<string | null>(null);

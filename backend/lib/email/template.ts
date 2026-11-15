@@ -11,7 +11,7 @@
  *  - every string that came from a feed is escaped before it lands in markup
  */
 
-export const EMAIL_COLORS = {
+const EMAIL_COLORS = {
   cobalt: '#085AC0',
   cobaltWash: '#E5EEFF',
   navy: '#0B1C30',
@@ -40,12 +40,12 @@ export function esc(s: string): string {
 }
 
 /** Absolute URL of the PNG mark, or null when there is no public origin to host it. */
-export function markUrl(origin: string | undefined | null): string | null {
+function markUrl(origin: string | undefined | null): string | null {
   if (!origin) return null;
   return `${origin.replace(/\/$/, '')}/email-mark.png`;
 }
 
-export interface EmailShellInput {
+interface EmailShellInput {
   /** Inbox preview text, shown after the subject line. */
   preheader: string;
   heading: string;

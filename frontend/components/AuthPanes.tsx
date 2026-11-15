@@ -8,10 +8,11 @@ import { EyeIcon } from '@phosphor-icons/react/dist/ssr/Eye';
 import { EyeSlashIcon } from '@phosphor-icons/react/dist/ssr/EyeSlash';
 import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { RadarIcon } from './RadarMark';
-import { Bezel, PillButton, SPRING, textLink } from './landing/Machined';
+import { Bezel, PillButton, SPRING, focusRing, textLink } from './landing/Machined';
 import { DOT_FIELD, Grain, HeroRadar } from './landing/Backdrop';
 import { SampleReading, type Reason } from './landing/SampleReading';
 import { LegalLinks } from './Legal';
+import { send } from '../lib/send';
 
 /*
  * Sign in and Get access, on the marketing surface's machined parts
@@ -57,8 +58,7 @@ function readNextParam(): string {
   return next && /^\/(?![/\\])[^\x00-\x20\x7f]*$/.test(next) ? next : '';
 }
 
-export const ring =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8f9ff]';
+export const ring = focusRing;
 
 export const FIELD = `h-12 w-full rounded-full bg-white px-5 text-[15px] text-[#1a1b20] shadow-[inset_0_1px_2px_rgba(11,28,48,0.06)] ring-1 ring-[#0b1c30]/[0.12] outline-none transition-shadow duration-300 placeholder:text-[#6b6e75] hover:ring-[#0b1c30]/20 focus:ring-2 focus:ring-[#085ac0]/60 disabled:opacity-60 aria-[invalid=true]:ring-[#b45309]/60`;
 
@@ -308,20 +308,16 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
     setLinkError('');
     setLinkBusy(true);
     const form = new FormData(e.currentTarget);
-    const res = await fetch('/api/auth/sign-in', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: form.get('email'), password: form.get('password') }),
-    }).catch(() => null);
-    if (res?.ok) {
+    const res = await send('/api/auth/sign-in', { email: form.get('email'), password: form.get('password') });
+    if (res.ok) {
       track('password_sign_in_succeeded');
       window.location.href = redirectTo;
       return;
     }
-    const { error } = ((await res?.json().catch(() => null)) ?? {}) as { error?: string };
+    const { error } = res.data as { error?: string };
     setLinkBusy(false);
     setLinkError(
-      res?.status === 429
+      res.status === 429
         ? 'Too many attempts. Wait a minute and try again.'
         : error === 'pending'
           ? 'We are still reviewing your property. You will get an email once it is verified.'
@@ -337,9 +333,9 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
     setLinkError('');
     setLinkBusy(true);
     const email = input.value;
-    const res = await fetch('/api/auth/magic-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, next: redirectTo }) }).catch(() => null);
+    const res = await send('/api/auth/magic-link', { email, next: redirectTo });
     setLinkBusy(false);
-    if (!res?.ok) {
+    if (!res.ok) {
       setLinkError('We could not send a link to that address. If you are not on the team yet, ask the owner for an invite.');
     } else {
       track('magic_link_requested');
@@ -352,9 +348,9 @@ export default function AuthPanes({ initialTab }: { initialTab: Tab }) {
     setPwBusy(true);
     setPwError('');
     const password = new FormData(e.currentTarget).get('password');
-    const res = await fetch('/api/auth/password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) }).catch(() => null);
-    if (!res?.ok) {
-      setPwError(res?.status === 429 ? 'Too many attempts. Wait a minute and try again.' : 'That password is not right. Check with the property owner.');
+    const res = await send('/api/auth/password', { password });
+    if (!res.ok) {
+      setPwError(res.status === 429 ? 'Too many attempts. Wait a minute and try again.' : 'That password is not right. Check with the property owner.');
       setPwBusy(false);
     } else {
       track('shared_password_sign_in_succeeded');

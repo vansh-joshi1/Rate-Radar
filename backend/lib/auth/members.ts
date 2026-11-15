@@ -23,7 +23,7 @@ export interface Member {
   propertyId?: string;
 }
 
-export interface Membership {
+interface Membership {
   role: Role;
   propertyId: string;
 }

@@ -9,7 +9,7 @@ export function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: n
   return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
 }
 
-export interface Located {
+interface Located {
   lat: number;
   lng: number;
   /** "Franklin, TN" */

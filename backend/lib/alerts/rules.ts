@@ -38,15 +38,15 @@ export interface AlertInput {
   fingerprints: Record<string, string>;
   seenEventIds: string[];
   now: string;
-  /** Collector source results this run (optional — omitted by older callers/tests). */
-  sources?: Pick<SourceResult, 'source' | 'status'>[];
+  /** Collector source results this run. */
+  sources: Pick<SourceResult, 'source' | 'status'>[];
   /** Prior consecutive-failure state, keyed by source name. */
-  sourceHealth?: Record<string, SourceHealth>;
+  sourceHealth: Record<string, SourceHealth>;
   /** Metered-search balance reported by the collector (see collector/budget.ts). */
   searchBudget?: { remaining: number; renewalDate?: string };
 }
 
-export interface AlertResult {
+interface AlertResult {
   triggers: Trigger[];
   newFingerprints: Record<string, string>;
   newEmailedState: Record<string, number>;
@@ -170,12 +170,12 @@ export function evaluateAlerts(input: AlertInput): AlertResult {
   // "ok" even when every individual check came back needs-manual-check.
   const newSourceHealth: Record<string, SourceHealth> = {};
   const observations: { name: string; ok: boolean }[] = [
-    ...(input.sources ?? []).map((s) => ({ name: s.source, ok: s.status === 'ok' })),
+    ...input.sources.map((s) => ({ name: s.source, ok: s.status === 'ok' })),
     ...parity.map((p) => ({ name: `rate:${p.source}`, ok: p.status === 'ok' })),
   ];
   for (const { name, ok } of observations) {
     const label = name.startsWith('rate:') ? `${name.slice(5)} rates` : name;
-    const prev = input.sourceHealth?.[name] ?? { consecutiveFails: 0 };
+    const prev = input.sourceHealth[name] ?? { consecutiveFails: 0 };
     if (ok) {
       if (prev.alerting) {
         fire(`source-recovered:${name}`, {

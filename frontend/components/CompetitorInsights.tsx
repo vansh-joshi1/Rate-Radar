@@ -16,6 +16,7 @@ import { useCanWrite } from './RoleProvider';
 import { Bezel, PillButton, SPRING } from './landing/Machined';
 import { fmtDay, fmtDow } from '../../backend/lib/date';
 import { DIVIDER, FOCUS, MONO_LABEL, StatusChip } from './settings/parts';
+import { money, signed } from './band';
 import { SuggestList, useSuggest } from './suggest/Suggest';
 
 /*
@@ -76,8 +77,6 @@ interface Props {
   parity?: ReactNode;
 }
 
-const money = (n: number) => `$${n}`;
-const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '-' : ''}$${Math.abs(n)}`;
 const ORDINAL = new Intl.PluralRules('en-US', { type: 'ordinal' });
 const SUFFIX: Record<string, string> = { one: 'st', two: 'nd', few: 'rd', other: 'th' };
 const ordinal = (n: number) => `${n}${SUFFIX[ORDINAL.select(n)]}`;

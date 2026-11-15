@@ -1,4 +1,4 @@
-export type SourceStatus = 'ok' | 'failed' | 'awaiting-key';
+type SourceStatus = 'ok' | 'failed' | 'awaiting-key';
 
 export interface SourceResult {
   source: string;

@@ -13,6 +13,8 @@ function base(overrides: Partial<AlertInput> = {}): AlertInput {
     fingerprints: {},
     seenEventIds: [],
     now: NOW,
+    sources: [],
+    sourceHealth: {},
     ...overrides,
   };
 }
