@@ -36,7 +36,7 @@ describe('post-sign-in redirect', () => {
   it('keeps same-site paths and drops everything else', async () => {
     const { safeNext } = await import('../auth');
     expect(safeNext('/calendar?d=1')).toBe('/calendar?d=1');
-    for (const bad of ['//evil.com', '/\\evil.com', 'https://evil.com', 'evil', undefined, 42]) {
+    for (const bad of ['//evil.com', '/\\evil.com', '/\t/evil.com', '/\n/evil.com', 'https://evil.com', 'evil', undefined, 42]) {
       expect(safeNext(bad)).toBe('/overview');
     }
   });

@@ -336,11 +336,14 @@ export default function EventMap({
     let sweepAnim: Animation | null = null;
     (async () => {
       try {
-        const [{ default: maplibregl }, { style, font }] = await Promise.all([
+        const [maplibregl, { style, font }] = await Promise.all([
           import('maplibre-gl'),
           themedStyle(hidePlaceNames),
         ]);
         if (cancelled || !el.current) return;
+        // maplibre 6 looks for its worker next to its own bundle, which Next
+        // renames into a chunk; point it at the worker file webpack emits.
+        maplibregl.setWorkerUrl(new URL('maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url).href);
 
         const map = new maplibregl.Map({
           container: el.current,
@@ -488,7 +491,7 @@ export default function EventMap({
     if (!ready || !map) return;
     let cancelled = false;
     (async () => {
-      const { default: maplibregl } = await import('maplibre-gl');
+      const maplibregl = await import('maplibre-gl');
       if (cancelled) return;
       const want = new Set(blips.map((b) => b.key));
       const next: Record<string, HTMLElement> = {};

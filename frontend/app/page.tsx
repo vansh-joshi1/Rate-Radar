@@ -211,11 +211,9 @@ const PLANS: {
     includes: 'Everything in Starter, plus:',
     facts: [
       'Up to 5 properties, under $50 per property at 5',
-      '4× daily rate refreshes',
       'Up to 8 comps per property',
       'Bellhop AI: “ask why” on every recommendation',
       '12-month rate history for the full seasonality view',
-      'Multi-property rollup dashboard',
       'Priority support',
     ],
     cta: { href: '/signup', label: 'Start free trial' },
@@ -223,12 +221,10 @@ const PLANS: {
   },
   {
     name: 'Enterprise',
-    audience: 'For portfolios that need rollup reporting and IT sign-off.',
+    audience: 'For portfolios and management companies with six or more properties.',
     includes: 'Everything in Growth, plus:',
     facts: [
       '6+ properties, portfolios and management companies',
-      'PMS integrations (HotelKey, Cloudbeds, Mews): occupancy and ADR flow in automatically',
-      'SSO/SAML through Auth0 Organizations',
       'Custom comp sets and market-level benchmarking',
       'Dedicated onboarding and quarterly pricing strategy reviews',
       'SLA and phone support',

@@ -52,8 +52,9 @@ type Sent = { email: string } | null;
 function readNextParam(): string {
   if (typeof window === 'undefined') return '';
   const next = new URLSearchParams(window.location.search).get('next');
-  // Browsers read `/\host` as `//host`, so both slashes must be refused.
-  return next && /^\/(?![/\\])/.test(next) ? next : '';
+  // Browsers read `/\host` as `//host`, so both slashes must be refused. They
+  // also strip tabs/newlines, so `/<tab>/host` is refused too (any control char or space).
+  return next && /^\/(?![/\\])[^\x00-\x20\x7f]*$/.test(next) ? next : '';
 }
 
 export const ring =

@@ -193,5 +193,5 @@ export async function revokeUser(email: string): Promise<void> {
 
 /** Only same-site paths survive as a post-sign-in destination — no open redirects. */
 export function safeNext(next: unknown): string {
-  return typeof next === 'string' && /^\/(?![/\\])/.test(next) ? next : '/overview';
+  return typeof next === 'string' && /^\/(?![/\\])[^\x00-\x20\x7f]*$/.test(next) ? next : '/overview';
 }
