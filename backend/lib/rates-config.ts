@@ -13,7 +13,7 @@ export interface DayRange {
   max: number;
 }
 
-export interface TierBaseline {
+interface TierBaseline {
   id: string;
   label: string;
   weekday: DayRange;
@@ -28,7 +28,7 @@ export interface RatesConfig {
 
 export const DEFAULT_RATES_CONFIG = defaultRates as RatesConfig;
 
-export const ratesConfigKey = (propertyId: string) => `prop:${propertyId}:rates-config`;
+const ratesConfigKey = (propertyId: string) => `prop:${propertyId}:rates-config`;
 
 export async function loadRatesConfig(store: Store, propertyId: string): Promise<RatesConfig> {
   const existing = await store.get<RatesConfig>(ratesConfigKey(propertyId));

@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import type { Store } from '../store';
 
 /**
@@ -41,7 +41,7 @@ function extractKey(req: Request): string | null {
   return req.headers.get('x-api-key')?.trim() ?? null;
 }
 
-export type AuthResult =
+type AuthResult =
   | { ok: true; record: ApiKeyRecord; keyHash: string }
   | { ok: false; status: number; code: string; message: string };
 
@@ -53,8 +53,6 @@ export async function authenticate(req: Request, store: Store): Promise<AuthResu
   const keyHash = hashApiKey(key);
   const record = await store.hget<ApiKeyRecord>(APIKEYS_HASH, keyHash);
   if (!record) {
-    // Constant-time compare against itself keeps timing uniform on the miss path.
-    timingSafeEqual(Buffer.from(keyHash), Buffer.from(keyHash));
     return { ok: false, status: 401, code: 'invalid_key', message: 'Unknown API key.' };
   }
 

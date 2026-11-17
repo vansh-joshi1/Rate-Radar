@@ -58,7 +58,7 @@ export const DEMO_NEARBY_HOTELS = [
  * Kestrel Bay, the stadium is inland, the 5K is down the road. The map hides
  * real place names in the demo so none of this is pinned to a real town.
  */
-export const DEMO_VENUE_COORDS: Record<string, { lat: number; lng: number }> = {
+const DEMO_VENUE_COORDS: Record<string, { lat: number; lng: number }> = {
   'harborview amphitheater': { lat: 44.8095, lng: -124.062 },
   'fairmount field': { lat: 44.6215, lng: -123.9385 },
   'mill creek park': { lat: 44.615, lng: -124.03 },

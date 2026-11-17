@@ -21,7 +21,7 @@ export function upliftPct(score: number, cfg: RatesConfig = DEFAULT_RATES_CONFIG
 }
 
 /** Three day classes per owner guidance: Mon-Thu weekday, Sunday its own middle tier, Fri-Sat weekend. */
-export function dayClass(date: string): 'weekday' | 'sunday' | 'weekend' {
+function dayClass(date: string): 'weekday' | 'sunday' | 'weekend' {
   const dow = dayOfWeek(date);
   if (dow === 5 || dow === 6) return 'weekend';
   if (dow === 0) return 'sunday';

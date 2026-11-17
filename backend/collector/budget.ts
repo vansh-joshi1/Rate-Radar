@@ -30,7 +30,7 @@
  * schedule, so nothing is stored between runs and it tests without a store.
  */
 
-export type BudgetTier = 'full' | 'reduced' | 'minimal';
+type BudgetTier = 'full' | 'reduced' | 'minimal';
 
 export interface SearchPlan {
   tier: BudgetTier;
@@ -75,8 +75,8 @@ const LADDER: Record<BudgetTier, { dates: number; details: boolean }[]> = {
   ],
 };
 
-/** Daily cost of each tier's ladder — what the tier thresholds are measured against. */
-const DAILY_COST: Record<BudgetTier, number> = { full: 7, reduced: 4, minimal: 1 };
+/** Daily cost of a tier's ladder (dates + one details call) — what the tier thresholds are measured against. */
+const dailyCost = (t: BudgetTier) => LADDER[t].reduce((n, s) => n + s.dates + Number(s.details), 0);
 
 function chicagoParts(now: Date): { hour: number; year: number; month: number; day: number } {
   const fmt = new Intl.DateTimeFormat('en-CA', {
@@ -141,8 +141,8 @@ function slotIndex(hour: number): number {
 
 function tierFor(remaining: number, daysLeft: number): BudgetTier {
   const budget = remaining - RESERVE;
-  if (budget >= daysLeft * DAILY_COST.full) return 'full';
-  if (budget >= daysLeft * DAILY_COST.reduced) return 'reduced';
+  if (budget >= daysLeft * dailyCost('full')) return 'full';
+  if (budget >= daysLeft * dailyCost('reduced')) return 'reduced';
   return 'minimal';
 }
 

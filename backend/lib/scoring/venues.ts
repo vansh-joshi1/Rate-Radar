@@ -1,7 +1,7 @@
 import type { RawEvent } from './types';
 
 /** Known venue capacities (lowercase key matching). */
-export const VENUE_CAPACITY: Record<string, number> = {
+const VENUE_CAPACITY: Record<string, number> = {
   'nissan stadium': 69000,
   'geodis park': 30000,
   'bridgestone arena': 17100,

@@ -24,7 +24,7 @@ function priceOf(rate?: { extracted_lowest?: number }): number | undefined {
   return typeof rate?.extracted_lowest === 'number' ? rate.extracted_lowest : undefined;
 }
 
-export interface CompsetMapping {
+interface CompsetMapping {
   entries: CompsetEntry[];
   /** Watchlist name → property_token, for ingest to persist so later runs match exactly. */
   resolvedTokens: Record<string, string>;

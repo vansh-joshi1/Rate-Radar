@@ -5,6 +5,7 @@ import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr/CheckCircle';
 import { XIcon } from '@phosphor-icons/react/dist/ssr/X';
 import { Bezel, PillButton } from './Machined';
 import { FIELD, LABEL } from '../AuthPanes';
+import { send } from '../../lib/send';
 
 /*
  * Enterprise "Contact us": opens a native <dialog> (focus trap, Escape, top
@@ -12,33 +13,25 @@ import { FIELD, LABEL } from '../AuthPanes';
  * through /api/contact. A click on the backdrop closes it.
  */
 
-const empty = { name: '', email: '', phone: '', properties: '', details: '' };
-
 export default function ContactSales() {
   const dialog = useRef<HTMLDialogElement>(null);
-  const [form, setForm] = useState(empty);
+  // Who to thank once it sends. The form itself is uncontrolled: it unmounts
+  // on "sent", so reopening after a send starts from empty fields.
+  const [form, setForm] = useState({ name: '', email: '' });
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const set = (k: keyof typeof empty) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const open = () => {
-    if (state === 'sent') {
-      setForm(empty);
-      setState('idle');
-    }
+    if (state === 'sent') setState('idle');
     dialog.current?.showModal();
   };
   const close = () => dialog.current?.close();
 
-  async function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const fields = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
+    setForm({ name: fields.name, email: fields.email });
     setState('sending');
-    const res = await fetch('/api/contact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    }).catch(() => null);
-    setState(res?.ok ? 'sent' : 'error');
+    setState((await send('/api/contact', fields)).ok ? 'sent' : 'error');
   }
 
   return (
@@ -88,19 +81,19 @@ export default function ContactSales() {
               <div className="mt-6 space-y-4">
                 <div>
                   <label className={LABEL} htmlFor="contact-name">Name</label>
-                  <input id="contact-name" required minLength={2} maxLength={120} autoComplete="name" value={form.name} onChange={set('name')} className={FIELD} />
+                  <input id="contact-name" required minLength={2} maxLength={120} autoComplete="name" name="name" className={FIELD} />
                 </div>
                 <div>
                   <label className={LABEL} htmlFor="contact-email">Work email</label>
-                  <input id="contact-email" type="email" required maxLength={200} autoComplete="email" value={form.email} onChange={set('email')} className={FIELD} />
+                  <input id="contact-email" type="email" required maxLength={200} autoComplete="email" name="email" className={FIELD} />
                 </div>
                 <div>
                   <label className={LABEL} htmlFor="contact-phone">Phone number</label>
-                  <input id="contact-phone" type="tel" required pattern="(?:\D*\d){10,}\D*" title="At least 10 digits" maxLength={40} autoComplete="tel" value={form.phone} onChange={set('phone')} className={FIELD} />
+                  <input id="contact-phone" type="tel" required pattern="(?:\D*\d){10,}\D*" title="At least 10 digits" maxLength={40} autoComplete="tel" name="phone" className={FIELD} />
                 </div>
                 <div>
                   <label className={LABEL} htmlFor="contact-properties">Number of properties</label>
-                  <input id="contact-properties" type="number" required min={1} max={10000} inputMode="numeric" value={form.properties} onChange={set('properties')} className={FIELD} />
+                  <input id="contact-properties" type="number" required min={1} max={10000} inputMode="numeric" name="properties" className={FIELD} />
                 </div>
                 <div>
                   <label className={LABEL} htmlFor="contact-details">
@@ -110,8 +103,7 @@ export default function ContactSales() {
                     id="contact-details"
                     rows={4}
                     maxLength={2000}
-                    value={form.details}
-                    onChange={set('details')}
+                    name="details"
                     placeholder="PMS, markets, timeline, anything else"
                     className={`${FIELD.replace('h-12', 'h-auto').replace('rounded-full', 'rounded-[1.25rem]')} resize-y py-3`}
                   />

@@ -49,7 +49,7 @@ export function parseMonthDay(text: string, year: number): string | null {
 }
 
 /** Full-date extraction: "May 8, 2026" / "2026-05-08". */
-export function parseDate(text: string): string | null {
+function parseDate(text: string): string | null {
   const iso = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
   if (iso) return iso[0];
   const us = text.match(/\b([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})\b/);

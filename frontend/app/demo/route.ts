@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getStore, PrefixedStore } from '../../../backend/lib/store';
-import { DEMO_COOKIE, DEMO_TTL_SECONDS, demoPrefix, isValidDemoSid, newDemoSid } from '../../../backend/lib/demo/session';
+import { DEMO_COOKIE, DEMO_TTL_SECONDS, demoPrefix, isValidDemoSid } from '../../../backend/lib/demo/session';
 import { seedDemoSandbox, sandboxNeedsSeed } from '../../../backend/lib/demo/context';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   const reset = new URL(req.url).searchParams.get('reset') === '1';
   const existing = (await cookies()).get(DEMO_COOKIE)?.value;
-  const sid = !reset && isValidDemoSid(existing) ? existing : newDemoSid();
+  const sid = !reset && isValidDemoSid(existing) ? existing : crypto.randomUUID();
 
   const store = new PrefixedStore(getStore(), demoPrefix(sid), DEMO_TTL_SECONDS);
   if (reset || (await sandboxNeedsSeed(store))) {

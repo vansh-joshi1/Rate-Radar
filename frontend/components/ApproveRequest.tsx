@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PillButton } from './landing/Machined';
 import { FIELD, StatusLine } from './settings/parts';
+import { send } from '../lib/send';
 
 /**
  * Approve one access request: creates the hotel's property, makes the
@@ -20,21 +21,16 @@ export default function ApproveRequest({ email, name }: { email: string; name: s
   async function approve() {
     setBusy(true);
     setStatus(null);
-    const res = await fetch('/api/admin/approve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, airport }),
-    }).catch(() => null);
-    const data = (await res?.json().catch(() => null)) as { error?: string; emailed?: boolean } | null;
+    const { ok, data } = await send('/api/admin/approve', { email, airport });
     setBusy(false);
     setConfirming(false);
-    if (!res?.ok) {
-      setStatus({ tone: 'bad', text: data?.error ?? 'Could not reach the server. Try again.' });
+    if (!ok) {
+      setStatus({ tone: 'bad', text: data.error ?? 'Could not reach the server. Try again.' });
       return;
     }
     setStatus({
       tone: 'ok',
-      text: data?.emailed
+      text: data.emailed
         ? `Approved. ${email} has been emailed.`
         : `Approved, but the email didn't send. Tell ${email} they can sign in now.`,
     });

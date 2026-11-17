@@ -13,7 +13,7 @@ export async function loadPropertySnapshot(propertyId: string): Promise<Snapshot
   return null;
 }
 
-export interface PropertyContext {
+interface PropertyContext {
   store: Store;
   record: ApiKeyRecord;
   property: Property;

@@ -15,7 +15,7 @@ const DOW = [0.7, 0.45, 0.45, 0.45, 0.7, 1.0, 1.0];
 const FILL_DEFAULT = 0.8;
 const FILL_SELLOUT = 1.0;
 
-function tierOf(score: number): Tier {
+export function tierOf(score: number): Tier {
   if (score < 15) return 'too-small';
   if (score < 40) return 'minor';
   if (score < 70) return 'meaningful';

@@ -32,7 +32,7 @@ export function carryForwardParity(fresh: RateCheck[], previous?: RateCheck[]): 
   return fresh.length > 0 ? fresh : previous ?? [];
 }
 
-export const SourceResultSchema = z.object({
+const SourceResultSchema = z.object({
   source: z.string(),
   status: z.enum(['ok', 'failed', 'awaiting-key']),
   error: z.string().optional(),

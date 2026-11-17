@@ -9,7 +9,7 @@ import { loadCurrentRates } from '../../../../backend/lib/current-rates';
 import { requestProperty, requestStore } from '../../../../backend/lib/demo/context';
 import { Bezel } from '../../../components/landing/Machined';
 import { CHIP, DIVIDER, MONO_LABEL, StatusChip } from '../../../components/settings/parts';
-import { band, BAND_CHIP, type Band } from '../../../components/band';
+import { band, BAND_CHIP, money, signed, type Band } from '../../../components/band';
 import { ago } from '../../../lib/ago';
 import { fmtWeekdayLong, fmtRange, fmtDow } from '../../../../backend/lib/date';
 import type { ScoredEvent, SourceResult } from '../../../../backend/lib/scoring/types';
@@ -38,25 +38,17 @@ export const metadata = { title: 'Dashboard' };
  * warning banners only render when the data is stale or a source failed.
  */
 
-const money = (n: number) => `$${n}`;
-const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '-' : ''}$${Math.abs(n)}`;
-
 const LINK =
   'rounded-full text-[14px] font-medium text-[#44474d] underline decoration-[#0b1c30]/20 underline-offset-4 transition-colors duration-150 hover:text-[#1a1b20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#085ac0]/40 focus-visible:ring-offset-2';
 
 /* ---- chips (DESIGN.md → Chips, migrated form) ---- */
 
 /** Reads the scorer's own tier rather than re-deriving it from the score. */
-const DEMAND_CHIP: Record<ScoredEvent['tier'], { label: string; tone: string }> = {
-  major: { label: 'Major', tone: BAND_CHIP.major.cls },
-  meaningful: { label: 'Meaningful', tone: BAND_CHIP.meaningful.cls },
-  minor: { label: 'Minor', tone: BAND_CHIP.minor.cls },
-  'too-small': { label: 'Too small', tone: BAND_CHIP.quiet.cls },
-};
-
 function DemandChip({ event }: { event: ScoredEvent }) {
-  const { label, tone } = DEMAND_CHIP[event.tier];
-  return <span className={`${CHIP} ${tone}`}>{label}</span>;
+  const { tier } = event;
+  const small = tier === 'too-small';
+  const { label, cls } = BAND_CHIP[small ? 'quiet' : tier];
+  return <span className={`${CHIP} ${cls}`}>{small ? 'Too small' : label}</span>;
 }
 
 /* ---- instruments ---- */

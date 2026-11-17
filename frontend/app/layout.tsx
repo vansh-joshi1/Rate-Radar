@@ -27,9 +27,7 @@ const plexMono = localFont({
 export const metadata: Metadata = {
   title: { default: 'Rate Radar — Know what to charge tonight', template: '%s · Rate Radar' },
   description: 'Revenue management for independent hotels. Recommends nightly rates — a human decides.',
-  robots: { index: false, follow: false },
-  // The image comes from app/opengraph-image.tsx. Previews matter even while
-  // the site is noindex: the demo link gets shared by hand.
+  // The image comes from app/opengraph-image.tsx.
   openGraph: {
     title: 'Rate Radar: know what to charge tonight',
     description: 'Nightly rate recommendations for independent hotels, with the arithmetic attached. It recommends; you decide.',

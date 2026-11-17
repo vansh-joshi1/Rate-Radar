@@ -13,7 +13,7 @@ export interface CurrentRates {
   updatedAt: string;
 }
 
-export const currentRatesKey = (propertyId: string) => `prop:${propertyId}:current-rates`;
+const currentRatesKey = (propertyId: string) => `prop:${propertyId}:current-rates`;
 
 export async function loadCurrentRates(store: Store, propertyId: string): Promise<CurrentRates | null> {
   return store.get<CurrentRates>(currentRatesKey(propertyId));

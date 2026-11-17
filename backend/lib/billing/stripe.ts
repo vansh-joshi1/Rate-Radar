@@ -19,7 +19,7 @@ export function priceId(plan: Plan, interval: Interval): string | undefined {
 
 const PAIRS = (['starter', 'growth'] as const).flatMap((plan) => (['month', 'year'] as const).map((interval) => ({ plan, interval })));
 
-export const planForPrice = (id: string) => PAIRS.find((p) => priceId(p.plan, p.interval) === id) ?? null;
+const planForPrice = (id: string) => PAIRS.find((p) => priceId(p.plan, p.interval) === id) ?? null;
 
 const iso = (unix: number | null | undefined): string | undefined =>
   unix ? new Date(unix * 1000).toISOString() : undefined;

@@ -6,6 +6,7 @@ import type { CurrentRates } from '../../backend/lib/current-rates';
 import { ReadOnlyNote, useCanWrite } from './RoleProvider';
 import { PillButton } from './landing/Machined';
 import { FIELD, FIELD_BAD, NUMBER, MONO_LABEL, StatusLine } from './settings/parts';
+import { send } from '../lib/send';
 
 interface Props {
   propertyId: string;
@@ -54,26 +55,19 @@ export default function CurrentRatesCard({ propertyId, tiers }: Props) {
         .filter(([, v]) => v.trim() !== '')
         .map(([k, v]) => [k, Number(v)]),
     );
-    try {
-      const res = await fetch(`/api/current-rates?propertyId=${propertyId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tiers: tiersBody }),
-      });
-      const json = (await res.json().catch(() => ({}))) as { error?: string; rates?: CurrentRates };
-      if (res.ok && json.rates) {
-        setUpdatedAt(json.rates.updatedAt);
-        setSaved(values);
-        track('current_rates_saved', { configured_tier_count: Object.keys(tiersBody).length });
-        setStatus({ tone: 'ok', text: 'Saved. Competitor comparisons now use these as your rates.' });
-      } else {
-        setStatus({ tone: 'bad', text: json.error ?? 'Your rates were not saved. Try again.' });
-      }
-    } catch {
+    const res = await send(`/api/current-rates?propertyId=${propertyId}`, { tiers: tiersBody }, 'PUT');
+    const json = res.data as { error?: string; rates?: CurrentRates };
+    if (res.ok && json.rates) {
+      setUpdatedAt(json.rates.updatedAt);
+      setSaved(values);
+      track('current_rates_saved', { configured_tier_count: Object.keys(tiersBody).length });
+      setStatus({ tone: 'ok', text: 'Saved. Competitor comparisons now use these as your rates.' });
+    } else if (res.status) {
+      setStatus({ tone: 'bad', text: json.error ?? 'Your rates were not saved. Try again.' });
+    } else {
       setStatus({ tone: 'bad', text: 'Could not reach the server, so nothing was saved. Check your connection.' });
-    } finally {
-      setSaving(false);
     }
+    setSaving(false);
   }
 
   return (

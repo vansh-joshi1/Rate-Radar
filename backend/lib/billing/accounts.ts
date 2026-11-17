@@ -49,7 +49,7 @@ export function access(account: Account, propertyId: string, now: Date): 'open' 
   return now < new Date(account.trialEndsAt) ? 'open' : 'locked';
 }
 
-export function trialDaysLeft(account: Account, now: Date): number {
+function trialDaysLeft(account: Account, now: Date): number {
   return Math.max(0, Math.ceil((new Date(account.trialEndsAt).getTime() - now.getTime()) / DAY));
 }
 

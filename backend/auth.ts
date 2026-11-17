@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { getStore } from './lib/store';
@@ -28,16 +28,9 @@ import { sendEmail } from './lib/email/send';
  * request, so removing someone from the team signs them out immediately.
  */
 
-/**
- * React `cache` exists only in Next's server build of React. Plain React 18
- * (tests, scripts) lacks it, and there memoizing per render is moot anyway.
- */
-const perRender: <F extends (...args: never[]) => unknown>(fn: F) => F =
-  (React as { cache?: <F>(fn: F) => F }).cache ?? ((fn) => fn);
-
 const SHARED_NAME = 'Front desk (shared password)';
 
-export interface SessionUser {
+interface SessionUser {
   id: string;
   name: string | null;
   email: string | null;
@@ -82,12 +75,12 @@ export async function supabaseAuth() {
 /**
  * The signed-in user, or null. Same shape the call sites used under Auth.js.
  *
- * Memoized per server render (`perRender`): the layout, the page and
+ * Memoized per server render (React `cache`): the layout, the page and
  * every `requestStore()`/`requestProperty()` inside them ask, and each ask is a
  * Supabase round trip plus two store reads. Route handlers are not memoized by
  * `cache` and simply call through.
  */
-export const auth = perRender(async (): Promise<{ user: SessionUser } | null> => {
+export const auth = cache(async (): Promise<{ user: SessionUser } | null> => {
   if (!authEnv()) return null;
   const {
     data: { user },
@@ -193,5 +186,5 @@ export async function revokeUser(email: string): Promise<void> {
 
 /** Only same-site paths survive as a post-sign-in destination — no open redirects. */
 export function safeNext(next: unknown): string {
-  return typeof next === 'string' && /^\/(?![/\\])/.test(next) ? next : '/overview';
+  return typeof next === 'string' && /^\/(?![/\\])[^\x00-\x20\x7f]*$/.test(next) ? next : '/overview';
 }

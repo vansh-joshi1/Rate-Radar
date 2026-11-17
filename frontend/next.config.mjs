@@ -24,7 +24,6 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: [
-          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
           // Nobody frames the dashboard: blocks clickjacking a signed-in user's controls.
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },

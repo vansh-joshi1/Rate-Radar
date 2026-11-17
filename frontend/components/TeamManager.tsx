@@ -7,6 +7,7 @@ import { ReadOnlyNote, useCanWrite } from './RoleProvider';
 import { PillButton } from './landing/Machined';
 import type { Member, Role } from '../../backend/lib/auth/members';
 import { FIELD, FOCUS, Footnote, MONO_LABEL, StatusChip, StatusLine, type Tone } from './settings/parts';
+import { send } from '../lib/send';
 
 /**
  * Team tab: the invite list that gates magic-link sign-in. An owner adds an
@@ -60,21 +61,14 @@ export default function TeamManager() {
     e.preventDefault();
     setBusy(true);
     setNotice(null);
-    try {
-      const res = await fetch('/api/members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, role }),
-      });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (res.ok) {
-        track('team_member_invited', { role });
-        setNotice({ tone: 'ok', text: `${email} can now sign in with a magic link from the sign-in page.` });
-        setEmail('');
-      } else {
-        setNotice({ tone: 'bad', text: json.error ?? 'The invite did not go through. Try again.' });
-      }
-    } catch {
+    const res = await send('/api/members', { email, role });
+    if (res.ok) {
+      track('team_member_invited', { role });
+      setNotice({ tone: 'ok', text: `${email} can now sign in with a magic link from the sign-in page.` });
+      setEmail('');
+    } else if (res.status) {
+      setNotice({ tone: 'bad', text: res.data.error ?? 'The invite did not go through. Try again.' });
+    } else {
       setNotice({ tone: 'bad', text: 'Could not reach the server, so nobody was invited. Check your connection.' });
     }
     await refresh();
@@ -85,22 +79,15 @@ export default function TeamManager() {
     setBusy(true);
     setNotice(null);
     setConfirming(null);
-    try {
-      const res = await fetch('/api/members', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: target }),
-      });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (res.ok) track('team_member_removed');
-      setNotice(
-        res.ok
-          ? { tone: 'ok', text: `${target} was removed and can no longer sign in.` }
-          : { tone: 'bad', text: json.error ?? `${target} was not removed. Try again.` },
-      );
-    } catch {
-      setNotice({ tone: 'bad', text: `Could not reach the server, so ${target} is still on the team.` });
-    }
+    const res = await send('/api/members', { email: target }, 'DELETE');
+    if (res.ok) track('team_member_removed');
+    setNotice(
+      res.ok
+        ? { tone: 'ok', text: `${target} was removed and can no longer sign in.` }
+        : res.status
+          ? { tone: 'bad', text: res.data.error ?? `${target} was not removed. Try again.` }
+          : { tone: 'bad', text: `Could not reach the server, so ${target} is still on the team.` },
+    );
     await refresh();
     setBusy(false);
   }

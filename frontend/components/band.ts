@@ -3,11 +3,14 @@
  * and the dashboard, so a Major night reads the same everywhere.
  */
 
+import { tierOf } from '../../backend/lib/scoring/score';
+
 export type Band = 'major' | 'meaningful' | 'minor' | 'quiet';
 
-/** Demand band, on the scoring engine's own thresholds (backend/lib/scoring/score.ts → tierOf). */
+/** Demand band: the scoring engine's tier, with "too small" shown as quiet. */
 export function band(score: number): Band {
-  return score >= 70 ? 'major' : score >= 40 ? 'meaningful' : score >= 15 ? 'minor' : 'quiet';
+  const t = tierOf(score);
+  return t === 'too-small' ? 'quiet' : t;
 }
 
 /* Demand chips on a light surface, DESIGN.md → Chips. */
@@ -29,3 +32,7 @@ export const KIND_LABEL: Record<string, string> = {
 
 /** Miles for display: one decimal under ten, whole miles after. */
 export const fmtMi = (n: number) => (n < 10 ? n.toFixed(1) : Math.round(n).toString());
+
+/** Dollar figures, and a difference with its sign (zero reads $0). */
+export const money = (n: number) => `$${n}`;
+export const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '-' : ''}$${Math.abs(n)}`;

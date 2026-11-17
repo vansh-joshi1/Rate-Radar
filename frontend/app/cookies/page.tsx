@@ -29,12 +29,6 @@ const OPTIONAL: Row[] = [
     purpose: 'PostHog product analytics: which pages and features are used, and errors.',
     lasts: '1 year, or until you decline',
   },
-  {
-    name: 'originid_vid (front page only)',
-    purpose:
-      'DigitalFingerprint (OriginID) visitor identification: reads browser and device characteristics to recognise a returning visitor, and stores a visitor ID.',
-    lasts: '1 year, or until you decline',
-  },
 ];
 
 function Table({ caption, rows }: { caption: string; rows: Row[] }) {
@@ -65,7 +59,7 @@ function Table({ caption, rows }: { caption: string; rows: Row[] }) {
 
 export default function Cookies() {
   return (
-    <LegalPage title="Cookie Policy" updated="30 September 2026">
+    <LegalPage title="Cookie Policy" updated="5 October 2026">
       <p>
         Cookies and similar browser storage let a site remember things between pages. Rate Radar uses as few as it can.
         Anything not needed to sign you in or run the demo loads only after you accept analytics.
